@@ -302,7 +302,7 @@ class Statement(object):
         win.refresh()
 
     # Edit statement operations
-    def editOps(self, statLast) -> None:
+    def editOps(self, statDst) -> None:
 
         win = curses.newwin(curses.LINES + 50, curses.COLS, 0, 0)
         win.keypad(True)
@@ -322,9 +322,9 @@ class Statement(object):
             self.dispOps(win, opIdxFirst, opHl, pOpSel)
 
             win.move(Y2, X2)
-            win.addstr(f"last statement : ")
-            if statLast is not None:
-                win.addstr(f"{statLast.name}")
+            win.addstr(f"Destination statement : ")
+            if statDst is not None:
+                win.addstr(f"{statDst.name}")
             else:
                 win.addstr(f"none")
             win.move(win.getyx()[0] + 1, X2)
@@ -396,13 +396,6 @@ class Statement(object):
                 elif opHlIdx >= opIdxFirst + curses.LINES - 10:
                     opHl = self.pOp[opIdxFirst + curses.LINES - 10 - 1]
 
-            # Add operation
-            elif key == "a":
-                op = Operation(datetime.now(), "", "", "", "", 0.0)
-                op.edit()
-                self.insertOp(op)
-                self.write()
-
             # (Un)select operation
             elif key == "s":
                 # If operation not selected
@@ -414,9 +407,16 @@ class Statement(object):
                     # Remove  operation to selected ones
                     pOpSel.remove(opHl)
 
+            # Add operation
+            elif key == "a":
+                op = Operation(datetime.now(), "", "", "", "", 0.0)
+                op.edit()
+                self.insertOp(op)
+                self.write()
+
             # Move selected operations
             elif key == "m":
-                if statLast is None:
+                if statDst is None:
                     continue
                 win.addstr("Move ? (y/n) : ")
                 cConfirm = win.getch()
@@ -425,7 +425,7 @@ class Statement(object):
                     continue
                 print("MOVE")
                 # Move selected operations from current statement to last one
-                self.moveOps(pOpSel, statLast)
+                self.moveOps(pOpSel, statDst)
                 # Clear select operations
                 pOpSel.clear()
 

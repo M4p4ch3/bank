@@ -54,7 +54,7 @@ def main(win):
 
     curses.init_pair(1, curses.COLOR_RED, curses.COLOR_BLACK)
     account = Account()
-    account.edit(win)
+    account.editStats(win)
 
 if __name__ == "__main__":
 

@@ -56,7 +56,7 @@ class Account(object):
         for stat in self.pStat:
 
             # Create statement line
-            statCsv = [stat.date.strftime(FMT_DATE), str(stat.balStart), str(stat.balEnd)]
+            statCsv = [stat.name, str(stat.balStart), str(stat.balEnd)]
 
             # Write statement line to CSV file
             csvFile.writerow(statCsv)
@@ -81,7 +81,7 @@ class Account(object):
 
         return ret
 
-    def disp(self, win, statHl: Statement) -> None:
+    def dispStats(self, win, statHl: Statement, statSel: Statement) -> None:
 
         win.clear()
         win.border()
@@ -101,6 +101,8 @@ class Account(object):
             dispFlag = A_NORMAL
             if stat == statHl:
                 dispFlag += A_STANDOUT
+            if stat == statSel:
+                dispFlag += A_BOLD
 
             win.addstr(f"|"
                 f" {stat.name.ljust(LEN_NAME)} |"
@@ -114,14 +116,14 @@ class Account(object):
 
         win.refresh()
 
-    def edit(self, win) -> None:
+    def editStats(self, win) -> None:
 
         statHl = self.pStat[0]
-        statLast = None
+        statSel = None
 
         while True:
 
-            self.disp(win, statHl)
+            self.dispStats(win, statHl, statSel)
             key = win.getkey()
 
             # Highlight previous statement
@@ -139,6 +141,17 @@ class Account(object):
                     statHl = self.pStat[0]
                 else:
                     statHl = self.pStat[idx]
+
+            # (Un)select statement
+            elif key == "s":
+                # If statement not selected
+                if statHl != statSel:
+                    # Select statement
+                    statSel = statHl
+                # Else, statement selected
+                else:
+                    # Unselect satement
+                    statSel = None
 
             # Add statement
             elif key == "a":
@@ -173,9 +186,7 @@ class Account(object):
 
             # Open statement
             elif key == "\n":
-                statHl.editOps(statLast)
-                # Update last statement
-                statLast = statHl
+                statHl.editOps(statSel)
 
             elif key == '\x1b':
                 break
