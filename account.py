@@ -21,6 +21,12 @@ class Account(object):
     HEADER += f" {'start'.ljust(LEN_AMOUNT, ' ')} |"
     HEADER += f" {'end'.ljust(LEN_AMOUNT, ' ')} |"
 
+    UNCOMPLETE = "|"
+    UNCOMPLETE += f" {'...'.ljust(LEN_NAME, ' ')} |"
+    UNCOMPLETE += f" {'...'.ljust(LEN_DATE, ' ')} |"
+    UNCOMPLETE += f" {'...'.ljust(LEN_AMOUNT, ' ')} |"
+    UNCOMPLETE += f" {'...'.ljust(LEN_AMOUNT, ' ')} |"
+
     def __init__(self) -> None:
 
         self.filePath = "statements.csv"
@@ -81,7 +87,9 @@ class Account(object):
 
         return ret
 
-    def dispStats(self, win: Window, statHl: Statement, statSel: Statement) -> None:
+    def dispStats(self, win: Window, iStatFirst: int, statHl: Statement, statSel: Statement) -> None:
+
+        (hWin, _) = win.getmaxyx()
 
         win.clear()
         win.border()
@@ -91,12 +99,27 @@ class Account(object):
         (y, x) = (2, 2)
         win.addstr(y, x, f"{self.SEP}")
         y = y + 1
-        win.addstr(y, x, f"{self.HEADER}")
-        y = y + 1
-        win.addstr(y, x, f"{self.SEP}")
+        win.addstr(y, x, f"| ")
+        win.addstr(f"{'name'.ljust(LEN_NAME)}", A_BOLD)
+        win.addstr(" | ")
+        win.addstr(f"{'date'.ljust(LEN_DATE)}", A_BOLD)
+        win.addstr(" | ")
+        win.addstr(f"{'start'.ljust(LEN_AMOUNT)}", A_BOLD)
+        win.addstr(" | ")
+        win.addstr(f"{'end'.ljust(LEN_AMOUNT)}", A_BOLD)
+        win.addstr(" |")
         y = y + 1
 
-        for stat in self.pStat:
+        if iStatFirst == 0:
+            win.addstr(y, x, f"{self.SEP}")
+        else:
+            win.addstr(y, x, self.UNCOMPLETE)
+        y = y + 1
+
+        iStat = iStatFirst
+        while iStat < len(self.pStat) and iStat < iStatFirst + hWin - 11:
+
+            stat = self.pStat[iStat]
 
             dispFlag = A_NORMAL
             if stat == statHl:
@@ -104,32 +127,46 @@ class Account(object):
             if stat == statSel:
                 dispFlag += A_BOLD
 
-            win.addstr(y, x, f"|"
-                f" {stat.name.ljust(LEN_NAME)} |"
-                f" {stat.date.strftime(FMT_DATE).ljust(LEN_DATE)} |"
-                f" {str(stat.balStart).ljust(LEN_AMOUNT)} |"
-                f" {str(stat.balEnd).ljust(LEN_AMOUNT)} |",
-                dispFlag)
+            win.addstr(y, x, f"| ")
+            win.addstr(f"{stat.name.ljust(LEN_NAME)}", dispFlag)
+            win.addstr(" | ")
+            win.addstr(f"{stat.date.strftime(FMT_DATE).ljust(LEN_DATE)}", dispFlag)
+            win.addstr(" | ")
+            win.addstr(f"{str(stat.balStart).ljust(LEN_AMOUNT)}", dispFlag)
+            win.addstr(" | ")
+            win.addstr(f"{str(stat.balEnd).ljust(LEN_AMOUNT)}", dispFlag)
+            win.addstr(" |")
             y = y + 1
 
-        win.addstr(y, x, f"{self.SEP}")
+            iStat = iStat + 1
+
+        if iStat == len(self.pStat):
+            win.addstr(y, x, f"{self.SEP}")
+        else:
+            win.addstr(y, x, self.UNCOMPLETE)
         y = y + 1
 
         win.refresh()
 
     def editStats(self, pWin: List[Window]) -> None:
 
-        statHl = self.pStat[0]
-        statSel = None
+        (hWinMain, _) = pWin[WIN_IDX_MAIN].getmaxyx()
+
+        # Index of first displayed statement
+        iStatFirst = 0
+        # Highlighted statement
+        statHl: Statement = self.pStat[0]
+        # Selected statement
+        statSel: Statement = None
 
         while True:
 
-            self.dispStats(pWin[WIN_IDX_MAIN], statHl, statSel)
+            self.dispStats(pWin[WIN_IDX_MAIN], iStatFirst, statHl, statSel)
 
             pWin[WIN_IDX_CMD].clear()
             pWin[WIN_IDX_CMD].border()
             pWin[WIN_IDX_CMD].addstr(0, 2, " COMMANDS ", A_BOLD)
-            sCmd = " s : (un)select, a : add, d : delete, e : edit, ENTER : open "
+            sCmd = "S/SPACE : (un)select, A/+ : add, D/DEL/- : delete, E : edit, ENTER : open "
             pWin[WIN_IDX_CMD].addstr(1, 2, sCmd)
             pWin[WIN_IDX_CMD].refresh()
 
@@ -137,22 +174,70 @@ class Account(object):
 
             # Highlight previous statement
             if key == "KEY_UP":
-                idx = self.pStat.index(statHl) - 1
-                if idx < 0:
-                    statHl = self.pStat[len(self.pStat) - 1]
-                else:
-                    statHl = self.pStat[idx]
+
+                # Highlight previous statement
+                iStatHl = self.pStat.index(statHl) - 1
+                if iStatHl < 0:
+                    iStatHl = 0
+                statHl = self.pStat[iStatHl]
+
+                # If out of display range
+                if iStatHl < iStatFirst:
+                    # Previous page
+                    iStatFirst = iStatFirst - 1
+                    if iStatFirst < 0:
+                        iStatFirst = 0    
 
             # Highlight next statement
             if key == "KEY_DOWN":
-                idx = self.pStat.index(statHl) + 1
-                if idx >= len(self.pStat):
-                    statHl = self.pStat[0]
-                else:
-                    statHl = self.pStat[idx]
+
+                # Highlight next statement
+                iStatHl = self.pStat.index(statHl) + 1
+                if iStatHl >= len(self.pStat):
+                    iStatHl = len(self.pStat) - 1
+                statHl = self.pStat[iStatHl]
+
+                # If out of display range
+                if iStatHl - iStatFirst >= hWinMain - 11:
+                    # Next page
+                    iStatFirst = iStatFirst + 1
+                    if iStatFirst > len(self.pStat) - (hWinMain - 11):
+                        iStatFirst = len(self.pStat) - (hWinMain - 11)
+
+            # Previous page
+            elif key == "KEY_PPAGE":
+
+                # Previous page
+                iStatFirst = iStatFirst - 3
+                if iStatFirst < 0:
+                    iStatFirst = 0
+
+                # If out of display range
+                iStatHl = self.pStat.index(statHl)
+                if iStatHl < iStatFirst:
+                    statHl = self.pStat[iStatFirst]
+                elif iStatHl >= iStatFirst + hWinMain - 11:
+                    statHl = self.pStat[iStatFirst + hWinMain - 11 - 1]
+
+            # Next page
+            elif key == "KEY_NPAGE":
+
+                # Next page
+                iStatFirst = iStatFirst + 3
+                if iStatFirst > len(self.pStat) - (hWinMain - 11):
+                    iStatFirst = len(self.pStat) - (hWinMain - 11)
+                    if iStatFirst < 0:
+                        iStatFirst = 0
+
+                # If out of display range
+                iStatHl = self.pStat.index(statHl)
+                if iStatHl < iStatFirst:
+                    statHl = self.pStat[iStatFirst]
+                elif iStatHl >= iStatFirst + hWinMain - 11:
+                    statHl = self.pStat[iStatFirst + hWinMain - 11 - 1]
 
             # (Un)select statement
-            elif key == "s":
+            elif key == "s" or key == " ":
                 # If statement not selected
                 if statHl != statSel:
                     # Select statement
@@ -163,11 +248,11 @@ class Account(object):
                     statSel = None
 
             # Add statement
-            elif key == "a":
+            elif key == "a" or key == "+":
                 self.addStat(pWin[WIN_IDX_INPUT])
 
             # Delete selected operations
-            elif key == "d":
+            elif key == "d" or key == "KEY_DC" or key == "-":
 
                 pWin[WIN_IDX_INPUT].clear()
                 pWin[WIN_IDX_INPUT].border()

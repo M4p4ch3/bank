@@ -230,6 +230,8 @@ class Statement(object):
     # Display statement operations
     def dispOps(self, winMain: Window, winInfo: Window, opIdxFirst: int, opHl: Operation, pOpSel: list) -> None:
 
+        (winMainH, _) = winMain.getmaxyx()
+
         winMain.clear()
         winMain.border()
         winMain.move(0, 2)
@@ -257,19 +259,29 @@ class Statement(object):
         (y, x) = (2, 2)
         winMain.addstr(y, x, self.SEP)
         y = y + 1
-        winMain.addstr(y, x, self.HEADER)
-        y = y + 1
-        winMain.addstr(y, x, self.SEP)
+        winMain.addstr(y, x, "| ")
+        winMain.addnstr('date'.ljust(LEN_DATE), LEN_DATE, A_BOLD)
+        winMain.addstr(" | ")
+        winMain.addnstr('type'.ljust(LEN_TYPE), LEN_TYPE, A_BOLD)
+        winMain.addstr(" | ")
+        winMain.addnstr('tier'.ljust(LEN_TIER), LEN_TIER, A_BOLD)
+        winMain.addstr(" | ")
+        winMain.addnstr('cat'.ljust(LEN_CAT), LEN_CAT, A_BOLD)
+        winMain.addstr(" | ")
+        winMain.addnstr('desc'.ljust(LEN_DESC), LEN_DESC, A_BOLD)
+        winMain.addstr(" | ")
+        winMain.addnstr('amount'.ljust(LEN_AMOUNT), LEN_AMOUNT, A_BOLD)
+        winMain.addstr(" |")
         y = y + 1
 
-        if opIdxFirst != 0:
+        if opIdxFirst == 0:
+            winMain.addstr(y, x, self.SEP)
+        else:
             winMain.addstr(y, x, self.UNCOMPLETE)
-            y = y + 1
-
-        (winMainH, _) = winMain.getmaxyx()
+        y = y + 1
 
         opIdx = opIdxFirst
-        while opIdx < len(self.pOp) and opIdx < opIdxFirst + winMainH - 13:
+        while opIdx < len(self.pOp) and opIdx < opIdxFirst + winMainH - 11:
 
             op = self.pOp[opIdx]
 
@@ -296,11 +308,10 @@ class Statement(object):
 
             opIdx = opIdx + 1
 
-        if opIdx < len(self.pOp):
+        if opIdx == len(self.pOp):
+            winMain.addstr(y, x, f"{self.SEP}\n")
+        else:
             winMain.addstr(y, x, self.UNCOMPLETE)
-            y = y + 1
-
-        winMain.addstr(y, x, f"{self.SEP}\n")
         y = y + 1
 
         winMain.refresh()
@@ -309,17 +320,17 @@ class Statement(object):
     # Edit statement operations
     def editOps(self, pWin: List[Window], statDst) -> None:
 
+        (winMainH, _) = pWin[WIN_IDX_MAIN].getmaxyx()
+
+        # Index of first displayed operation
+        opIdxFirst = 0
+        # Highlighted operation
         if len(self.pOp) != 0:
-            # Highlighted operation
             opHl = self.pOp[0]
         else:
             opHl = None
         # Selected operations list
         pOpSel = list()
-
-        opIdxFirst = 0
-
-        (winMainH, _) = pWin[WIN_IDX_MAIN].getmaxyx()
 
         while True:
 
@@ -328,7 +339,7 @@ class Statement(object):
             pWin[WIN_IDX_CMD].clear()
             pWin[WIN_IDX_CMD].border()
             pWin[WIN_IDX_CMD].addstr(0, 2, " COMMANDS ", A_BOLD)
-            sCmd = " s : (un)select, a : add, d : delete, m : move, e/ENTER : edit/open"
+            sCmd = "S/SPACE : (un)select, A/+ : add, D/DEL/-: delete, M : move, E/ENTER : edit/open"
             pWin[WIN_IDX_CMD].addstr(1, 2, sCmd)
             pWin[WIN_IDX_CMD].refresh()
 
@@ -368,11 +379,11 @@ class Statement(object):
                 opHl = self.pOp[opHlIdx]
 
                 # If out of display range
-                if opHlIdx - opIdxFirst >= winMainH - 13:
+                if opHlIdx - opIdxFirst >= winMainH - 11:
                     # Next page
                     opIdxFirst = opIdxFirst + 1
-                    if opIdxFirst > len(self.pOp) - (winMainH - 13):
-                        opIdxFirst = len(self.pOp) - (winMainH - 13)    
+                    if opIdxFirst > len(self.pOp) - (winMainH - 11):
+                        opIdxFirst = len(self.pOp) - (winMainH - 11)    
 
             # Previous page
             elif key == "KEY_PPAGE":
@@ -386,16 +397,16 @@ class Statement(object):
                 opHlIdx = self.pOp.index(opHl)
                 if opHlIdx < opIdxFirst:
                     opHl = self.pOp[opIdxFirst]
-                elif opHlIdx >= opIdxFirst + winMainH - 13:
-                    opHl = self.pOp[opIdxFirst + winMainH - 13 - 1]
+                elif opHlIdx >= opIdxFirst + winMainH - 11:
+                    opHl = self.pOp[opIdxFirst + winMainH - 11 - 1]
 
             # Next page
             elif key == "KEY_NPAGE":
 
                 # Next page
                 opIdxFirst = opIdxFirst + 3
-                if opIdxFirst > len(self.pOp) - (winMainH - 13):
-                    opIdxFirst = len(self.pOp) - (winMainH - 13)
+                if opIdxFirst > len(self.pOp) - (winMainH - 11):
+                    opIdxFirst = len(self.pOp) - (winMainH - 11)
                     if opIdxFirst < 0:
                         opIdxFirst = 0
 
@@ -403,11 +414,11 @@ class Statement(object):
                 opHlIdx = self.pOp.index(opHl)
                 if opHlIdx < opIdxFirst:
                     opHl = self.pOp[opIdxFirst]
-                elif opHlIdx >= opIdxFirst + winMainH - 13:
-                    opHl = self.pOp[opIdxFirst + winMainH - 13 - 1]
+                elif opHlIdx >= opIdxFirst + winMainH - 11:
+                    opHl = self.pOp[opIdxFirst + winMainH - 11 - 1]
 
             # (Un)select operation
-            elif key == "s":
+            elif key == "s" or key == " ":
                 # If operation not selected
                 if opHl not in pOpSel:
                     # Add operation to selected ones
@@ -418,7 +429,7 @@ class Statement(object):
                     pOpSel.remove(opHl)
 
             # Add operation
-            elif key == "a":
+            elif key == "a" or key == "+":
                 op = Operation(datetime.now(), "", "", "", "", 0.0)
                 op.edit(pWin[WIN_IDX_INPUT])
                 self.insertOp(op)
@@ -441,7 +452,7 @@ class Statement(object):
                 pOpSel.clear()
 
             # Delete selected operations
-            elif key == "d":
+            elif key == "d" or key == "KEY_DC" or key == "-":
 
                 pWin[WIN_IDX_INPUT].clear()
                 pWin[WIN_IDX_INPUT].border()
