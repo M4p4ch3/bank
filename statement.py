@@ -231,6 +231,9 @@ class Statement(object):
     def dispOps(self, winMain: Window, winInfo: Window, opIdxFirst: int, opHl: Operation, pOpSel: list) -> None:
 
         (winMainH, _) = winMain.getmaxyx()
+        nOpDisp = winMainH - 11
+        if len(self.pOp) < nOpDisp:
+            nOpDisp = len(self.pOp)
 
         winMain.clear()
         winMain.border()
@@ -258,6 +261,8 @@ class Statement(object):
 
         (y, x) = (2, 2)
         winMain.addstr(y, x, self.SEP)
+        # Get X at end of table
+        xTableEnd = winMain.getyx()[1]
         y = y + 1
         winMain.addstr(y, x, "| ")
         winMain.addnstr('date'.ljust(LEN_DATE), LEN_DATE, A_BOLD)
@@ -281,7 +286,7 @@ class Statement(object):
         y = y + 1
 
         opIdx = opIdxFirst
-        while opIdx < len(self.pOp) and opIdx < opIdxFirst + winMainH - 11:
+        while opIdx < len(self.pOp) and opIdx < opIdxFirst + nOpDisp:
 
             op = self.pOp[opIdx]
 
@@ -313,6 +318,15 @@ class Statement(object):
         else:
             winMain.addstr(y, x, self.UNCOMPLETE)
         y = y + 1
+
+        if len(self.pOp) != 0:
+            # Slider
+            (y2, x2) = (5, xTableEnd)
+            for i in range(int(opIdxFirst * nOpDisp / len(self.pOp))):
+                y2 = y2 + 1
+            for i in range(int(nOpDisp * nOpDisp / len(self.pOp))):
+                winMain.addstr(y2, x2, " ", A_STANDOUT)
+                y2 = y2 + 1
 
         winMain.refresh()
         winInfo.refresh()

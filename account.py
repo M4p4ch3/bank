@@ -90,6 +90,9 @@ class Account(object):
     def dispStats(self, win: Window, iStatFirst: int, statHl: Statement, statSel: Statement) -> None:
 
         (hWin, _) = win.getmaxyx()
+        nStatDisp = hWin - 11
+        if len(self.pStat) < nStatDisp:
+            nStatDisp = len(self.pStat)
 
         win.clear()
         win.border()
@@ -98,6 +101,8 @@ class Account(object):
 
         (y, x) = (2, 2)
         win.addstr(y, x, f"{self.SEP}")
+        # Get X at end of table
+        xTableEnd = win.getyx()[1]
         y = y + 1
         win.addstr(y, x, f"| ")
         win.addstr(f"{'name'.ljust(LEN_NAME)}", A_BOLD)
@@ -117,7 +122,7 @@ class Account(object):
         y = y + 1
 
         iStat = iStatFirst
-        while iStat < len(self.pStat) and iStat < iStatFirst + hWin - 11:
+        while iStat < len(self.pStat) and iStat < iStatFirst + nStatDisp:
 
             stat = self.pStat[iStat]
 
@@ -145,6 +150,14 @@ class Account(object):
         else:
             win.addstr(y, x, self.UNCOMPLETE)
         y = y + 1
+
+        # Slider
+        (y2, x2) = (5, xTableEnd)
+        for i in range(int(iStatFirst * nStatDisp / len(self.pStat))):
+            y2 = y2 + 1
+        for i in range(int(nStatDisp * nStatDisp / len(self.pStat)) + 1):
+            win.addstr(y2, x2, " ", A_STANDOUT)
+            y2 = y2 + 1
 
         win.refresh()
 
