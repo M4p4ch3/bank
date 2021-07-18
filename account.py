@@ -81,20 +81,20 @@ class Account(object):
 
         return ret
 
-    def dispStats(self, win, statHl: Statement, statSel: Statement) -> None:
+    def dispStats(self, win: Window, statHl: Statement, statSel: Statement) -> None:
 
         win.clear()
         win.border()
         win.move(0, 2)
-        win.addstr("Statements")
+        win.addstr(" STATEMENTS ", A_BOLD)
 
-        win.move(Y1, X1)
-        win.addstr(f"{self.SEP}")
-        win.move(win.getyx()[0] + 1, X1)
-        win.addstr(f"{self.HEADER}")
-        win.move(win.getyx()[0] + 1, X1)
-        win.addstr(f"{self.SEP}")
-        win.move(win.getyx()[0] + 1, X1)
+        (y, x) = (2, 2)
+        win.addstr(y, x, f"{self.SEP}")
+        y = y + 1
+        win.addstr(y, x, f"{self.HEADER}")
+        y = y + 1
+        win.addstr(y, x, f"{self.SEP}")
+        y = y + 1
 
         for stat in self.pStat:
 
@@ -104,27 +104,36 @@ class Account(object):
             if stat == statSel:
                 dispFlag += A_BOLD
 
-            win.addstr(f"|"
+            win.addstr(y, x, f"|"
                 f" {stat.name.ljust(LEN_NAME)} |"
                 f" {stat.date.strftime(FMT_DATE).ljust(LEN_DATE)} |"
                 f" {str(stat.balStart).ljust(LEN_AMOUNT)} |"
                 f" {str(stat.balEnd).ljust(LEN_AMOUNT)} |",
                 dispFlag)
-            win.move(win.getyx()[0] + 1, X1)
+            y = y + 1
 
-        win.addstr(f"{self.SEP}")
+        win.addstr(y, x, f"{self.SEP}")
+        y = y + 1
 
         win.refresh()
 
-    def editStats(self, win) -> None:
+    def editStats(self, pWin: List[Window]) -> None:
 
         statHl = self.pStat[0]
         statSel = None
 
         while True:
 
-            self.dispStats(win, statHl, statSel)
-            key = win.getkey()
+            self.dispStats(pWin[WIN_IDX_MAIN], statHl, statSel)
+
+            pWin[WIN_IDX_CMD].clear()
+            pWin[WIN_IDX_CMD].border()
+            pWin[WIN_IDX_CMD].addstr(0, 2, " COMMANDS ", A_BOLD)
+            sCmd = " s : (un)select, a : add, d : delete, e : edit, ENTER : open "
+            pWin[WIN_IDX_CMD].addstr(1, 2, sCmd)
+            pWin[WIN_IDX_CMD].refresh()
+
+            key = pWin[WIN_IDX_MAIN].getkey()
 
             # Highlight previous statement
             if key == "KEY_UP":
@@ -155,14 +164,16 @@ class Account(object):
 
             # Add statement
             elif key == "a":
-                self.addStat()
+                self.addStat(pWin[WIN_IDX_INPUT])
 
-            # Drop selected operations
+            # Delete selected operations
             elif key == "d":
 
-                win.addstr("Delete ? (y/n) : ")
-                cConfirm = win.getch()
-                win.move(win.getyx()[0] + 1, X2)
+                pWin[WIN_IDX_INPUT].clear()
+                pWin[WIN_IDX_INPUT].border()
+                pWin[WIN_IDX_INPUT].addstr(0, 2, " DELETE STATEMENT ", A_BOLD)
+                pWin[WIN_IDX_INPUT].addstr(2, 2, "Confirm ? (y/n) : ")
+                cConfirm = pWin[WIN_IDX_INPUT].getch()
                 if cConfirm != ord('y'):
                     continue
 
@@ -186,7 +197,7 @@ class Account(object):
 
             # Open statement
             elif key == "\n":
-                statHl.editOps(statSel)
+                statHl.editOps(pWin, statSel)
 
             elif key == '\x1b':
                 break
@@ -204,29 +215,29 @@ class Account(object):
 
         return OK
 
-    def addStat(self) -> None:
-
-        win = curses.newwin(15, 50, Y2, X2)
-        win.keypad(True)
+    def addStat(self, win: Window) -> None:
 
         win.clear()
         win.border()
         win.move(0, 2)
-        win.addstr("New statement")
+        win.addstr(" ADD STATEMENT ", A_BOLD)
 
-        win.move(Y1, X1)
-        win.addstr("date : ")
-        win.move(win.getyx()[0] + 1, X1)
-        win.addstr("start balance : ")
-        win.move(win.getyx()[0] + 1, X1)
-        win.addstr("end balance   : ")
+        (y, x) = (2, 2)
+        win.addstr(y, x, "date : ")
+        y = y + 1
+        win.addstr(y, x, "start balance : ")
+        y = y + 1
+        win.addstr(y, x, "end balance   : ")
+        y = y + 1
 
         win.keypad(False)
         curses.echo()
 
+        (y, x) = (2, 2)
+
         bConvert = False
         while bConvert != True:
-            win.move(Y1, X1 + len("date : "))
+            win.move(y, x + len("date : "))
             sVal = win.getstr().decode(encoding="utf-8")
             try:
                 date = datetime.strptime(sVal, FMT_DATE)
@@ -234,9 +245,11 @@ class Account(object):
             except:
                 pass
 
+        y = y + 1
+
         bConvert = False
         while bConvert != True:
-            win.move(Y1 + 1, X1 + len("start balance : "))
+            win.move(y, x + len("start balance : "))
             sVal = win.getstr().decode(encoding="utf-8")
             try:
                 balStart = float(sVal)
@@ -244,15 +257,19 @@ class Account(object):
             except:
                 pass
 
+        y = y + 1
+
         bConvert = False
         while bConvert != True:
-            win.move(Y1 + 2, X1 + len("end balance   : "))
+            win.move(y, x + len("end balance   : "))
             sVal = win.getstr().decode(encoding="utf-8")
             try:
                 balEnd = float(sVal)
                 bConvert = True
             except:
                 pass
+
+        y = y + 1
 
         win.keypad(True)
         curses.noecho()

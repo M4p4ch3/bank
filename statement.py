@@ -162,34 +162,31 @@ class Statement(object):
         win.clear()
         win.border()
         win.move(0, 2)
-        win.addstr("Statement")
+        win.addstr(" STATEMENT INFO ")
 
-        win.move(Y1, X1)
+        (y, x) = (2, 2)
         for idx in range(self.IDX_BAL_END + 1):
 
             dispFlag = A_NORMAL
             if idx == idxSel:
                 dispFlag = A_STANDOUT
 
-            win.addstr(self.getField(idx), dispFlag)
-            win.move(win.getyx()[0] + 1, X1)
+            win.addstr(y, x, self.getField(idx), dispFlag)
+            y = y + 1
 
-        win.move(win.getyx()[0] + 1, X1)
         win.refresh()
 
     # Edit statmenent
-    def editStat(self) -> None:
+    def editStat(self, pWin: List[Window]) -> None:
 
         bDateEdit = False
         idxSel = 0
-        win = curses.newwin(12, 49, Y3, X2)
-        win.keypad(True)
 
         while True:
 
-            self.dispStat(win, idxSel)
+            self.dispStat(pWin[WIN_IDX_INPUT], idxSel)
 
-            key = win.getkey()
+            key = pWin[WIN_IDX_INPUT].getkey()
 
             # Highlight previous field
             if key == "KEY_UP":
@@ -206,11 +203,11 @@ class Statement(object):
             # Edit highlighted field
             elif key == "\n":
 
-                win.addstr("New value : ")
-                win.keypad(False)
+                pWin[WIN_IDX_INPUT].addstr("New value : ")
+                pWin[WIN_IDX_INPUT].keypad(False)
                 curses.echo()
-                sVal = win.getstr().decode(encoding="utf-8")
-                win.keypad(True)
+                sVal = pWin[WIN_IDX_INPUT].getstr().decode(encoding="utf-8")
+                pWin[WIN_IDX_INPUT].keypad(True)
                 curses.noecho()
 
                 if sVal != "":
@@ -231,41 +228,48 @@ class Statement(object):
         return bDateEdit
 
     # Display statement operations
-    def dispOps(self, win, opIdxFirst: int, opHl: Operation, pOpSel: list) -> None:
+    def dispOps(self, winMain: Window, winInfo: Window, opIdxFirst: int, opHl: Operation, pOpSel: list) -> None:
 
-        win.clear()
-        win.border()
-        win.move(0, 2)
-        win.addstr("Statement")
+        winMain.clear()
+        winMain.border()
+        winMain.move(0, 2)
+        winMain.addstr(" STATEMENT ", A_BOLD)
 
-        win.move(Y1, X2)
-        win.addstr(f"name : {self.name}")
-        win.move(win.getyx()[0] + 1, X2)
-        win.addstr(f"date : {self.date.strftime(FMT_DATE)}")
-        win.move(win.getyx()[0] + 1, X2)
-        win.addstr(f"start balance : {self.balStart}")
-        win.move(win.getyx()[0] + 1, X2)
-        win.addstr(f"end balance : {self.balEnd}")
-        win.move(win.getyx()[0] + 1, X2)
-        win.addstr(f"actual end : {(self.balStart + self.opSum):.2f}")
-        win.move(win.getyx()[0] + 1, X2)
-        win.addstr(f"balance diff : {(self.balStart + self.opSum - self.balEnd):.2f}")
-        win.move(win.getyx()[0] + 1, X2)
+        winInfo.clear()
+        winInfo.border()
+        winInfo.move(0, 2)
+        winInfo.addstr(" INFO ", A_BOLD)
 
-        win.move(Y1, X1)
-        win.addstr(self.SEP)
-        win.move(win.getyx()[0] + 1, X1)
-        win.addstr(self.HEADER)
-        win.move(win.getyx()[0] + 1, X1)
-        win.addstr(self.SEP)
-        win.move(win.getyx()[0] + 1, X1)
+        (y, x) = (2, 2)
+        winInfo.addstr(y, x, f"name : {self.name}")
+        y = y + 1
+        winInfo.addstr(y, x, f"date : {self.date.strftime(FMT_DATE)}")
+        y = y + 1
+        winInfo.addstr(y, x, f"start balance : {self.balStart}")
+        y = y + 1
+        winInfo.addstr(y, x, f"end balance : {self.balEnd}")
+        y = y + 1
+        winInfo.addstr(y, x, f"actual end : {(self.balStart + self.opSum):.2f}")
+        y = y + 1
+        winInfo.addstr(y, x, f"balance diff : {(self.balStart + self.opSum - self.balEnd):.2f}")
+        y = y + 1
+
+        (y, x) = (2, 2)
+        winMain.addstr(y, x, self.SEP)
+        y = y + 1
+        winMain.addstr(y, x, self.HEADER)
+        y = y + 1
+        winMain.addstr(y, x, self.SEP)
+        y = y + 1
 
         if opIdxFirst != 0:
-            win.addstr(self.UNCOMPLETE)
-            win.move(win.getyx()[0] + 1, X1)
+            winMain.addstr(y, x, self.UNCOMPLETE)
+            y = y + 1
+
+        (winMainH, _) = winMain.getmaxyx()
 
         opIdx = opIdxFirst
-        while opIdx < len(self.pOp) and opIdx < opIdxFirst + curses.LINES - 10:
+        while opIdx < len(self.pOp) and opIdx < opIdxFirst + winMainH - 13:
 
             op = self.pOp[opIdx]
 
@@ -275,37 +279,35 @@ class Statement(object):
             if op in pOpSel:
                 dispFlag += A_BOLD
 
-            win.addstr("| ")
-            win.addnstr(op.date.strftime(FMT_DATE).ljust(LEN_DATE), LEN_DATE, dispFlag)
-            win.addstr(" | ")
-            win.addnstr(op.type.ljust(LEN_TYPE), LEN_TYPE, dispFlag)
-            win.addstr(" | ")
-            win.addnstr(op.tier.ljust(LEN_TIER), LEN_TIER, dispFlag)
-            win.addstr(" | ")
-            win.addnstr(op.cat.ljust(LEN_CAT), LEN_CAT, dispFlag)
-            win.addstr(" | ")
-            win.addnstr(op.desc.ljust(LEN_DESC), LEN_DESC, dispFlag)
-            win.addstr(" | ")
-            win.addnstr(str(op.amount).ljust(LEN_AMOUNT), LEN_AMOUNT, dispFlag)
-            win.addstr(" |")
-            win.move(win.getyx()[0] + 1, X1)
+            winMain.addstr(y, x, "| ")
+            winMain.addnstr(op.date.strftime(FMT_DATE).ljust(LEN_DATE), LEN_DATE, dispFlag)
+            winMain.addstr(" | ")
+            winMain.addnstr(op.type.ljust(LEN_TYPE), LEN_TYPE, dispFlag)
+            winMain.addstr(" | ")
+            winMain.addnstr(op.tier.ljust(LEN_TIER), LEN_TIER, dispFlag)
+            winMain.addstr(" | ")
+            winMain.addnstr(op.cat.ljust(LEN_CAT), LEN_CAT, dispFlag)
+            winMain.addstr(" | ")
+            winMain.addnstr(op.desc.ljust(LEN_DESC), LEN_DESC, dispFlag)
+            winMain.addstr(" | ")
+            winMain.addnstr(str(op.amount).ljust(LEN_AMOUNT), LEN_AMOUNT, dispFlag)
+            winMain.addstr(" |")
+            y = y + 1
 
             opIdx = opIdx + 1
 
         if opIdx < len(self.pOp):
-            win.addstr(self.UNCOMPLETE)
-            win.move(win.getyx()[0] + 1, X1)
+            winMain.addstr(y, x, self.UNCOMPLETE)
+            y = y + 1
 
-        win.addstr(f"{self.SEP}\n")
-        win.move(win.getyx()[0] + 1, X1)
+        winMain.addstr(y, x, f"{self.SEP}\n")
+        y = y + 1
 
-        win.refresh()
+        winMain.refresh()
+        winInfo.refresh()
 
     # Edit statement operations
-    def editOps(self, statDst) -> None:
-
-        win = curses.newwin(curses.LINES + 50, curses.COLS, 0, 0)
-        win.keypad(True)
+    def editOps(self, pWin: List[Window], statDst) -> None:
 
         if len(self.pOp) != 0:
             # Highlighted operation
@@ -317,20 +319,28 @@ class Statement(object):
 
         opIdxFirst = 0
 
+        (winMainH, _) = pWin[WIN_IDX_MAIN].getmaxyx()
+
         while True:
 
-            self.dispOps(win, opIdxFirst, opHl, pOpSel)
+            self.dispOps(pWin[WIN_IDX_MAIN], pWin[WIN_IDX_INFO], opIdxFirst, opHl, pOpSel)
 
-            win.move(Y2, X2)
-            win.addstr(f"Destination statement : ")
+            pWin[WIN_IDX_CMD].clear()
+            pWin[WIN_IDX_CMD].border()
+            pWin[WIN_IDX_CMD].addstr(0, 2, " COMMANDS ", A_BOLD)
+            sCmd = " s : (un)select, a : add, d : delete, m : move, e/ENTER : edit/open"
+            pWin[WIN_IDX_CMD].addstr(1, 2, sCmd)
+            pWin[WIN_IDX_CMD].refresh()
+
+            (y, x) = (2, 2)
+            pWin[WIN_IDX_INFO].addstr(y, x, f"Destination statement : ")
             if statDst is not None:
-                win.addstr(f"{statDst.name}")
+                pWin[WIN_IDX_INFO].addstr(f"{statDst.name}")
             else:
-                win.addstr(f"none")
-            win.move(win.getyx()[0] + 1, X2)
-            win.move(win.getyx()[0] + 1, X2)
+                pWin[WIN_IDX_INFO].addstr(f"none")
+            y = y + 1
 
-            key = win.getkey()
+            key = pWin[WIN_IDX_MAIN].getkey()
 
             # Highlight previous operation
             if key == "KEY_UP":
@@ -358,11 +368,11 @@ class Statement(object):
                 opHl = self.pOp[opHlIdx]
 
                 # If out of display range
-                if opHlIdx - opIdxFirst >= curses.LINES - 10:
+                if opHlIdx - opIdxFirst >= winMainH - 13:
                     # Next page
                     opIdxFirst = opIdxFirst + 1
-                    if opIdxFirst > len(self.pOp) - (curses.LINES - 10):
-                        opIdxFirst = len(self.pOp) - (curses.LINES - 10)    
+                    if opIdxFirst > len(self.pOp) - (winMainH - 13):
+                        opIdxFirst = len(self.pOp) - (winMainH - 13)    
 
             # Previous page
             elif key == "KEY_PPAGE":
@@ -376,16 +386,16 @@ class Statement(object):
                 opHlIdx = self.pOp.index(opHl)
                 if opHlIdx < opIdxFirst:
                     opHl = self.pOp[opIdxFirst]
-                elif opHlIdx >= opIdxFirst + curses.LINES - 10:
-                    opHl = self.pOp[opIdxFirst + curses.LINES - 10 - 1]
+                elif opHlIdx >= opIdxFirst + winMainH - 13:
+                    opHl = self.pOp[opIdxFirst + winMainH - 13 - 1]
 
             # Next page
             elif key == "KEY_NPAGE":
 
                 # Next page
                 opIdxFirst = opIdxFirst + 3
-                if opIdxFirst > len(self.pOp) - (curses.LINES - 10):
-                    opIdxFirst = len(self.pOp) - (curses.LINES - 10)
+                if opIdxFirst > len(self.pOp) - (winMainH - 13):
+                    opIdxFirst = len(self.pOp) - (winMainH - 13)
                     if opIdxFirst < 0:
                         opIdxFirst = 0
 
@@ -393,8 +403,8 @@ class Statement(object):
                 opHlIdx = self.pOp.index(opHl)
                 if opHlIdx < opIdxFirst:
                     opHl = self.pOp[opIdxFirst]
-                elif opHlIdx >= opIdxFirst + curses.LINES - 10:
-                    opHl = self.pOp[opIdxFirst + curses.LINES - 10 - 1]
+                elif opHlIdx >= opIdxFirst + winMainH - 13:
+                    opHl = self.pOp[opIdxFirst + winMainH - 13 - 1]
 
             # (Un)select operation
             elif key == "s":
@@ -410,7 +420,7 @@ class Statement(object):
             # Add operation
             elif key == "a":
                 op = Operation(datetime.now(), "", "", "", "", 0.0)
-                op.edit()
+                op.edit(pWin[WIN_IDX_INPUT])
                 self.insertOp(op)
                 self.write()
 
@@ -418,23 +428,26 @@ class Statement(object):
             elif key == "m":
                 if statDst is None:
                     continue
-                win.addstr("Move ? (y/n) : ")
-                cConfirm = win.getch()
-                win.move(win.getyx()[0] + 1, X2)
+                pWin[WIN_IDX_INPUT].clear()
+                pWin[WIN_IDX_INPUT].border()
+                pWin[WIN_IDX_INPUT].addstr(0, 2, " MOVE OPERATIONS ", A_BOLD)
+                pWin[WIN_IDX_INPUT].addstr(2, 2, "Confirm ? (y/n) : ")
+                cConfirm = pWin[WIN_IDX_INPUT].getch()
                 if cConfirm != ord('y'):
                     continue
-                print("MOVE")
                 # Move selected operations from current statement to last one
                 self.moveOps(pOpSel, statDst)
                 # Clear select operations
                 pOpSel.clear()
 
-            # Drop selected operations
+            # Delete selected operations
             elif key == "d":
 
-                win.addstr("Delete ? (y/n) : ")
-                cConfirm = win.getch()
-                win.move(win.getyx()[0] + 1, X2)
+                pWin[WIN_IDX_INPUT].clear()
+                pWin[WIN_IDX_INPUT].border()
+                pWin[WIN_IDX_INPUT].addstr(0, 2, " DELETE OPERATIONS ", A_BOLD)
+                pWin[WIN_IDX_INPUT].addstr(2, 2, "Confirm ? (y/n) : ")
+                cConfirm = pWin[WIN_IDX_INPUT].getch()
                 if cConfirm != ord('y'):
                     continue
 
@@ -453,7 +466,7 @@ class Statement(object):
 
             # (Edit/Open) highlited operation
             elif key == "e" or key == "\n":
-                bDateEdit = opHl.edit()
+                bDateEdit = opHl.edit(pWin[WIN_IDX_INPUT])
                 # If date edited
                 if bDateEdit == True:
                     # Remove and insert to update index

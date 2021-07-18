@@ -91,31 +91,32 @@ class Operation(object):
         win.clear()
         win.border()
         win.move(0, 2)
-        win.addstr("Operation")
+        win.addstr(" OPERATION ", A_BOLD)
 
-        win.move(Y1, X1)
+        (y, x) = (2, 2)
         for idx in range(self.IDX_AMOUNT + 1):
 
             dispFlag = A_NORMAL
             if idx == idxSel:
                 dispFlag = A_STANDOUT
 
-            win.addstr(self.getField(idx), dispFlag)
-            win.move(win.getyx()[0] + 1, X1)
+            win.addstr(y, x, self.getField(idx), dispFlag)
+            y = y + 1
 
-        win.move(win.getyx()[0] + 1, X1)
+        y = y + 1
+        win.addstr(y, x, "")
+
         win.refresh()
 
-    def edit(self) -> bool:
+    def edit(self, win: Window) -> bool:
 
         bDateEdit = False
         idxSel = 0
-        win = curses.newwin(12, 49, Y3, X2)
-        win.keypad(True)
 
         while True:
 
             self.disp(win, idxSel)
+            (y, x) = (win.getyx()[0], 2)
 
             key = win.getkey()
 
@@ -134,7 +135,7 @@ class Operation(object):
             # Edit highlighted field
             elif key == "\n":
 
-                win.addstr("New value : ")
+                win.addstr(y, x, "New value : ")
                 win.keypad(False)
                 curses.echo()
                 sVal = win.getstr().decode(encoding="utf-8")
