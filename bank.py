@@ -76,7 +76,7 @@ def main(winMain: Window):
     winMain.border()
     winMain.addstr(0, 2, " Main ")
     # winMain.refresh()
-    
+
     winInfo = curses.newwin(WIN_INFO_H, WIN_INFO_W, WIN_INFO_Y, WIN_INFO_X)
     winInfo.border()
     winInfo.addstr(0, 2, " Info ")

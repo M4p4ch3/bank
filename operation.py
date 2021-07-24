@@ -1,7 +1,8 @@
 
-from datetime import datetime
 import curses
 from curses import *
+from datetime import datetime
+from typing import Tuple
 
 from utils import *
 
@@ -83,7 +84,7 @@ class Operation(object):
                 self.amount = float(sVal)
             except:
                 bEdit = False
-        
+
         return bEdit
 
     def disp(self, win, idxSel: int) -> None:
@@ -108,8 +109,9 @@ class Operation(object):
 
         win.refresh()
 
-    def edit(self, win: Window) -> bool:
+    def edit(self, win: Window) -> Tuple[bool, bool]:
 
+        bEdit = False
         bDateEdit = False
         idxSel = 0
 
@@ -143,10 +145,13 @@ class Operation(object):
                 curses.noecho()
 
                 if sVal != "":
-                    bEdit = self.setField(idxSel, sVal)
-                    # If date edited
-                    if idxSel == self.IDX_DATE and bEdit == True:
-                        bDateEdit = True
+                    bFieldEdit = self.setField(idxSel, sVal)
+                    # If field edited
+                    if bFieldEdit == True:
+                        bEdit = True
+                        # If date edited
+                        if idxSel == self.IDX_DATE:
+                            bDateEdit = True
 
                 # Highlight next field
                 idxSel = idxSel + 1
@@ -157,4 +162,4 @@ class Operation(object):
             elif key == '\x1b':
                 break
 
-        return bDateEdit
+        return (bEdit, bDateEdit)

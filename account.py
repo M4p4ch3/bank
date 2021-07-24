@@ -1,8 +1,8 @@
 
 import csv
-from datetime import datetime
 import curses
 from curses import *
+from datetime import datetime
 
 from utils import *
 from statement import Statement
@@ -40,7 +40,7 @@ class Account(object):
 
         # For each statement line
         for statLine in statsCsv:
-            
+
             # Create and read statement
             stat = Statement(statLine[Statement.IDX_DATE],
                 float(statLine[Statement.IDX_BAL_START]), float(statLine[Statement.IDX_BAL_END]))
@@ -76,7 +76,7 @@ class Account(object):
         sIndent = ""
         for i in range(indent):
             sIndent += "    "
-            
+
         ret = ""
         ret += f"{sIndent}statements : [\n"
         for stat in self.pStat:
@@ -199,7 +199,7 @@ class Account(object):
                     # Previous page
                     iStatFirst = iStatFirst - 1
                     if iStatFirst < 0:
-                        iStatFirst = 0    
+                        iStatFirst = 0
 
             # Highlight next statement
             if key == "KEY_DOWN":
@@ -264,7 +264,7 @@ class Account(object):
             elif key == "a" or key == "+":
                 self.addStat(pWin[WIN_IDX_INPUT])
 
-            # Delete selected operations
+            # Delete highlighted statement
             elif key == "d" or key == "KEY_DC" or key == "-":
 
                 pWin[WIN_IDX_INPUT].clear()
