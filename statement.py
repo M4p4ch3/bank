@@ -546,7 +546,7 @@ class Statement(object):
             # Add operation
             elif key == "a" or key == "+":
                 op = Operation(datetime.now(), "", "", "", "", 0.0)
-                op.edit(pWin[WIN_IDX_INPUT])
+                op.editLin(pWin[WIN_IDX_INPUT])
                 pWin[WIN_IDX_STATUS].clear()
                 pWin[WIN_IDX_STATUS].border()
                 pWin[WIN_IDX_STATUS].addstr(0, 2, " STATUS ", A_BOLD)
@@ -642,12 +642,13 @@ class Statement(object):
                 # Clear select operations
                 pOpSel.clear()
 
-            # (Edit/Open) highlited operation
+            # (Edit/Open) highlighted operation
             elif key == "e" or key == "\n":
 
+                # (Edit/Open) highlighted operation
                 if opHl is not None:
 
-                    (bEdit, bDateEdit) = opHl.edit(pWin[WIN_IDX_INPUT])
+                    (bEdit, bDateEdit) = opHl.editFree(pWin[WIN_IDX_INPUT])
                     # If operation edited
                     if bEdit == True:
                         self.bUnsav = True
@@ -657,6 +658,7 @@ class Statement(object):
                             self.pOp.remove(opHl)
                             self.insertOp(opHl)
 
+                # (Edit/Open) highlighted statement field
                 elif fieldIdxHl != self.IDX_INVALID:
 
                     pWin[WIN_IDX_INPUT].clear()

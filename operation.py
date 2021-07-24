@@ -109,7 +109,37 @@ class Operation(object):
 
         win.refresh()
 
-    def edit(self, win: Window) -> Tuple[bool, bool]:
+    def editLin(self, win: Window) -> None:
+
+        for idxSel in range(self.IDX_AMOUNT + 1):
+
+            self.disp(win, idxSel)
+            (y, x) = (win.getyx()[0], 2)
+
+            win.addstr(y, x, "Value : ")
+            win.keypad(False)
+            curses.echo()
+            sVal = win.getstr().decode(encoding="utf-8")
+            win.keypad(True)
+            curses.noecho()
+
+            if sVal != "":
+                bFieldEdit = self.setField(idxSel, sVal)
+                # If field edited
+                if bFieldEdit == True:
+                    bEdit = True
+                    # If date edited
+                    if idxSel == self.IDX_DATE:
+                        bDateEdit = True
+
+            # Highlight next field
+            idxSel = idxSel + 1
+            if idxSel > self.IDX_AMOUNT:
+                idxSel = self.IDX_DATE
+
+            idxSel = idxSel + 1
+
+    def editFree(self, win: Window) -> Tuple[bool, bool]:
 
         bEdit = False
         bDateEdit = False
@@ -137,7 +167,7 @@ class Operation(object):
             # Edit highlighted field
             elif key == "\n":
 
-                win.addstr(y, x, "New value : ")
+                win.addstr(y, x, "Value : ")
                 win.keypad(False)
                 curses.echo()
                 sVal = win.getstr().decode(encoding="utf-8")
@@ -152,11 +182,6 @@ class Operation(object):
                         # If date edited
                         if idxSel == self.IDX_DATE:
                             bDateEdit = True
-
-                # Highlight next field
-                idxSel = idxSel + 1
-                if idxSel > self.IDX_AMOUNT:
-                    idxSel = self.IDX_DATE
 
             # Exit
             elif key == '\x1b':
