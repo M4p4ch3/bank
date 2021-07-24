@@ -560,6 +560,11 @@ class Statement(object):
             # Move selected operations
             elif key == "m":
 
+                # If no selected operations
+                if len(pOpSel) == 0:
+                    # Selected is highlighted operation
+                    pOpSel.append(opHl)
+
                 pWin[WIN_IDX_INPUT].clear()
                 pWin[WIN_IDX_INPUT].border()
                 pWin[WIN_IDX_INPUT].addstr(0, 2, " MOVE OPERATIONS ", A_BOLD)
@@ -609,8 +614,13 @@ class Statement(object):
                 # Clear select operations
                 pOpSel.clear()
 
-            # Delete selected operations
+            # Delete operation(s)
             elif key == "d" or key == "KEY_DC" or key == "-":
+
+                # If no selected operations
+                if len(pOpSel) == 0:
+                    # Selected is highlighted operation
+                    pOpSel.append(opHl)
 
                 pWin[WIN_IDX_INPUT].clear()
                 pWin[WIN_IDX_INPUT].border()
