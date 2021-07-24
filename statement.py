@@ -6,6 +6,7 @@ from datetime import datetime
 
 from utils import *
 from operation import Operation
+import account
 
 class Statement(object):
 
@@ -50,7 +51,7 @@ class Statement(object):
         self.balStart = balStart
         self.balEnd = balEnd
         self.opSum = 0
-        self.pOp:List[Operation] = list()
+        self.pOp : List[Operation] = list()
 
     def read(self) -> None:
 
@@ -177,56 +178,56 @@ class Statement(object):
 
         win.refresh()
 
-    # Edit statmenent
-    def editStat(self, pWin: List[Window]) -> None:
+    # # Edit statmenent
+    # def editStat(self, pWin: List[Window]) -> None:
 
-        bDateEdit = False
-        idxSel = 0
+    #     bDateEdit = False
+    #     idxSel = 0
 
-        while True:
+    #     while True:
 
-            self.dispStat(pWin[WIN_IDX_INPUT], idxSel)
+    #         self.dispStat(pWin[WIN_IDX_INPUT], idxSel)
 
-            key = pWin[WIN_IDX_INPUT].getkey()
+    #         key = pWin[WIN_IDX_INPUT].getkey()
 
-            # Highlight previous field
-            if key == "KEY_UP":
-                idxSel = idxSel - 1
-                if idxSel < self.IDX_DATE:
-                    idxSel = self.IDX_BAL_END
+    #         # Highlight previous field
+    #         if key == "KEY_UP":
+    #             idxSel = idxSel - 1
+    #             if idxSel < self.IDX_DATE:
+    #                 idxSel = self.IDX_BAL_END
 
-            # Highlight next field
-            elif key == "KEY_DOWN":
-                idxSel = idxSel + 1
-                if idxSel > self.IDX_BAL_END:
-                    idxSel = self.IDX_DATE
+    #         # Highlight next field
+    #         elif key == "KEY_DOWN":
+    #             idxSel = idxSel + 1
+    #             if idxSel > self.IDX_BAL_END:
+    #                 idxSel = self.IDX_DATE
 
-            # Edit highlighted field
-            elif key == "\n":
+    #         # Edit highlighted field
+    #         elif key == "\n":
 
-                pWin[WIN_IDX_INPUT].addstr("New value : ")
-                pWin[WIN_IDX_INPUT].keypad(False)
-                curses.echo()
-                sVal = pWin[WIN_IDX_INPUT].getstr().decode(encoding="utf-8")
-                pWin[WIN_IDX_INPUT].keypad(True)
-                curses.noecho()
+    #             pWin[WIN_IDX_INPUT].addstr("New value : ")
+    #             pWin[WIN_IDX_INPUT].keypad(False)
+    #             curses.echo()
+    #             sVal = pWin[WIN_IDX_INPUT].getstr().decode(encoding="utf-8")
+    #             pWin[WIN_IDX_INPUT].keypad(True)
+    #             curses.noecho()
 
-                if sVal != "":
-                    bEdit = self.setField(idxSel, sVal)
-                    # If date edited
-                    if idxSel == self.IDX_DATE and bEdit == True:
-                        bDateEdit = True
+    #             if sVal != "":
+    #                 bEdit = self.setField(idxSel, sVal)
+    #                 # If date edited
+    #                 if idxSel == self.IDX_DATE and bEdit == True:
+    #                     bDateEdit = True
 
-                # Highlight next field
-                idxSel = idxSel + 1
-                if idxSel > self.IDX_BAL_END:
-                    idxSel = self.IDX_DATE
+    #             # Highlight next field
+    #             idxSel = idxSel + 1
+    #             if idxSel > self.IDX_BAL_END:
+    #                 idxSel = self.IDX_DATE
 
-            # Exit
-            elif key == '\x1b':
-                break
+    #         # Exit
+    #         elif key == '\x1b':
+    #             break
 
-        return bDateEdit
+    #     return bDateEdit
 
     # Display statement operations
     def dispOps(self, win: Window, opIdxFirst: int, opHl: Operation, pOpSel: list) -> None:
@@ -352,7 +353,7 @@ class Statement(object):
         win.refresh()
 
     # Edit statement operations
-    def editOps(self, pWin: List[Window], statDst) -> None:
+    def editOps(self, pWin : List[Window], account) -> None:
 
         (winMainH, _) = pWin[WIN_IDX_MAIN].getmaxyx()
 
@@ -404,14 +405,6 @@ class Statement(object):
             sCmd = sCmd + ", S : save, ESCAPE : exit"
             pWin[WIN_IDX_CMD].addstr(1, 2, sCmd)
             pWin[WIN_IDX_CMD].refresh()
-
-            (y, x) = (2, 2)
-            pWin[WIN_IDX_INFO].addstr(y, x, f"Destination statement : ")
-            if statDst is not None:
-                pWin[WIN_IDX_INFO].addstr(f"{statDst.name}")
-            else:
-                pWin[WIN_IDX_INFO].addstr(f"none")
-            y = y + 1
 
             key = pWin[WIN_IDX_MAIN].getkey()
 
@@ -539,8 +532,23 @@ class Statement(object):
 
             # Move selected operations
             elif key == "m":
+
+                pWin[WIN_IDX_INPUT].clear()
+                pWin[WIN_IDX_INPUT].border()
+                pWin[WIN_IDX_INPUT].addstr(0, 2, " MOVE OPERATIONS ", A_BOLD)
+                pWin[WIN_IDX_INPUT].addstr(2, 2, f"Destination statement : ")
+                pWin[WIN_IDX_INPUT].addstr(3, 2, f"  Name (date) : ")
+                curses.echo()
+                sStatDstName = pWin[WIN_IDX_INPUT].getstr().decode(encoding="utf-8")
+                curses.noecho()
+                statDst = account.getStatByName(sStatDstName)
                 if statDst is None:
+                    pWin[WIN_IDX_INPUT].addstr(4, 2, f"  Not found")
+                    pWin[WIN_IDX_INPUT].refresh()
+                    import time
+                    time.sleep(1)
                     continue
+
                 pWin[WIN_IDX_INPUT].clear()
                 pWin[WIN_IDX_INPUT].border()
                 pWin[WIN_IDX_INPUT].addstr(0, 2, " MOVE OPERATIONS ", A_BOLD)
@@ -550,9 +558,20 @@ class Statement(object):
                 cConfirm = pWin[WIN_IDX_INPUT].getch()
                 if cConfirm != ord('y'):
                     continue
+
                 # Move selected operations from current statement to last one
                 self.moveOps(pOpSel, statDst)
+                self.write()
+                statDst.write()
                 bUnsav = True
+
+                # If highlighted operation in selected ones
+                if opHl in pOpSel:
+                    if len(self.pOp) >= 1:
+                        opHl = self.pOp[0]
+                    else:
+                        opHl = None
+
                 # Clear select operations
                 pOpSel.clear()
 
@@ -582,7 +601,7 @@ class Statement(object):
                 # Clear select operations
                 pOpSel.clear()
 
-            # (Edit/Open) highlited
+            # (Edit/Open) highlited operation
             elif key == "e" or key == "\n":
 
                 if opHl is not None:
@@ -617,7 +636,6 @@ class Statement(object):
             # Save
             elif key == "s":
                 self.write()
-                statDst.write()
 
             # Exit
             elif key == '\x1b':
@@ -627,10 +645,8 @@ class Statement(object):
                     pWin[WIN_IDX_INPUT].addstr(0, 2, " UNSAVED CHANGES ", A_BOLD)
                     pWin[WIN_IDX_INPUT].addstr(2, 2, "Save ? (y/n) : ")
                     cConfirm = pWin[WIN_IDX_INPUT].getch()
-                    if cConfirm != ord('y'):
-                        continue
-                    self.write()
-                    statDst.write()
+                    if cConfirm != ord('n'):
+                        self.write()
                 break
 
     # Insert operation

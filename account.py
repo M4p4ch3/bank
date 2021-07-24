@@ -32,7 +32,7 @@ class Account(object):
         self.filePath = "statements.csv"
 
         # Statements list
-        self.pStat = list()
+        self.pStat : List[Statement] = list()
 
         # Open statements CSV file
         statsFile = open(self.filePath, "r")
@@ -87,7 +87,14 @@ class Account(object):
 
         return ret
 
-    def dispStats(self, win: Window, iStatFirst: int, statHl: Statement, statSel: Statement) -> None:
+    def getStatByName(self, sName: str) -> Statement:
+
+        for stat in self.pStat:
+            if stat.name == sName:
+                return stat
+        return None
+
+    def dispStats(self, win: Window, iStatFirst: int, statHl: Statement) -> None:
 
         (hWin, _) = win.getmaxyx()
         nStatDisp = hWin - 11
@@ -129,8 +136,6 @@ class Account(object):
             dispFlag = A_NORMAL
             if stat == statHl:
                 dispFlag += A_STANDOUT
-            if stat == statSel:
-                dispFlag += A_BOLD
 
             win.addstr(y, x, f"| ")
             win.addstr(f"{stat.name.ljust(LEN_NAME)}", dispFlag)
@@ -169,17 +174,15 @@ class Account(object):
         iStatFirst = 0
         # Highlighted statement
         statHl: Statement = self.pStat[0]
-        # Selected statement
-        statSel: Statement = None
 
         while True:
 
-            self.dispStats(pWin[WIN_IDX_MAIN], iStatFirst, statHl, statSel)
+            self.dispStats(pWin[WIN_IDX_MAIN], iStatFirst, statHl)
 
             pWin[WIN_IDX_CMD].clear()
             pWin[WIN_IDX_CMD].border()
             pWin[WIN_IDX_CMD].addstr(0, 2, " COMMANDS ", A_BOLD)
-            sCmd = "S/SPACE : (un)select, A/+ : add, D/DEL/- : delete, E : edit, ENTER : open "
+            sCmd = "A/+ : add, D/DEL/- : delete, E/ENTER : edit/open"
             pWin[WIN_IDX_CMD].addstr(1, 2, sCmd)
             pWin[WIN_IDX_CMD].refresh()
 
@@ -249,17 +252,6 @@ class Account(object):
                 elif iStatHl >= iStatFirst + hWinMain - 11:
                     statHl = self.pStat[iStatFirst + hWinMain - 11 - 1]
 
-            # (Un)select statement
-            elif key == "s" or key == " ":
-                # If statement not selected
-                if statHl != statSel:
-                    # Select statement
-                    statSel = statHl
-                # Else, statement selected
-                else:
-                    # Unselect satement
-                    statSel = None
-
             # Add statement
             elif key == "a" or key == "+":
                 self.addStat(pWin[WIN_IDX_INPUT])
@@ -282,20 +274,20 @@ class Account(object):
                 # Reset highlighted statement
                 statHl = self.pStat[0]
 
-            # Edit statement
-            elif key == "e":
-                bDateEdit = statHl.editStat()
-                # If date edited
-                if bDateEdit == True:
-                    # Remove and insert to update index
-                    self.pStat.remove(statHl)
-                    self.insertStat(statHl)
-                # Write in any case
-                self.write()
+            # # Edit statement
+            # elif key == "e":
+            #     bDateEdit = statHl.editStat()
+            #     # If date edited
+            #     if bDateEdit == True:
+            #         # Remove and insert to update index
+            #         self.pStat.remove(statHl)
+            #         self.insertStat(statHl)
+            #     # Write in any case
+            #     self.write()
 
-            # Open statement
+            # (Edit/Open) highligthed statement
             elif key == "\n":
-                statHl.editOps(pWin, statSel)
+                statHl.editOps(pWin, self)
 
             elif key == '\x1b':
                 break
