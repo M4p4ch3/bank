@@ -2,5 +2,12 @@
 # CSV files
 **.csv
 
+# VS code
+.vscode
+# Python cache
+__pycache__
+
+# Save folder
+sav
 # Statements folder
 statements
