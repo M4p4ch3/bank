@@ -3,6 +3,7 @@ import csv
 import curses
 from curses import *
 from datetime import datetime
+import time
 
 from utils import *
 from operation import Operation
@@ -42,16 +43,17 @@ class Statement(object):
 
     def __init__(self, name: str, balStart: float, balEnd: float) -> None:
 
-        self.name = name
-        self.filePath = f"statements/{name}.csv"
+        self.name : str = name
+        self.filePath : str = f"statements/{name}.csv"
         try:
-            self.date = datetime.strptime(name, FMT_DATE)
+            self.date : datetime= datetime.strptime(name, FMT_DATE)
         except:
-            self.date = datetime.now()
-        self.balStart = balStart
-        self.balEnd = balEnd
-        self.opSum = 0
+            self.date : datetime = datetime.now()
+        self.balStart : float = balStart
+        self.balEnd : float = balEnd
+        self.opSum : float = 0.0
         self.pOp : List[Operation] = list()
+        self.bUnsav : bool = False
 
     def read(self) -> None:
 
@@ -101,6 +103,8 @@ class Statement(object):
             # Write operation line to CSV file
             fileCsv.writerow(opCsv)
 
+        self.bUnsav = False
+
         file.close()
 
         return OK
@@ -136,27 +140,26 @@ class Statement(object):
         return ret
 
     # Set attribute identified by field index from string
-    def setField(self, idx, sVal) -> bool:
-
-        bEdit = True
+    def setField(self, idx, sVal):
 
         if idx == self.IDX_DATE:
             try:
                 self.date = datetime.strptime(sVal, FMT_DATE)
+                self.bUnsav = True
             except:
-                bEdit = False
+                pass
         elif idx == self.IDX_BAL_START:
             try:
                 self.balStart = float(sVal)
+                self.bUnsav = True
             except:
-                bEdit = False
+                pass
         elif idx == self.IDX_BAL_END:
             try:
                 self.balEnd = float(sVal)
+                self.bUnsav = True
             except:
-                bEdit = False
-
-        return bEdit
+                pass
 
     # Display statement
     def dispStat(self, win, idxSel: int) -> None:
@@ -177,6 +180,19 @@ class Statement(object):
             y = y + 1
 
         win.refresh()
+
+    def save(self, win : Window):
+
+        win.clear()
+        win.border()
+        win.addstr(0, 2, " STATUS ", A_BOLD)
+        win.addstr(1, 2, "Save")
+        win.refresh()
+        self.write()
+        self.bUnsav = False
+        win.addstr(1, 2, "Save : OK")
+        win.refresh()
+        time.sleep(1)
 
     # # Edit statmenent
     # def editStat(self, pWin: List[Window]) -> None:
@@ -357,8 +373,6 @@ class Statement(object):
 
         (winMainH, _) = pWin[WIN_IDX_MAIN].getmaxyx()
 
-        # Unsaved changes
-        bUnsav : bool
         # Highlighted field index
         fieldIdxHl : int
         # Saved highlighted field index
@@ -371,9 +385,6 @@ class Statement(object):
         opHlSav : Operation
         # Selected operations list
         pOpSel : List[Operation]
-
-        # No unsaved changes
-        bUnsav = False
 
         # No highlighted field
         fieldIdxHl = self.IDX_INVALID
@@ -405,6 +416,15 @@ class Statement(object):
             sCmd = sCmd + ", S : save, ESCAPE : exit"
             pWin[WIN_IDX_CMD].addstr(1, 2, sCmd)
             pWin[WIN_IDX_CMD].refresh()
+
+            pWin[WIN_IDX_STATUS].clear()
+            pWin[WIN_IDX_STATUS].border()
+            pWin[WIN_IDX_STATUS].addstr(0, 2, " STATUS ", A_BOLD)
+            if self.bUnsav == True:
+                pWin[WIN_IDX_STATUS].addstr(1, 2, "Unsaved")
+            else:
+                pWin[WIN_IDX_STATUS].addstr(1, 2, "Saved")
+            pWin[WIN_IDX_STATUS].refresh()
 
             key = pWin[WIN_IDX_MAIN].getkey()
 
@@ -527,8 +547,15 @@ class Statement(object):
             elif key == "a" or key == "+":
                 op = Operation(datetime.now(), "", "", "", "", 0.0)
                 op.edit(pWin[WIN_IDX_INPUT])
+                pWin[WIN_IDX_STATUS].clear()
+                pWin[WIN_IDX_STATUS].border()
+                pWin[WIN_IDX_STATUS].addstr(0, 2, " STATUS ", A_BOLD)
+                pWin[WIN_IDX_STATUS].addstr(1, 2, "Insert operation")
+                pWin[WIN_IDX_STATUS].refresh()
                 self.insertOp(op)
-                bUnsav = True
+                pWin[WIN_IDX_STATUS].addstr(1, 2, "Insert operation : OK")
+                pWin[WIN_IDX_STATUS].refresh()
+                time.sleep(1)
 
             # Move selected operations
             elif key == "m":
@@ -545,7 +572,6 @@ class Statement(object):
                 if statDst is None:
                     pWin[WIN_IDX_INPUT].addstr(4, 2, f"  Not found")
                     pWin[WIN_IDX_INPUT].refresh()
-                    import time
                     time.sleep(1)
                     continue
 
@@ -559,11 +585,19 @@ class Statement(object):
                 if cConfirm != ord('y'):
                     continue
 
-                # Move selected operations from current statement to last one
+                pWin[WIN_IDX_STATUS].clear()
+                pWin[WIN_IDX_STATUS].border()
+                pWin[WIN_IDX_STATUS].addstr(0, 2, " STATUS ", A_BOLD)
+                pWin[WIN_IDX_STATUS].addstr(1, 2, "Move operations")
+                pWin[WIN_IDX_STATUS].refresh()
+                # Move selected operations from current to destination statement
                 self.moveOps(pOpSel, statDst)
-                self.write()
+                # Save current and destination statement
+                self.save(pWin[WIN_IDX_STATUS])
                 statDst.write()
-                bUnsav = True
+                pWin[WIN_IDX_STATUS].addstr(1, 2, "Move operations : OK")
+                pWin[WIN_IDX_STATUS].refresh()
+                time.sleep(1)
 
                 # If highlighted operation in selected ones
                 if opHl in pOpSel:
@@ -587,9 +621,16 @@ class Statement(object):
                 if cConfirm != ord('y'):
                     continue
 
+                pWin[WIN_IDX_STATUS].clear()
+                pWin[WIN_IDX_STATUS].border()
+                pWin[WIN_IDX_STATUS].addstr(0, 2, " STATUS ", A_BOLD)
+                pWin[WIN_IDX_STATUS].addstr(1, 2, "Delete operations")
+                pWin[WIN_IDX_STATUS].refresh()
                 # Delete selected operations from current statement
                 self.deleteOps(pOpSel)
-                bUnsav = True
+                pWin[WIN_IDX_STATUS].addstr(1, 2, "Delete operations : OK")
+                pWin[WIN_IDX_STATUS].refresh()
+                time.sleep(1)
 
                 # If highlighted operation in selected ones
                 if opHl in pOpSel:
@@ -609,7 +650,7 @@ class Statement(object):
                     (bEdit, bDateEdit) = opHl.edit(pWin[WIN_IDX_INPUT])
                     # If operation edited
                     if bEdit == True:
-                        bUnsav = True
+                        self.bUnsav = True
                         # If date edited
                         if bDateEdit == True:
                             # Remove and insert to update index
@@ -631,22 +672,21 @@ class Statement(object):
 
                     if sVal != "":
                         self.setField(fieldIdxHl, sVal)
-                        bUnsav = True
 
             # Save
             elif key == "s":
-                self.write()
+                self.save(pWin[WIN_IDX_STATUS])
 
             # Exit
             elif key == '\x1b':
-                if bUnsav == True:
+                if self.bUnsav == True:
                     pWin[WIN_IDX_INPUT].clear()
                     pWin[WIN_IDX_INPUT].border()
                     pWin[WIN_IDX_INPUT].addstr(0, 2, " UNSAVED CHANGES ", A_BOLD)
                     pWin[WIN_IDX_INPUT].addstr(2, 2, "Save ? (y/n) : ")
                     cConfirm = pWin[WIN_IDX_INPUT].getch()
                     if cConfirm != ord('n'):
-                        self.write()
+                        self.save(pWin[WIN_IDX_STATUS])
                 break
 
     # Insert operation
@@ -660,6 +700,8 @@ class Statement(object):
         # Insert operation at dedicated index
         self.pOp.insert(idx, op)
 
+        self.bUnsav = True
+
         return OK
 
     # Move operations from source to destination statement
@@ -672,6 +714,8 @@ class Statement(object):
             # Remove operation from statement
             self.pOp.remove(op)
 
+        self.bUnsav = True
+
     # Delete operations
     def deleteOps(self, pOp: list) -> None:
 
@@ -679,3 +723,5 @@ class Statement(object):
         for op in pOp:
             # Remove operation from statement
             self.pOp.remove(op)
+
+        self.bUnsav = True

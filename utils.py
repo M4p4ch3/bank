@@ -28,6 +28,7 @@ WIN_IDX_MAIN = 0
 WIN_IDX_INFO = 1
 WIN_IDX_INPUT = 2
 WIN_IDX_CMD = 3
+WIN_IDX_STATUS = 4
 
 # datetime date format
 FMT_DATE = "%Y-%m-%d"

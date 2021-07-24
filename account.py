@@ -288,8 +288,10 @@ class Account(object):
             # (Edit/Open) highligthed statement
             elif key == "\n":
                 statHl.editOps(pWin, self)
+                self.write()
 
             elif key == '\x1b':
+                self.write()
                 break
 
     # Insert statement
