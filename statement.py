@@ -368,6 +368,139 @@ class Statement(object):
 
         win.refresh()
 
+    def addOp(self, pWin : List[Window]) -> None:
+
+        op = Operation(datetime.now(), "", "", "", "", 0.0)
+
+        op.editLin(pWin[WIN_IDX_INPUT])
+
+        pWin[WIN_IDX_STATUS].clear()
+        pWin[WIN_IDX_STATUS].border()
+        pWin[WIN_IDX_STATUS].addstr(0, 2, " STATUS ", A_BOLD)
+        pWin[WIN_IDX_STATUS].addstr(1, 2, "Insert operation")
+        pWin[WIN_IDX_STATUS].refresh()
+
+        self.insertOp(op)
+
+        pWin[WIN_IDX_STATUS].addstr(1, 2, "Insert operation : OK")
+        pWin[WIN_IDX_STATUS].refresh()
+
+        time.sleep(1)
+
+    # Insert operation
+    def insertOp(self, op: Operation) -> int:
+
+        # Find index
+        idx = 0
+        while idx < len(self.pOp) and op.date > self.pOp[idx].date:
+            idx = idx + 1
+
+        # Insert operation at dedicated index
+        self.pOp.insert(idx, op)
+
+        self.bUnsav = True
+
+        return OK
+
+    # Move operations from source to destination statement
+    def moveOps(self, pOp : List[Operation], pWin : List[Window]) -> None:
+
+        pWin[WIN_IDX_INPUT].clear()
+        pWin[WIN_IDX_INPUT].border()
+        pWin[WIN_IDX_INPUT].addstr(0, 2, " MOVE OPERATIONS ", A_BOLD)
+        pWin[WIN_IDX_INPUT].addstr(2, 2, f"Destination statement : ")
+        pWin[WIN_IDX_INPUT].addstr(3, 2, f"  Name (date) : ")
+        curses.echo()
+        sStatDstName = pWin[WIN_IDX_INPUT].getstr().decode(encoding="utf-8")
+        curses.noecho()
+        statDst = account.getStatByName(sStatDstName)
+        if statDst is None:
+            pWin[WIN_IDX_INPUT].addstr(4, 2, f"  Not found")
+            pWin[WIN_IDX_INPUT].refresh()
+            time.sleep(1)
+            return
+
+        pWin[WIN_IDX_INPUT].clear()
+        pWin[WIN_IDX_INPUT].border()
+        pWin[WIN_IDX_INPUT].addstr(0, 2, " MOVE OPERATIONS ", A_BOLD)
+        pWin[WIN_IDX_INPUT].addstr(2, 2, f"Move {len(pOp)} operations")
+        pWin[WIN_IDX_INPUT].addstr(3, 2, f"To statement {statDst.name}")
+        pWin[WIN_IDX_INPUT].addstr(5, 2, "Confirm ? (y/n) : ")
+        cConfirm = pWin[WIN_IDX_INPUT].getch()
+        if cConfirm != ord('y'):
+            return
+
+        pWin[WIN_IDX_STATUS].clear()
+        pWin[WIN_IDX_STATUS].border()
+        pWin[WIN_IDX_STATUS].addstr(0, 2, " STATUS ", A_BOLD)
+        pWin[WIN_IDX_STATUS].addstr(1, 2, "Move operations")
+        pWin[WIN_IDX_STATUS].refresh()
+
+        # Move selected operations from current to destination statement
+
+        # For each operation
+        for op in pOp:
+            # Insert operation in target statement
+            statDst.insertOp(op)
+            # Remove operation from statement
+            self.pOp.remove(op)
+
+        self.bUnsav = True
+
+        # Save current and destination statement
+        self.save(pWin[WIN_IDX_STATUS])
+        statDst.write()
+        pWin[WIN_IDX_STATUS].addstr(1, 2, "Move operations : OK")
+        pWin[WIN_IDX_STATUS].refresh()
+        time.sleep(1)
+
+    # Delete operations
+    def deleteOps(self, pOp : List[Operation], pWin : List[Window]) -> None:
+
+        pWin[WIN_IDX_INPUT].clear()
+        pWin[WIN_IDX_INPUT].border()
+        pWin[WIN_IDX_INPUT].addstr(0, 2, " DELETE OPERATIONS ", A_BOLD)
+        pWin[WIN_IDX_INPUT].addstr(2, 2, f"Delete {len(pOp)} operations")
+        pWin[WIN_IDX_INPUT].addstr(4, 2, "Confirm ? (y/n) : ")
+        cConfirm = pWin[WIN_IDX_INPUT].getch()
+        if cConfirm != ord('y'):
+            return
+
+        pWin[WIN_IDX_STATUS].clear()
+        pWin[WIN_IDX_STATUS].border()
+        pWin[WIN_IDX_STATUS].addstr(0, 2, " STATUS ", A_BOLD)
+        pWin[WIN_IDX_STATUS].addstr(1, 2, "Delete operations")
+        pWin[WIN_IDX_STATUS].refresh()
+
+        # Delete selected operations from current statement
+
+        # For each operation
+        for op in pOp:
+            # Remove operation from statement
+            self.pOp.remove(op)
+
+        self.bUnsav = True
+
+        pWin[WIN_IDX_STATUS].addstr(1, 2, "Delete operations : OK")
+        pWin[WIN_IDX_STATUS].refresh()
+        time.sleep(1)
+
+    def editFiel(self, fiedlIdx : int, win : Window):
+
+        win.clear()
+        win.border()
+        win.addstr(0, 2, " EDIT FIELD ", A_BOLD)
+        win.addstr(2, 2, f"{self.getField(fiedlIdx)}")
+        win.addstr(4, 2, "New value : ")
+        win.keypad(False)
+        curses.echo()
+        sVal = win.getstr().decode(encoding="utf-8")
+        win.keypad(True)
+        curses.noecho()
+
+        if sVal != "":
+            self.setField(fiedlIdx, sVal)
+
     # Edit statement operations
     def editOps(self, pWin : List[Window], account) -> None:
 
@@ -545,17 +678,8 @@ class Statement(object):
 
             # Add operation
             elif key == "a" or key == "+":
-                op = Operation(datetime.now(), "", "", "", "", 0.0)
-                op.editLin(pWin[WIN_IDX_INPUT])
-                pWin[WIN_IDX_STATUS].clear()
-                pWin[WIN_IDX_STATUS].border()
-                pWin[WIN_IDX_STATUS].addstr(0, 2, " STATUS ", A_BOLD)
-                pWin[WIN_IDX_STATUS].addstr(1, 2, "Insert operation")
-                pWin[WIN_IDX_STATUS].refresh()
-                self.insertOp(op)
-                pWin[WIN_IDX_STATUS].addstr(1, 2, "Insert operation : OK")
-                pWin[WIN_IDX_STATUS].refresh()
-                time.sleep(1)
+
+                self.addOp(pWin)
 
             # Move selected operations
             elif key == "m":
@@ -565,44 +689,7 @@ class Statement(object):
                     # Selected is highlighted operation
                     pOpSel.append(opHl)
 
-                pWin[WIN_IDX_INPUT].clear()
-                pWin[WIN_IDX_INPUT].border()
-                pWin[WIN_IDX_INPUT].addstr(0, 2, " MOVE OPERATIONS ", A_BOLD)
-                pWin[WIN_IDX_INPUT].addstr(2, 2, f"Destination statement : ")
-                pWin[WIN_IDX_INPUT].addstr(3, 2, f"  Name (date) : ")
-                curses.echo()
-                sStatDstName = pWin[WIN_IDX_INPUT].getstr().decode(encoding="utf-8")
-                curses.noecho()
-                statDst = account.getStatByName(sStatDstName)
-                if statDst is None:
-                    pWin[WIN_IDX_INPUT].addstr(4, 2, f"  Not found")
-                    pWin[WIN_IDX_INPUT].refresh()
-                    time.sleep(1)
-                    continue
-
-                pWin[WIN_IDX_INPUT].clear()
-                pWin[WIN_IDX_INPUT].border()
-                pWin[WIN_IDX_INPUT].addstr(0, 2, " MOVE OPERATIONS ", A_BOLD)
-                pWin[WIN_IDX_INPUT].addstr(2, 2, f"Move {len(pOpSel)} operations")
-                pWin[WIN_IDX_INPUT].addstr(3, 2, f"To statement {statDst.name}")
-                pWin[WIN_IDX_INPUT].addstr(5, 2, "Confirm ? (y/n) : ")
-                cConfirm = pWin[WIN_IDX_INPUT].getch()
-                if cConfirm != ord('y'):
-                    continue
-
-                pWin[WIN_IDX_STATUS].clear()
-                pWin[WIN_IDX_STATUS].border()
-                pWin[WIN_IDX_STATUS].addstr(0, 2, " STATUS ", A_BOLD)
-                pWin[WIN_IDX_STATUS].addstr(1, 2, "Move operations")
-                pWin[WIN_IDX_STATUS].refresh()
-                # Move selected operations from current to destination statement
-                self.moveOps(pOpSel, statDst)
-                # Save current and destination statement
-                self.save(pWin[WIN_IDX_STATUS])
-                statDst.write()
-                pWin[WIN_IDX_STATUS].addstr(1, 2, "Move operations : OK")
-                pWin[WIN_IDX_STATUS].refresh()
-                time.sleep(1)
+                self.moveOps(pOpSel, pWin)
 
                 # If highlighted operation in selected ones
                 if opHl in pOpSel:
@@ -622,25 +709,7 @@ class Statement(object):
                     # Selected is highlighted operation
                     pOpSel.append(opHl)
 
-                pWin[WIN_IDX_INPUT].clear()
-                pWin[WIN_IDX_INPUT].border()
-                pWin[WIN_IDX_INPUT].addstr(0, 2, " DELETE OPERATIONS ", A_BOLD)
-                pWin[WIN_IDX_INPUT].addstr(2, 2, f"Delete {len(pOpSel)} operations")
-                pWin[WIN_IDX_INPUT].addstr(4, 2, "Confirm ? (y/n) : ")
-                cConfirm = pWin[WIN_IDX_INPUT].getch()
-                if cConfirm != ord('y'):
-                    continue
-
-                pWin[WIN_IDX_STATUS].clear()
-                pWin[WIN_IDX_STATUS].border()
-                pWin[WIN_IDX_STATUS].addstr(0, 2, " STATUS ", A_BOLD)
-                pWin[WIN_IDX_STATUS].addstr(1, 2, "Delete operations")
-                pWin[WIN_IDX_STATUS].refresh()
-                # Delete selected operations from current statement
-                self.deleteOps(pOpSel)
-                pWin[WIN_IDX_STATUS].addstr(1, 2, "Delete operations : OK")
-                pWin[WIN_IDX_STATUS].refresh()
-                time.sleep(1)
+                self.deleteOps(pOpSel, pWin)
 
                 # If highlighted operation in selected ones
                 if opHl in pOpSel:
@@ -671,19 +740,7 @@ class Statement(object):
                 # (Edit/Open) highlighted statement field
                 elif fieldIdxHl != self.IDX_INVALID:
 
-                    pWin[WIN_IDX_INPUT].clear()
-                    pWin[WIN_IDX_INPUT].border()
-                    pWin[WIN_IDX_INPUT].addstr(0, 2, " EDIT FIELD ", A_BOLD)
-                    pWin[WIN_IDX_INPUT].addstr(2, 2, f"{self.getField(fieldIdxHl)}")
-                    pWin[WIN_IDX_INPUT].addstr(4, 2, "New value : ")
-                    pWin[WIN_IDX_INPUT].keypad(False)
-                    curses.echo()
-                    sVal = pWin[WIN_IDX_INPUT].getstr().decode(encoding="utf-8")
-                    pWin[WIN_IDX_INPUT].keypad(True)
-                    curses.noecho()
-
-                    if sVal != "":
-                        self.setField(fieldIdxHl, sVal)
+                    self.editField(fieldIdxHl, pWin[WIN_IDX_INPUT])
 
             # Save
             elif key == "s":
@@ -700,40 +757,3 @@ class Statement(object):
                     if cConfirm != ord('n'):
                         self.save(pWin[WIN_IDX_STATUS])
                 break
-
-    # Insert operation
-    def insertOp(self, op: Operation) -> int:
-
-        # Find index
-        idx = 0
-        while idx < len(self.pOp) and op.date > self.pOp[idx].date:
-            idx = idx + 1
-
-        # Insert operation at dedicated index
-        self.pOp.insert(idx, op)
-
-        self.bUnsav = True
-
-        return OK
-
-    # Move operations from source to destination statement
-    def moveOps(self, pOp: list, statDst) -> None:
-
-        # For each operation
-        for op in pOp:
-            # Insert operation in target statement
-            statDst.insertOp(op)
-            # Remove operation from statement
-            self.pOp.remove(op)
-
-        self.bUnsav = True
-
-    # Delete operations
-    def deleteOps(self, pOp: list) -> None:
-
-        # For each operation
-        for op in pOp:
-            # Remove operation from statement
-            self.pOp.remove(op)
-
-        self.bUnsav = True
