@@ -1,14 +1,5 @@
 
-import curses
 from datetime import date
-from typing import (TYPE_CHECKING, List)
-
-if TYPE_CHECKING:
-    from _curses import _CursesWindow
-    Window = _CursesWindow
-else:
-    from typing import Any
-    Window = Any
 
 # Return code
 OK = 0
@@ -22,13 +13,6 @@ LEN_TIER = 18
 LEN_CAT = 10
 LEN_DESC = 35
 LEN_AMOUNT = 8
-
-# Window index
-WIN_IDX_MAIN = 0
-WIN_IDX_INFO = 1
-WIN_IDX_INPUT = 2
-WIN_IDX_CMD = 3
-WIN_IDX_STATUS = 4
 
 # datetime date format
 FMT_DATE = "%Y-%m-%d"

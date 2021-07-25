@@ -4,6 +4,7 @@ import curses
 from curses import *
 from datetime import datetime
 import time
+from typing import List
 
 from utils import *
 from operation import Operation
@@ -17,29 +18,7 @@ class Statement(object):
     IDX_BAL_START = 1
     IDX_BAL_END = 2
 
-    SEP = "|"
-    SEP += f"-{'-'.ljust(LEN_DATE, '-')}-|"
-    SEP += f"-{'-'.ljust(LEN_TYPE, '-')}-|"
-    SEP += f"-{'-'.ljust(LEN_TIER, '-')}-|"
-    SEP += f"-{'-'.ljust(LEN_CAT, '-')}-|"
-    SEP += f"-{'-'.ljust(LEN_DESC, '-')}-|"
-    SEP += f"-{'-'.ljust(LEN_AMOUNT, '-')}-|"
 
-    HEADER = "|"
-    HEADER += f" {'date'.ljust(LEN_DATE, ' ')} |"
-    HEADER += f" {'type'.ljust(LEN_TYPE, ' ')} |"
-    HEADER += f" {'tier'.ljust(LEN_TIER, ' ')} |"
-    HEADER += f" {'category'.ljust(LEN_CAT, ' ')} |"
-    HEADER += f" {'description'.ljust(LEN_DESC, ' ')} |"
-    HEADER += f" {'amount'.ljust(LEN_AMOUNT, ' ')} |"
-
-    UNCOMPLETE = "|"
-    UNCOMPLETE += f" {'...'.ljust(LEN_DATE, ' ')} |"
-    UNCOMPLETE += f" {'...'.ljust(LEN_TYPE, ' ')} |"
-    UNCOMPLETE += f" {'...'.ljust(LEN_TIER, ' ')} |"
-    UNCOMPLETE += f" {'...'.ljust(LEN_CAT, ' ')} |"
-    UNCOMPLETE += f" {'...'.ljust(LEN_DESC, ' ')} |"
-    UNCOMPLETE += f" {'...'.ljust(LEN_AMOUNT, ' ')} |"
 
     def __init__(self, name: str, balStart: float, balEnd: float) -> None:
 
@@ -181,18 +160,10 @@ class Statement(object):
 
         win.refresh()
 
-    def save(self, win : Window):
+    def save(self, win):
 
-        win.clear()
-        win.border()
-        win.addstr(0, 2, " STATUS ", A_BOLD)
-        win.addstr(1, 2, "Save")
-        win.refresh()
         self.write()
         self.bUnsav = False
-        win.addstr(1, 2, "Save : OK")
-        win.refresh()
-        time.sleep(1)
 
     # # Edit statmenent
     # def editStat(self, pWin: List[Window]) -> None:
@@ -246,129 +217,16 @@ class Statement(object):
     #     return bDateEdit
 
     # Display statement operations
-    def dispOps(self, win: Window, opIdxFirst: int, opHl: Operation, pOpSel: list) -> None:
+    def dispOps(self, win, opIdxFirst: int, opHl: Operation, pOpSel: list) -> None:
 
-        (winH, _) = win.getmaxyx()
-        nOpDisp = winH - 11
-        if len(self.pOp) < nOpDisp:
-            nOpDisp = len(self.pOp)
-
-        win.clear()
-        win.border()
-        win.move(0, 2)
-        win.addstr(" STATEMENT ", A_BOLD)
-
-        (y, x) = (2, 2)
-        win.addstr(y, x, self.SEP)
-        # Get X at end of table
-        xTableEnd = win.getyx()[1]
-        y = y + 1
-        win.addstr(y, x, "| ")
-        win.addnstr('date'.ljust(LEN_DATE), LEN_DATE, A_BOLD)
-        win.addstr(" | ")
-        win.addnstr('type'.ljust(LEN_TYPE), LEN_TYPE, A_BOLD)
-        win.addstr(" | ")
-        win.addnstr('tier'.ljust(LEN_TIER), LEN_TIER, A_BOLD)
-        win.addstr(" | ")
-        win.addnstr('cat'.ljust(LEN_CAT), LEN_CAT, A_BOLD)
-        win.addstr(" | ")
-        win.addnstr('desc'.ljust(LEN_DESC), LEN_DESC, A_BOLD)
-        win.addstr(" | ")
-        win.addnstr('amount'.ljust(LEN_AMOUNT), LEN_AMOUNT, A_BOLD)
-        win.addstr(" |")
-        y = y + 1
-
-        if opIdxFirst == 0:
-            win.addstr(y, x, self.SEP)
-        else:
-            win.addstr(y, x, self.UNCOMPLETE)
-        y = y + 1
-
-        opIdx = opIdxFirst
-        while opIdx < len(self.pOp) and opIdx < opIdxFirst + nOpDisp:
-
-            op = self.pOp[opIdx]
-
-            dispFlag = A_NORMAL
-            if op == opHl:
-                dispFlag += A_STANDOUT
-            if op in pOpSel:
-                dispFlag += A_BOLD
-
-            win.addstr(y, x, "| ")
-            win.addnstr(op.date.strftime(FMT_DATE).ljust(LEN_DATE), LEN_DATE, dispFlag)
-            win.addstr(" | ")
-            win.addnstr(op.type.ljust(LEN_TYPE), LEN_TYPE, dispFlag)
-            win.addstr(" | ")
-            win.addnstr(op.tier.ljust(LEN_TIER), LEN_TIER, dispFlag)
-            win.addstr(" | ")
-            win.addnstr(op.cat.ljust(LEN_CAT), LEN_CAT, dispFlag)
-            win.addstr(" | ")
-            win.addnstr(op.desc.ljust(LEN_DESC), LEN_DESC, dispFlag)
-            win.addstr(" | ")
-            win.addnstr(str(op.amount).ljust(LEN_AMOUNT), LEN_AMOUNT, dispFlag)
-            win.addstr(" |")
-            y = y + 1
-
-            opIdx = opIdx + 1
-
-        if opIdx == len(self.pOp):
-            win.addstr(y, x, f"{self.SEP}\n")
-        else:
-            win.addstr(y, x, self.UNCOMPLETE)
-        y = y + 1
-
-        if len(self.pOp) != 0:
-            # Slider
-            (y2, x2) = (5, xTableEnd)
-            for i in range(int(opIdxFirst * nOpDisp / len(self.pOp))):
-                y2 = y2 + 1
-            for i in range(int(nOpDisp * nOpDisp / len(self.pOp))):
-                win.addstr(y2, x2, " ", A_STANDOUT)
-                y2 = y2 + 1
-
-        win.refresh()
+        pass
 
     # Display fields
     def dispFields(self, win, fieldIdxHl) -> None:
 
-        win.clear()
-        win.border()
-        win.move(0, 2)
-        win.addstr(" INFO ", A_BOLD)
+        pass
 
-        (y, x) = (2, 2)
-        dispFlag = A_NORMAL
-        win.addstr(y, x, f"name : {self.name}")
-        y = y + 1
-
-        dispFlag = A_NORMAL
-        if fieldIdxHl == self.IDX_DATE:
-            dispFlag = A_STANDOUT
-        win.addstr(y, x, f"date : {self.date.strftime(FMT_DATE)}", dispFlag)
-        y = y + 1
-
-        dispFlag = A_NORMAL
-        if fieldIdxHl == self.IDX_BAL_START:
-            dispFlag = A_STANDOUT
-        win.addstr(y, x, f"start balance : {self.balStart}", dispFlag)
-        y = y + 1
-
-        dispFlag = A_NORMAL
-        if fieldIdxHl == self.IDX_BAL_END:
-            dispFlag = A_STANDOUT
-        win.addstr(y, x, f"end balance : {self.balEnd}", dispFlag)
-        y = y + 1
-
-        win.addstr(y, x, f"actual end : {(self.balStart + self.opSum):.2f}")
-        y = y + 1
-
-        win.addstr(y, x, f"balance diff : {(self.balStart + self.opSum - self.balEnd):.2f}")
-        y = y + 1
-
-        win.refresh()
-
-    def addOp(self, pWin : List[Window]) -> None:
+    def addOp(self, pWin) -> None:
 
         op = Operation(datetime.now(), "", "", "", "", 0.0)
 
@@ -403,7 +261,7 @@ class Statement(object):
         return OK
 
     # Move operations from source to destination statement
-    def moveOps(self, pOp : List[Operation], pWin : List[Window]) -> None:
+    def moveOps(self, pOp : List[Operation], pWin) -> None:
 
         pWin[WIN_IDX_INPUT].clear()
         pWin[WIN_IDX_INPUT].border()
@@ -455,7 +313,7 @@ class Statement(object):
         time.sleep(1)
 
     # Delete operations
-    def deleteOps(self, pOp : List[Operation], pWin : List[Window]) -> None:
+    def deleteOps(self, pOp : List[Operation], pWin) -> None:
 
         pWin[WIN_IDX_INPUT].clear()
         pWin[WIN_IDX_INPUT].border()
@@ -485,7 +343,7 @@ class Statement(object):
         pWin[WIN_IDX_STATUS].refresh()
         time.sleep(1)
 
-    def editFiel(self, fiedlIdx : int, win : Window):
+    def editFiel(self, fiedlIdx : int, win):
 
         win.clear()
         win.border()
@@ -502,258 +360,6 @@ class Statement(object):
             self.setField(fiedlIdx, sVal)
 
     # Edit statement operations
-    def editOps(self, pWin : List[Window], account) -> None:
+    def editOps(self, pWin, account) -> None:
 
-        (winMainH, _) = pWin[WIN_IDX_MAIN].getmaxyx()
-
-        # Highlighted field index
-        fieldIdxHl : int
-        # Saved highlighted field index
-        fieldIdxHlSav : int
-        # First displayed operation index
-        opIdxFirst : int
-        # Highlighted operation
-        opHl : Operation
-        # Highlighted operation save
-        opHlSav : Operation
-        # Selected operations list
-        pOpSel : List[Operation]
-
-        # No highlighted field
-        fieldIdxHl = self.IDX_INVALID
-        # Saved highlighted field is date
-        fieldIdxHlSav = self.IDX_BAL_START
-
-        # First displayed operations is first
-        opIdxFirst = 0
-        # Highlighted operation is first of statement
-        if len(self.pOp) != 0:
-            opHl = self.pOp[0]
-        else:
-            opHl = None
-        # Save highlighted operation
-        opHlSav = opHl
-
-        # Init selected operations list
-        pOpSel = list()
-
-        while True:
-
-            self.dispOps(pWin[WIN_IDX_MAIN], opIdxFirst, opHl, pOpSel)
-            self.dispFields(pWin[WIN_IDX_INFO], fieldIdxHl)
-
-            pWin[WIN_IDX_CMD].clear()
-            pWin[WIN_IDX_CMD].border()
-            pWin[WIN_IDX_CMD].addstr(0, 2, " COMMANDS ", A_BOLD)
-            sCmd = "SPACE : (un)select, A/+ : add, D/DEL/-: delete, M : move, E/ENTER : edit/open"
-            sCmd = sCmd + ", S : save, ESCAPE : exit"
-            pWin[WIN_IDX_CMD].addstr(1, 2, sCmd)
-            pWin[WIN_IDX_CMD].refresh()
-
-            pWin[WIN_IDX_STATUS].clear()
-            pWin[WIN_IDX_STATUS].border()
-            pWin[WIN_IDX_STATUS].addstr(0, 2, " STATUS ", A_BOLD)
-            if self.bUnsav == True:
-                pWin[WIN_IDX_STATUS].addstr(1, 2, "Unsaved")
-            else:
-                pWin[WIN_IDX_STATUS].addstr(1, 2, "Saved")
-            pWin[WIN_IDX_STATUS].refresh()
-
-            key = pWin[WIN_IDX_MAIN].getkey()
-
-            # Move from operations to statement fields
-            if key == "KEY_RIGHT":
-
-                # Save highlighted operation
-                opHlSav = opHl
-                # No highlighted operation
-                opHl = None
-                # Backup highlighted field
-                fieldIdxHl = fieldIdxHlSav
-
-            # Move from statement fields to operations
-            elif key == "KEY_LEFT":
-
-                # Save highlighted field
-                fieldIdxHlSav = fieldIdxHl
-                # No highlighted field
-                fieldIdxHl = self.IDX_INVALID
-                # Backup highlighted operation
-                opHl = opHlSav
-
-            # Highlight previous
-            elif key == "KEY_UP":
-
-                # Operation
-                if opHl is not None:
-
-                    # Highlight previous operation
-                    opHlIdx = self.pOp.index(opHl) - 1
-                    if opHlIdx < 0:
-                        opHlIdx = 0
-                    opHl = self.pOp[opHlIdx]
-
-                    # If out of display range
-                    if opHlIdx < opIdxFirst:
-                        # Previous page
-                        opIdxFirst = opIdxFirst - 1
-                        if opIdxFirst < 0:
-                            opIdxFirst = 0
-
-                # Statement field
-                elif fieldIdxHl != self.IDX_INVALID:
-
-                    fieldIdxHl = fieldIdxHl - 1
-                    if fieldIdxHl < self.IDX_BAL_START:
-                        fieldIdxHl = self.IDX_BAL_START
-
-            # Highlight next operation
-            elif key == "KEY_DOWN":
-
-                # Operation
-                if opHl is not None:
-
-                    # Highlight next operation
-                    opHlIdx = self.pOp.index(opHl) + 1
-                    if opHlIdx >= len(self.pOp):
-                        opHlIdx = len(self.pOp) - 1
-                    opHl = self.pOp[opHlIdx]
-
-                    # If out of display range
-                    if opHlIdx - opIdxFirst >= winMainH - 11:
-                        # Next page
-                        opIdxFirst = opIdxFirst + 1
-                        if opIdxFirst > len(self.pOp) - (winMainH - 11):
-                            opIdxFirst = len(self.pOp) - (winMainH - 11)
-
-                # Statement field
-                elif fieldIdxHl != self.IDX_INVALID:
-
-                    fieldIdxHl = fieldIdxHl + 1
-                    if fieldIdxHl > self.IDX_BAL_END:
-                        fieldIdxHl = self.IDX_BAL_END
-
-            # Previous page
-            elif key == "KEY_PPAGE":
-
-                # Previous page
-                opIdxFirst = opIdxFirst - 3
-                if opIdxFirst < 0:
-                    opIdxFirst = 0
-
-                # If out of display range
-                opHlIdx = self.pOp.index(opHl)
-                if opHlIdx < opIdxFirst:
-                    opHl = self.pOp[opIdxFirst]
-                elif opHlIdx >= opIdxFirst + winMainH - 11:
-                    opHl = self.pOp[opIdxFirst + winMainH - 11 - 1]
-
-            # Next page
-            elif key == "KEY_NPAGE":
-
-                # Next page
-                opIdxFirst = opIdxFirst + 3
-                if opIdxFirst > len(self.pOp) - (winMainH - 11):
-                    opIdxFirst = len(self.pOp) - (winMainH - 11)
-                    if opIdxFirst < 0:
-                        opIdxFirst = 0
-
-                # If out of display range
-                opHlIdx = self.pOp.index(opHl)
-                if opHlIdx < opIdxFirst:
-                    opHl = self.pOp[opIdxFirst]
-                elif opHlIdx >= opIdxFirst + winMainH - 11:
-                    opHl = self.pOp[opIdxFirst + winMainH - 11 - 1]
-
-            # (Un)select operation
-            elif key == " ":
-                # If operation not selected
-                if opHl not in pOpSel:
-                    # Add operation to selected ones
-                    pOpSel.append(opHl)
-                # Else, operation selected
-                else:
-                    # Remove  operation to selected ones
-                    pOpSel.remove(opHl)
-
-            # Add operation
-            elif key == "a" or key == "+":
-
-                self.addOp(pWin)
-
-            # Move selected operations
-            elif key == "m":
-
-                # If no selected operations
-                if len(pOpSel) == 0:
-                    # Selected is highlighted operation
-                    pOpSel.append(opHl)
-
-                self.moveOps(pOpSel, pWin)
-
-                # If highlighted operation in selected ones
-                if opHl in pOpSel:
-                    if len(self.pOp) >= 1:
-                        opHl = self.pOp[0]
-                    else:
-                        opHl = None
-
-                # Clear select operations
-                pOpSel.clear()
-
-            # Delete operation(s)
-            elif key == "d" or key == "KEY_DC" or key == "-":
-
-                # If no selected operations
-                if len(pOpSel) == 0:
-                    # Selected is highlighted operation
-                    pOpSel.append(opHl)
-
-                self.deleteOps(pOpSel, pWin)
-
-                # If highlighted operation in selected ones
-                if opHl in pOpSel:
-                    if len(self.pOp) >= 1:
-                        opHl = self.pOp[0]
-                    else:
-                        opHl = None
-
-                # Clear select operations
-                pOpSel.clear()
-
-            # (Edit/Open) highlighted operation
-            elif key == "e" or key == "\n":
-
-                # (Edit/Open) highlighted operation
-                if opHl is not None:
-
-                    (bEdit, bDateEdit) = opHl.editFree(pWin[WIN_IDX_INPUT])
-                    # If operation edited
-                    if bEdit == True:
-                        self.bUnsav = True
-                        # If date edited
-                        if bDateEdit == True:
-                            # Remove and insert to update index
-                            self.pOp.remove(opHl)
-                            self.insertOp(opHl)
-
-                # (Edit/Open) highlighted statement field
-                elif fieldIdxHl != self.IDX_INVALID:
-
-                    self.editField(fieldIdxHl, pWin[WIN_IDX_INPUT])
-
-            # Save
-            elif key == "s":
-                self.save(pWin[WIN_IDX_STATUS])
-
-            # Exit
-            elif key == '\x1b':
-                if self.bUnsav == True:
-                    pWin[WIN_IDX_INPUT].clear()
-                    pWin[WIN_IDX_INPUT].border()
-                    pWin[WIN_IDX_INPUT].addstr(0, 2, " UNSAVED CHANGES ", A_BOLD)
-                    pWin[WIN_IDX_INPUT].addstr(2, 2, "Save ? (y/n) : ")
-                    cConfirm = pWin[WIN_IDX_INPUT].getch()
-                    if cConfirm != ord('n'):
-                        self.save(pWin[WIN_IDX_STATUS])
-                break
+        pass

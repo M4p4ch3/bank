@@ -109,7 +109,7 @@ class Operation(object):
 
         win.refresh()
 
-    def editLin(self, win: Window) -> None:
+    def editLin(self, win) -> None:
 
         for idxSel in range(self.IDX_AMOUNT + 1):
 
@@ -139,7 +139,7 @@ class Operation(object):
 
             idxSel = idxSel + 1
 
-    def editFree(self, win: Window) -> Tuple[bool, bool]:
+    def editFree(self, win) -> Tuple[bool, bool]:
 
         bEdit = False
         bDateEdit = False
