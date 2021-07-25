@@ -12,50 +12,18 @@ class Account(object):
 
     def __init__(self) -> None:
 
+        status : int = OK
+
         self.filePath = "statements.csv"
 
         # Statements list
         self.pStat : List[Statement] = list()
 
-        # Open statements CSV file
-        statsFile = open(self.filePath, "r")
-        statsCsv = csv.reader(statsFile)
+        status = self.read()
+        if status != OK:
+            return status
 
-        # For each statement line
-        for statLine in statsCsv:
-
-            # Create and read statement
-            stat = Statement(statLine[Statement.IDX_DATE],
-                float(statLine[Statement.IDX_BAL_START]), float(statLine[Statement.IDX_BAL_END]))
-            stat.read()
-
-            # Add statement to statements list
-            self.pStat.append(stat)
-
-        statsFile.close()
-
-        # TODO
-        self.bUnsav = False
-
-    # Write to CSV file
-    def write(self) -> int:
-
-        # Open CSV file
-        file = open(self.filePath, "w")
-        csvFile = csv.writer(file, delimiter=',', quotechar='"')
-
-        # For each statement
-        for stat in self.pStat:
-
-            # Create statement line
-            statCsv = [stat.name, str(stat.balStart), str(stat.balEnd)]
-
-            # Write statement line to CSV file
-            csvFile.writerow(statCsv)
-
-        file.close()
-
-        return OK
+        self.bUnsav : bool = False
 
     def getStr(self, indent: int = 0) -> str:
 
@@ -73,22 +41,82 @@ class Account(object):
 
         return ret
 
-    def getStatByName(self, sName: str) -> Statement:
+    def getStatByName(self, sStatName: str) -> Statement:
 
         for stat in self.pStat:
-            if stat.name == sName:
+            if stat.name == sStatName:
                 return stat
+
         return None
 
-    def dispStats(self, win, iStatFirst: int, statHl: Statement) -> None:
+    def read(self) -> int:
 
-        pass
+        try:
+            # Open statements CSV file
+            statsFile = open(self.filePath, "r")
+        except:
+            # TODO
+            # log
+            return ERROR
 
-    def editStats(self, pWin) -> None:
+        statsCsv = csv.reader(statsFile)
 
-        pass
+        # For each statement line
+        for statLine in statsCsv:
 
-    # Insert statement
+            # Create and read statement
+            stat = Statement(statLine[Statement.IDX_DATE],
+                float(statLine[Statement.IDX_BAL_START]), float(statLine[Statement.IDX_BAL_END]))
+            stat.read()
+
+            # Add statement to statements list
+            self.pStat.append(stat)
+
+        statsFile.close()
+
+        return OK
+
+    # Write to CSV file
+    def write(self) -> int:
+
+        try:
+            # Open CSV file
+            file = open(self.filePath, "w")
+        except:
+            return ERROR
+
+        fileCsv = csv.writer(file, delimiter=',', quotechar='"')
+
+        # For each statement
+        for stat in self.pStat:
+
+            # Create statement line
+            statCsv = [stat.name, str(stat.balStart), str(stat.balEnd)]
+
+            try:
+                # Write statement line to CSV file
+                fileCsv.writerow(statCsv)
+            except:
+                return ERROR
+
+        self.bUnsav = False
+
+        file.close()
+
+        return OK
+
+    def save(self) -> int:
+
+        status : int = OK
+
+        status = self.write()
+        if status != OK:
+            return ERROR
+
+        self.bUnsav = False
+
+        return OK
+
     def insertStat(self, stat: Statement) -> int:
 
         # Find index
@@ -99,8 +127,17 @@ class Account(object):
         # Insert statement at dedicated index
         self.pStat.insert(idx, stat)
 
+        self.bUnsav = True
+
         return OK
 
-    def addStat(self, win) -> None:
+    def delStat(self, stat : Statement) -> int:
 
-        pass
+        try:
+            self.pStat.remove(stat)
+        except:
+            return ERROR
+
+        self.bUnsav = True
+
+        return OK

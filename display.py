@@ -3,7 +3,8 @@ import curses
 from curses import *
 from datetime import datetime
 import sys
-from typing import (TYPE_CHECKING, List)
+import time
+from typing import (TYPE_CHECKING, List, Tuple)
 
 from utils import *
 from account import Account
@@ -19,9 +20,9 @@ else:
 
 class DisplayCurses(object):
 
-    # Color ID
-    COLOR_ID_RED_BLACK = 1
-    COLOR_ID_GREEN_BLACK = 2
+    # Color pair ID
+    COLOR_PAIR_ID_RED_BLACK = 1
+    COLOR_PAIR_ID_GREEN_BLACK = 2
 
     # Window ID
     WIN_ID_MAIN = 0
@@ -37,6 +38,7 @@ class DisplayCurses(object):
     SEP_STAT += "-" + "-".ljust(LEN_DATE, "-") + "-|"
     SEP_STAT += "-" + "-".ljust(LEN_AMOUNT, "-") + "-|"
     SEP_STAT += "-" + "-".ljust(LEN_AMOUNT, "-") + "-|"
+    SEP_STAT += "-" + "-".ljust(LEN_AMOUNT, "-") + "-|"
 
     # Statement header
     HEADER_STAT = "|"
@@ -44,11 +46,13 @@ class DisplayCurses(object):
     HEADER_STAT += " " + "date".ljust(LEN_DATE, " ") + " |"
     HEADER_STAT += " " + "start".ljust(LEN_AMOUNT, " ") + " |"
     HEADER_STAT += " " + "end".ljust(LEN_AMOUNT, " ") + " |"
+    HEADER_STAT += " " + "diff".ljust(LEN_AMOUNT, " ") + " |"
 
     # Statement missing
     MISS_STAT = "|"
     MISS_STAT += " " + "...".ljust(LEN_NAME, " ") + " |"
     MISS_STAT += " " + "...".ljust(LEN_DATE, " ") + " |"
+    MISS_STAT += " " + "...".ljust(LEN_AMOUNT, " ") + " |"
     MISS_STAT += " " + "...".ljust(LEN_AMOUNT, " ") + " |"
     MISS_STAT += " " + "...".ljust(LEN_AMOUNT, " ") + " |"
 
@@ -113,8 +117,8 @@ class DisplayCurses(object):
         WIN_STATUS_Y = WIN_CMD_Y
         WIN_STATUS_X = WIN_INFO_X
 
-        curses.init_pair(self.COLOR_ID_RED_BLACK, curses.COLOR_RED, curses.COLOR_BLACK)
-        curses.init_pair(self.COLOR_ID_GREEN_BLACK, curses.COLOR_GREEN, curses.COLOR_BLACK)
+        curses.init_pair(self.COLOR_PAIR_ID_RED_BLACK, curses.COLOR_RED, curses.COLOR_BLACK)
+        curses.init_pair(self.COLOR_PAIR_ID_GREEN_BLACK, curses.COLOR_GREEN, curses.COLOR_BLACK)
 
         self.pWin[self.WIN_ID_MAIN] = winMain
 
@@ -162,6 +166,8 @@ class DisplayCurses(object):
         win.addstr("start".ljust(LEN_AMOUNT), A_BOLD)
         win.addstr(" | ")
         win.addstr("end".ljust(LEN_AMOUNT), A_BOLD)
+        win.addstr(" | ")
+        win.addstr("diff".ljust(LEN_AMOUNT), A_BOLD)
         win.addstr(" |")
         y = y + 1
 
@@ -192,6 +198,14 @@ class DisplayCurses(object):
             win.addstr(str(stat.balStart).ljust(LEN_AMOUNT), dispFlag)
             win.addstr(" | ")
             win.addstr(str(stat.balEnd).ljust(LEN_AMOUNT), dispFlag)
+            win.addstr(" | ")
+            balanceDiff = round(stat.balStart + stat.opSum - stat.balEnd, 2)
+            if balanceDiff == 0.0:
+                win.addstr(str(balanceDiff).ljust(LEN_AMOUNT),
+                    curses.color_pair(self.COLOR_PAIR_ID_GREEN_BLACK))
+            else:
+                win.addstr(str(balanceDiff).ljust(LEN_AMOUNT),
+                    curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
             win.addstr(" |")
             y = y + 1
 
@@ -226,6 +240,17 @@ class DisplayCurses(object):
         while True:
 
             self.ACCOUNT_disp(iStatFirst, statHl)
+
+            # Status window
+            win : Window = self.pWin[self.WIN_ID_STATUS]
+            win.clear()
+            win.border()
+            win.addstr(0, 2, " STATUS ", A_BOLD)
+            if self.account.bUnsav == True:
+                win.addstr(1, 2, "Unsaved", curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
+            else:
+                win.addstr(1, 2, "Saved", curses.color_pair(self.COLOR_PAIR_ID_GREEN_BLACK))
+            win.refresh()
 
             # Command window
             win : Window = self.pWin[self.WIN_ID_CMD]
@@ -316,16 +341,29 @@ class DisplayCurses(object):
             # Open highligthed statement
             elif key == "\n":
                 self.STAT_browse(statHl)
-                # TODO
-                self.account.write()
 
             elif key == "s":
-                # TODO
+                self.account.save()
                 pass
 
             elif key == '\x1b':
-                # TODO
-                self.account.write()
+                if self.account.bUnsav == True:
+                    # Input window
+                    win : Window = self.pWin[self.WIN_ID_INPUT]
+                    win.clear()
+                    win.border()
+                    win.addstr(0, 2, " UNSAVED CHANGES ", A_BOLD)
+                    win.addstr(2, 2, "Save ? (y/n) : ")
+                    cSave = win.getch()
+                    if cSave != ord('n'):
+                        win.addstr(4, 2, f"Saving")
+                        win.refresh()
+                        time.sleep(1)
+                        self.account.save()
+                    else:
+                        win.addstr(4, 2, f"Discard changes", curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
+                        win.refresh()
+                        time.sleep(1)
                 break
 
     def ACCOUNT_addStat(self) -> None :
@@ -401,10 +439,6 @@ class DisplayCurses(object):
         # Append statement to statements list
         self.account.insertStat(stat)
 
-        # TODO
-        # Write statements list
-        self.account.write()
-
     def ACCOUNT_delStat(self, stat : Statement) -> None :
 
         # Input window
@@ -415,14 +449,13 @@ class DisplayCurses(object):
         win.addstr(2, 2, "Confirm ? (y/n) : ")
         cConfirm = win.getch()
         if cConfirm != ord('y'):
+            win.addstr(7, 2, f"Canceled", curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
+            win.refresh()
+            time.sleep(1)
             return
 
         # Delete highlighted statement
-        self.account.pStat.remove(stat)
-
-        # TODO
-        # Write
-        self.account.write()
+        self.account.delStat(stat)
 
     def STAT_dispOps(self, stat : Statement,
         iOpFirst : int, opHl : Operation, pOpSel : List[Operation]) -> None :
@@ -534,7 +567,12 @@ class DisplayCurses(object):
         y = y + 1
         win.addstr(y, x, f"actual end : {(stat.balStart + stat.opSum):.2f}")
         y = y + 1
-        win.addstr(y, x, f"balance diff : {(stat.balStart + stat.opSum - stat.balEnd):.2f}")
+        balanceDiff = round(stat.balStart + stat.opSum - stat.balEnd, 2)
+        win.addstr(y, x, f"balance diff : ")
+        if balanceDiff == 0.0:
+            win.addstr(str(balanceDiff), curses.color_pair(self.COLOR_PAIR_ID_GREEN_BLACK))
+        else:
+            win.addstr(str(balanceDiff), curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
         y = y + 1
 
         win.refresh()
@@ -574,9 +612,9 @@ class DisplayCurses(object):
             win.border()
             win.addstr(0, 2, " STATUS ", A_BOLD)
             if stat.bUnsav == True:
-                win.addstr(1, 2, "Unsaved")
+                win.addstr(1, 2, "Unsaved", curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
             else:
-                win.addstr(1, 2, "Saved")
+                win.addstr(1, 2, "Saved", curses.color_pair(self.COLOR_PAIR_ID_GREEN_BLACK))
             win.refresh()
 
             key = self.pWin[self.WIN_ID_MAIN].getkey()
@@ -651,7 +689,7 @@ class DisplayCurses(object):
                     pOpSel.append(opHl)
                 # Else, operation selected
                 else:
-                    # Remove  operation to selected ones
+                    # Remove operation from selected ones
                     pOpSel.remove(opHl)
 
             # Add operation
@@ -686,7 +724,7 @@ class DisplayCurses(object):
                     # Selected is highlighted operation
                     pOpSel.append(opHl)
 
-                self.STAT_moveOps(pOpSel)
+                self.STAT_moveOps(stat, pOpSel)
 
                 # If highlighted operation in selected ones
                 if opHl in pOpSel:
@@ -704,11 +742,12 @@ class DisplayCurses(object):
                 (bEdit, bDateEdit) = self.OP_browse(opHl)
                 # If operation edited
                 if bEdit == True:
-                    self.bUnsav = True
+                    stat.bUnsav = True
                     # If date edited
                     if bDateEdit == True:
-                        # Remove and insert to update index
-                        stat.pOp.remove(opHl)
+                        # Delete and insert opearion from/to statement
+                        # To update index
+                        stat.delOps([opHl])
                         stat.insertOp(opHl)
 
             # Save
@@ -724,22 +763,190 @@ class DisplayCurses(object):
                     win.border()
                     win.addstr(0, 2, " UNSAVED CHANGES ", A_BOLD)
                     win.addstr(2, 2, "Save ? (y/n) : ")
-                    cConfirm = win.getch()
-                    if cConfirm != ord('n'):
+                    cSave = win.getch()
+                    if cSave != ord('n'):
+                        win.addstr(4, 2, f"Saving")
+                        win.refresh()
+                        time.sleep(1)
                         stat.save()
+                    else:
+                        win.addstr(4, 2, f"Discard changes", curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
+                        win.refresh()
+                        time.sleep(1)
+                        stat.reset()
                 break
 
     def STAT_addOp(self, stat : Statement) -> None :
 
-        pass
+        # Create empty opeartion
+        op = Operation(datetime.now(), "", "", "", "", 0.0)
 
-    def STAT_delOps():
+        # Use input window
+        win = self.pWin[self.WIN_ID_INPUT]
 
-        pass
+        # For each operation field
+        for iField in range(op.IDX_AMOUNT + 1):
 
-    def STAT_moveOps():
+            self.OP_disp(op, iField)
+            (y, x) = (win.getyx()[0], 2)
 
-        pass
+            win.addstr(y, x, "Value : ")
+            win.keypad(False)
+            curses.echo()
+            sVal = win.getstr().decode(encoding="utf-8")
+            win.keypad(True)
+            curses.noecho()
+
+            if sVal != "":
+                op.setField(iField, sVal)
+
+        stat.insertOp(op)
+
+    def STAT_delOps(self, stat : Statement, pOp : List[Operation]) -> None:
+
+        # Use input window
+        win = self.pWin[self.WIN_ID_INPUT]
+
+        win.clear()
+        win.border()
+        win.addstr(0, 2, " DELETE OPERATIONS ", A_BOLD)
+        win.addstr(2, 2, f"Delete {len(pOp)} operations")
+        win.addstr(4, 2, "Confirm ? (y/n) : ")
+        cConfirm = win.getch()
+        if cConfirm != ord('y'):
+            win.addstr(7, 2, f"Canceled", curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
+            win.refresh()
+            time.sleep(1)
+            return
+
+        stat.delOps(pOp)
+
+    def STAT_moveOps(self, statSrc : Statement, pOp : List[Operation]) -> None :
+
+        # Use input window
+        win = self.pWin[self.WIN_ID_INPUT]
+
+        win.clear()
+        win.border()
+        win.addstr(0, 2, " MOVE OPERATIONS ", A_BOLD)
+        win.addstr(2, 2, f"Destination statement : ")
+        win.addstr(3, 2, f"  Name (date) : ")
+        curses.echo()
+        sStatDstName = win.getstr().decode(encoding="utf-8")
+        curses.noecho()
+        statDst = account.getStatByName(sStatDstName)
+        if statDst is None:
+            win.addstr(5, 2, f"Destination statement", curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
+            win.addstr(6, 2, f"not found", curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
+            win.refresh()
+            time.sleep(1)
+            return
+
+        win.clear()
+        win.border()
+        win.addstr(0, 2, " MOVE OPERATIONS ", A_BOLD)
+        win.addstr(2, 2, f"Move {len(pOp)} operations")
+        win.addstr(3, 2, f"To statement {statDst.name}")
+        win.addstr(5, 2, "Confirm ? (y/n) : ")
+        cConfirm = win.getch()
+        if cConfirm != ord('y'):
+            win.addstr(7, 2, f"Canceled", curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
+            win.refresh()
+            time.sleep(1)
+            return
+
+        # For each operation
+        for op in pOp:
+            # Insert operation in target statement
+            statDst.insertOp(op)
+            # Delete operation from source statement
+            statSrc.delOps([op])
+
+        # Save source and destination statement
+        statSrc.save()
+        statDst.save()
+
+    def OP_disp(self, op : Operation, iFieldHl : int) -> None :
+
+        # Use input window
+        win = self.pWin[self.WIN_ID_INPUT]
+
+        win.clear()
+        win.border()
+        win.move(0, 2)
+        win.addstr(" OPERATION ", A_BOLD)
+
+        (y, x) = (2, 2)
+        for iField in range(op.IDX_AMOUNT + 1):
+
+            dispFlag = A_NORMAL
+            if iField == iFieldHl:
+                dispFlag = A_STANDOUT
+
+            (sName, sVal) = op.getField(iField)
+            win.addstr(y, x, f"{sName} : {sVal}", dispFlag)
+            y = y + 1
+
+        y = y + 1
+        win.addstr(y, x, "")
+
+        win.refresh()
+
+    def OP_browse(self, op : Operation) -> Tuple[bool, bool]:
+
+        bEdit = False
+        bDateEdit = False
+        iFieldHl = 0
+
+        while True:
+
+            self.OP_disp(op, iFieldHl)
+            (y, x) = (self.pWin[self.WIN_ID_MAIN].getyx()[0], 2)
+            y = y + 2
+
+            key = self.pWin[self.WIN_ID_MAIN].getkey()
+
+            # Highlight previous field
+            if key == "KEY_UP":
+                iFieldHl = iFieldHl - 1
+                if iFieldHl < op.IDX_DATE:
+                    iFieldHl = op.IDX_AMOUNT
+
+            # Highlight next field
+            elif key == "KEY_DOWN":
+                iFieldHl = iFieldHl + 1
+                if iFieldHl > op.IDX_AMOUNT:
+                    iFieldHl = op.IDX_DATE
+
+            # Edit highlighted field
+            elif key == "\n":
+
+                # Use input window
+                win : Window = self.pWin[self.WIN_ID_INPUT]
+                win.addstr(y, x, "Value : ")
+                win.keypad(False)
+                curses.echo()
+                sVal = win.getstr().decode(encoding="utf-8")
+                win.keypad(True)
+                curses.noecho()
+
+                if sVal != "":
+
+                    status = op.setField(iFieldHl, sVal)
+                    if status == ERROR:
+                        continue
+
+                    # Field edited
+                    bEdit = True
+                    # If date edited
+                    if iFieldHl == op.IDX_DATE:
+                        bDateEdit = True
+
+            # Exit
+            elif key == '\x1b':
+                break
+
+        return (bEdit, bDateEdit)
 
 if __name__ == "__main__":
 
