@@ -573,18 +573,25 @@ class DisplayCurses(object):
         y = y + 1
         win.addstr(y, x, f"date : {stat.date.strftime(FMT_DATE)}")
         y = y + 1
-        win.addstr(y, x, f"start balance : {stat.balStart}")
+        win.addstr(y, x, f"start : {stat.balStart}")
         y = y + 1
-        win.addstr(y, x, f"end balance : {stat.balEnd}")
+        win.addstr(y, x, f"end : {stat.balEnd}")
         y = y + 1
         win.addstr(y, x, f"actual end : {(stat.balStart + stat.opSum):.2f}")
         y = y + 1
-        balanceDiff = round(stat.balStart + stat.opSum - stat.balEnd, 2)
-        win.addstr(y, x, f"balance diff : ")
-        if balanceDiff == 0.0:
+        balanceDiff = round(stat.balEnd - stat.balStart, 2)
+        win.addstr(y, x, f"diff : ")
+        if balanceDiff >= 0.0:
             win.addstr(str(balanceDiff), curses.color_pair(self.COLOR_PAIR_ID_GREEN_BLACK))
         else:
             win.addstr(str(balanceDiff), curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
+        y = y + 1
+        balanceErr = round(stat.balStart + stat.opSum - stat.balEnd, 2)
+        win.addstr(y, x, f"err : ")
+        if balanceErr == 0.0:
+            win.addstr(str(balanceErr), curses.color_pair(self.COLOR_PAIR_ID_GREEN_BLACK))
+        else:
+            win.addstr(str(balanceErr), curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
         y = y + 1
 
         win.refresh()
