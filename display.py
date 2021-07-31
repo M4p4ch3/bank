@@ -39,14 +39,16 @@ class DisplayCurses(object):
     SEP_STAT += "-" + "-".ljust(LEN_AMOUNT, "-") + "-|"
     SEP_STAT += "-" + "-".ljust(LEN_AMOUNT, "-") + "-|"
     SEP_STAT += "-" + "-".ljust(LEN_AMOUNT, "-") + "-|"
+    SEP_STAT += "-" + "-".ljust(LEN_AMOUNT, "-") + "-|"
 
-    # Statement header
-    HEADER_STAT = "|"
-    HEADER_STAT += " " + "name".ljust(LEN_NAME, " ") + " |"
-    HEADER_STAT += " " + "date".ljust(LEN_DATE, " ") + " |"
-    HEADER_STAT += " " + "start".ljust(LEN_AMOUNT, " ") + " |"
-    HEADER_STAT += " " + "end".ljust(LEN_AMOUNT, " ") + " |"
-    HEADER_STAT += " " + "diff".ljust(LEN_AMOUNT, " ") + " |"
+    # # Statement header
+    # HEADER_STAT = "|"
+    # HEADER_STAT += " " + "name".ljust(LEN_NAME, " ") + " |"
+    # HEADER_STAT += " " + "date".ljust(LEN_DATE, " ") + " |"
+    # HEADER_STAT += " " + "start".ljust(LEN_AMOUNT, " ") + " |"
+    # HEADER_STAT += " " + "end".ljust(LEN_AMOUNT, " ") + " |"
+    # HEADER_STAT += " " + "diff".ljust(LEN_AMOUNT, " ") + " |"
+    # HEADER_STAT += " " + "err".ljust(LEN_AMOUNT, " ") + " |"
 
     # Statement missing
     MISS_STAT = "|"
@@ -65,14 +67,14 @@ class DisplayCurses(object):
     SEP_OP += "-" + "-".ljust(LEN_DESC, "-") + "-|"
     SEP_OP += "-" + "-".ljust(LEN_AMOUNT, "-") + "-|"
 
-    # Operation header
-    HEADER_OP = "|"
-    HEADER_OP += " " + "date".ljust(LEN_DATE, " ") + " |"
-    HEADER_OP += " " + "type".ljust(LEN_TYPE, ' ') + " |"
-    HEADER_OP += " " + "tier".ljust(LEN_TIER, ' ') + " |"
-    HEADER_OP += " " + "category".ljust(LEN_CAT, ' ') + " |"
-    HEADER_OP += " " + "description".ljust(LEN_DESC, ' ') + " |"
-    HEADER_OP += " " + "amount".ljust(LEN_AMOUNT, ' ') + " |"
+    # # Operation header
+    # HEADER_OP = "|"
+    # HEADER_OP += " " + "date".ljust(LEN_DATE, " ") + " |"
+    # HEADER_OP += " " + "type".ljust(LEN_TYPE, ' ') + " |"
+    # HEADER_OP += " " + "tier".ljust(LEN_TIER, ' ') + " |"
+    # HEADER_OP += " " + "category".ljust(LEN_CAT, ' ') + " |"
+    # HEADER_OP += " " + "description".ljust(LEN_DESC, ' ') + " |"
+    # HEADER_OP += " " + "amount".ljust(LEN_AMOUNT, ' ') + " |"
 
     # Operation missing
     MISS_OP = "|"
@@ -168,6 +170,8 @@ class DisplayCurses(object):
         win.addstr("end".ljust(LEN_AMOUNT), A_BOLD)
         win.addstr(" | ")
         win.addstr("diff".ljust(LEN_AMOUNT), A_BOLD)
+        win.addstr(" | ")
+        win.addstr("err".ljust(LEN_AMOUNT), A_BOLD)
         win.addstr(" |")
         y = y + 1
 
@@ -199,12 +203,20 @@ class DisplayCurses(object):
             win.addstr(" | ")
             win.addstr(str(stat.balEnd).ljust(LEN_AMOUNT), dispFlag)
             win.addstr(" | ")
-            balanceDiff = round(stat.balStart + stat.opSum - stat.balEnd, 2)
-            if balanceDiff == 0.0:
+            balanceDiff = round(stat.balEnd - stat.balStart, 2)
+            if balanceDiff >= 0.0:
                 win.addstr(str(balanceDiff).ljust(LEN_AMOUNT),
                     curses.color_pair(self.COLOR_PAIR_ID_GREEN_BLACK))
             else:
                 win.addstr(str(balanceDiff).ljust(LEN_AMOUNT),
+                    curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
+            win.addstr(" | ")
+            balanceErr = round(stat.balStart + stat.opSum - stat.balEnd, 2)
+            if balanceErr == 0.0:
+                win.addstr(str(balanceErr).ljust(LEN_AMOUNT),
+                    curses.color_pair(self.COLOR_PAIR_ID_GREEN_BLACK))
+            else:
+                win.addstr(str(balanceErr).ljust(LEN_AMOUNT),
                     curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
             win.addstr(" |")
             y = y + 1
