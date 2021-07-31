@@ -723,7 +723,7 @@ class DisplayCurses(object):
                     # Selected is highlighted operation
                     pOpSel.append(opHl)
 
-                self.STAT_delOps(pOpSel)
+                self.STAT_delOps(stat, pOpSel)
 
                 # If highlighted operation in selected ones
                 if opHl in pOpSel:
