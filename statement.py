@@ -63,6 +63,34 @@ class Statement(object):
             ret = ("start balance", str(self.balEnd))
         return ret
 
+    def getClosestOp(self, pOp : List[Operation]) -> Operation:
+
+        # Operation to return
+        opRet : Operation = pOp[0]
+
+        # While operation in list
+        while (opRet in pOp) and (opRet is not None):
+
+            # Get operation index in statement
+            opRetIdx = self.pOp.index(opRet)
+
+            # If first operation in list is first operation in statement
+            if self.pOp.index(pOp[0]) == 0:
+                # Search forward
+                opRetIdx = opRetIdx + 1
+            # Else, first operation in list is not first one
+            else:
+                # Search backward
+                opRetIdx = opRetIdx - 1
+
+            # If operation out of statement
+            if opRetIdx < 0 or opRetIdx >= len(self.pOp):
+                opRet = None
+            else:
+                opRet = self.pOp[opRetIdx]
+
+        return opRet
+
     # Set field value, identified by field index, from string
     def setField(self, iField, sVal) -> int:
 

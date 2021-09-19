@@ -726,14 +726,11 @@ class DisplayCurses(object):
                     # Selected is highlighted operation
                     pOpSel.append(opHl)
 
-                self.STAT_delOps(stat, pOpSel)
+                # Highlight closest operation
+                opHl = stat.getClosestOp(pOpSel)
 
-                # If highlighted operation in selected ones
-                if opHl in pOpSel:
-                    if len(stat.pOp) >= 1:
-                        opHl = stat.pOp[0]
-                    else:
-                        opHl = None
+                # Delete selected operations from statement
+                self.STAT_delOps(stat, pOpSel)
 
                 # Clear select operations
                 pOpSel.clear()
@@ -746,14 +743,11 @@ class DisplayCurses(object):
                     # Selected is highlighted operation
                     pOpSel.append(opHl)
 
-                self.STAT_moveOps(stat, pOpSel)
+                # Highlight closest operation
+                opHl = stat.getClosestOp(pOpSel)
 
-                # If highlighted operation in selected ones
-                if opHl in pOpSel:
-                    if len(stat.pOp) >= 1:
-                        opHl = stat.pOp[0]
-                    else:
-                        opHl = None
+                # Move selected operations from statement
+                self.STAT_moveOps(stat, pOpSel)
 
                 # Clear select operations
                 pOpSel.clear()
