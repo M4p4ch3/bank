@@ -772,6 +772,16 @@ class DisplayCurses(object):
                         stat.delOps([opHl])
                         stat.insertOp(opHl)
 
+            # Duplicate highlighted operation
+            elif key == "d":
+
+                # Create new operation from highlighted one
+                opNew = Operation(opHl.date, opHl.type, opHl.tier, opHl.cat, opHl.desc, opHl.amount)
+                # Add new operation to statement
+                stat.insertOp(opNew)
+                # Highlight new operation
+                opHl = opNew
+
             # Save
             elif key == "s":
                 stat.save()
