@@ -269,8 +269,9 @@ class DisplayCurses(object):
             win.clear()
             win.border()
             win.addstr(0, 2, " COMMANDS ", A_BOLD)
-            sCmd = "A/INS/+ : add, D/DEL/- : delete"
-            sCmd = sCmd + ", ENTER : open, S : save, ESCAPE : exit"
+            sCmd = "Add : INS/+, Delete : DEL/-"
+            sCmd = sCmd + ", Open/Edit : ENTER"
+            sCmd = sCmd + ", Save : S, Return/Exit : ESCAPE"
             win.addstr(1, 2, sCmd)
             win.refresh()
 
@@ -341,11 +342,11 @@ class DisplayCurses(object):
                     statHl = self.account.pStat[iStatFirst + self.WIN_MAIN_H - 11 - 1]
 
             # Add statement
-            elif key == "a" or key == "+":
+            elif key == "KEY_IC" or key == "+":
                 self.ACCOUNT_addStat()
 
             # Delete highlighted statement
-            elif key == "d" or key == "KEY_DC" or key == "-":
+            elif key == "KEY_DC" or key == "-":
                 self.ACCOUNT_delStat(statHl)
                 # Reset highlighted statement
                 statHl = self.account.pStat[0]
@@ -620,8 +621,10 @@ class DisplayCurses(object):
             win.clear()
             win.border()
             win.addstr(0, 2, " COMMANDS ", A_BOLD)
-            sCmd = "SPACE : (un)select, A/INS/+ : add, D/DEL/-: delete, M : move"
-            sCmd = sCmd + ", ENTER : open, S : save, ESCAPE : exit"
+            sCmd = "Add : INS/+, Delete : DEL/-"
+            sCmd = sCmd + ", Duplicate : D, (Un)select : SPACE, Move : M "
+            sCmd = sCmd + ", Open/Edit : ENTER"
+            sCmd = sCmd + ", Save : S, Return/Exit : ESCAPE"
             win.addstr(1, 2, sCmd)
             win.refresh()
 
@@ -712,11 +715,11 @@ class DisplayCurses(object):
                     pOpSel.remove(opHl)
 
             # Add operation
-            elif key == "a" or key == "+":
+            elif key == "KEY_IC" or key == "+":
                 self.STAT_addOp(stat)
 
             # Delete operation(s)
-            elif key == "d" or key == "KEY_DC" or key == "-":
+            elif key == "KEY_DC" or key == "-":
 
                 # If no selected operations
                 if len(pOpSel) == 0:
