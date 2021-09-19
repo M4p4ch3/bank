@@ -942,7 +942,7 @@ class DisplayCurses(object):
 
                 # Use input window
                 win : Window = self.pWin[self.WIN_ID_INPUT]
-                win.addstr(y, x, "Value : ")
+                win.addstr("Value : ")
                 win.keypad(False)
                 curses.echo()
                 sVal = win.getstr().decode(encoding="utf-8")
