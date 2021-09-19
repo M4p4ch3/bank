@@ -269,9 +269,9 @@ class DisplayCurses(object):
             win.clear()
             win.border()
             win.addstr(0, 2, " COMMANDS ", A_BOLD)
-            sCmd = "Add : INS/+, Delete : DEL/-"
-            sCmd = sCmd + ", Open/Edit : ENTER"
-            sCmd = sCmd + ", Save : S, Return/Exit : ESCAPE"
+            sCmd = "Add : INS/+, Del : DEL/-"
+            sCmd = sCmd + ", Open : ENTER"
+            sCmd = sCmd + ", Save : S, Ret : ESCAPE"
             win.addstr(1, 2, sCmd)
             win.refresh()
 
@@ -621,10 +621,10 @@ class DisplayCurses(object):
             win.clear()
             win.border()
             win.addstr(0, 2, " COMMANDS ", A_BOLD)
-            sCmd = "Add : INS/+, Delete : DEL/-"
-            sCmd = sCmd + ", Duplicate : D, (Un)select : SPACE, Move : M "
-            sCmd = sCmd + ", Open/Edit : ENTER"
-            sCmd = sCmd + ", Save : S, Return/Exit : ESCAPE"
+            sCmd = "Add : INS/+, Del : DEL/-"
+            sCmd = sCmd + ", Dupl : D, (Un)sel : SPACE, Move : M "
+            sCmd = sCmd + ", Open : ENTER"
+            sCmd = sCmd + ", Save : S, Ret : ESCAPE"
             win.addstr(1, 2, sCmd)
             win.refresh()
 
