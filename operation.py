@@ -8,6 +8,10 @@ from typing import Tuple
 
 from utils import (OK, ERROR, FMT_DATE)
 
+# Display
+import curses
+from curses import *
+
 class Operation():
     """
     Operation
@@ -101,3 +105,94 @@ class Operation():
                 return ERROR
 
         return OK
+
+class OperationCurses(Operation):
+    """
+    Operation display with curses
+    """
+
+    def __init__(self, op: Operation):
+        super(OperationCurses, self).__init__(op.date, op.mode, op.tier, op.cat, op.desc, op.amount)
+
+    def display(self, win, field_hl_idx):
+        """
+        Display
+        """
+
+        win.clear()
+        win.border()
+        win.move(0, 2)
+        win.addstr(" OPERATION ", A_BOLD)
+
+        (y, x) = (2, 2)
+        for field_idx in range(self.IDX_AMOUNT + 1):
+
+            disp_flag = A_NORMAL
+            if field_idx == field_hl_idx:
+                disp_flag = A_STANDOUT
+
+            (name_str, val_str) = self.get_field(field_idx)
+            win.addstr(y, x, f"{name_str} : {val_str}", disp_flag)
+            y = y + 1
+
+        y = y + 1
+        win.addstr(y, x, "")
+
+        win.refresh()
+
+    def browse(self, win):
+        """
+        Browse
+        """
+
+        is_edited = False
+        is_date_edited = False
+        field_hl_idx = 0
+
+        while True:
+
+            self.display(win, field_hl_idx)
+            (y, _) = (win.getyx()[0], 2)
+            y = y + 2
+
+            key = win.getkey()
+
+            # Highlight previous field
+            if key == "KEY_UP":
+                field_hl_idx = field_hl_idx - 1
+                if field_hl_idx < self.IDX_DATE:
+                    field_hl_idx = self.IDX_AMOUNT
+
+            # Highlight next field
+            elif key == "KEY_DOWN":
+                field_hl_idx = field_hl_idx + 1
+                if field_hl_idx > self.IDX_AMOUNT:
+                    field_hl_idx = self.IDX_DATE
+
+            # Edit highlighted field
+            elif key == "\n":
+
+                win.addstr("Value : ")
+                win.keypad(False)
+                curses.echo()
+                val_str = win.getstr().decode(encoding="utf-8")
+                win.keypad(True)
+                curses.noecho()
+
+                if val_str != "":
+
+                    status = self.set_field(field_hl_idx, val_str)
+                    if status == ERROR:
+                        continue
+
+                    # Field edited
+                    is_edited = True
+                    # If date edited
+                    if field_hl_idx == self.IDX_DATE:
+                        is_date_edited = True
+
+            # Exit
+            elif key == '\x1b':
+                break
+
+        return (is_edited, is_date_edited)

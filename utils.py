@@ -12,7 +12,7 @@ ERROR = 1
 # Length for display padding
 LEN_DATE = 10
 LEN_NAME = LEN_DATE
-LEN_TYPE = 8
+LEN_MODE = 8
 LEN_TIER = 18
 LEN_CAT = 10
 LEN_DESC = 35

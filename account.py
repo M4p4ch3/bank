@@ -111,7 +111,7 @@ class Account():
         for stat in self.stat_list:
 
             # Create statement line
-            stat_csv = [stat.name, str(stat.balStart), str(stat.balEnd)]
+            stat_csv = [stat.name, str(stat.bal_start), str(stat.bal_end)]
 
             try:
                 # Write statement line to CSV file

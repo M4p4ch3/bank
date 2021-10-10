@@ -11,11 +11,11 @@ import time
 from typing import (TYPE_CHECKING, List, Tuple)
 
 from utils import (ERROR,
-                   LEN_DATE, LEN_NAME, LEN_TYPE, LEN_TIER, LEN_CAT, LEN_DESC, LEN_AMOUNT,
+                   LEN_DATE, LEN_NAME, LEN_MODE, LEN_TIER, LEN_CAT, LEN_DESC, LEN_AMOUNT,
                    FMT_DATE)
 from account import Account
 from statement import Statement
-from operation import Operation
+from operation import (Operation, OperationCurses)
 
 if TYPE_CHECKING:
     from _curses import _CursesWindow
@@ -70,7 +70,7 @@ class DisplayCurses():
     # Operation separator
     SEP_OP = "|"
     SEP_OP += "-" + "-".ljust(LEN_DATE, "-") + "-|"
-    SEP_OP += "-" + "-".ljust(LEN_TYPE, "-") + "-|"
+    SEP_OP += "-" + "-".ljust(LEN_MODE, "-") + "-|"
     SEP_OP += "-" + "-".ljust(LEN_TIER, "-") + "-|"
     SEP_OP += "-" + "-".ljust(LEN_CAT, "-") + "-|"
     SEP_OP += "-" + "-".ljust(LEN_DESC, "-") + "-|"
@@ -79,7 +79,7 @@ class DisplayCurses():
     # # Operation header
     # HEADER_OP = "|"
     # HEADER_OP += " " + "date".ljust(LEN_DATE, " ") + " |"
-    # HEADER_OP += " " + "type".ljust(LEN_TYPE, ' ') + " |"
+    # HEADER_OP += " " + "mode".ljust(LEN_MODE, ' ') + " |"
     # HEADER_OP += " " + "tier".ljust(LEN_TIER, ' ') + " |"
     # HEADER_OP += " " + "category".ljust(LEN_CAT, ' ') + " |"
     # HEADER_OP += " " + "description".ljust(LEN_DESC, ' ') + " |"
@@ -88,7 +88,7 @@ class DisplayCurses():
     # Operation missing
     MISS_OP = "|"
     MISS_OP += " " + "...".ljust(LEN_DATE, ' ') + " |"
-    MISS_OP += " " + "...".ljust(LEN_TYPE, ' ') + " |"
+    MISS_OP += " " + "...".ljust(LEN_MODE, ' ') + " |"
     MISS_OP += " " + "...".ljust(LEN_TIER, ' ') + " |"
     MISS_OP += " " + "...".ljust(LEN_CAT, ' ') + " |"
     MISS_OP += " " + "...".ljust(LEN_DESC, ' ') + " |"
@@ -219,9 +219,9 @@ class DisplayCurses():
             win.addstr(" | ")
             win.addstr(str(stat.bal_start).ljust(LEN_AMOUNT), disp_flag)
             win.addstr(" | ")
-            win.addstr(str(stat.balEnd).ljust(LEN_AMOUNT), disp_flag)
+            win.addstr(str(stat.bal_end).ljust(LEN_AMOUNT), disp_flag)
             win.addstr(" | ")
-            bal_diff = round(stat.balEnd - stat.bal_start, 2)
+            bal_diff = round(stat.bal_end - stat.bal_start, 2)
             if bal_diff >= 0.0:
                 win.addstr(str(bal_diff).ljust(LEN_AMOUNT),
                            curses.color_pair(self.COLOR_PAIR_ID_GREEN_BLACK))
@@ -229,7 +229,7 @@ class DisplayCurses():
                 win.addstr(str(bal_diff).ljust(LEN_AMOUNT),
                            curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
             win.addstr(" | ")
-            bal_err = round(stat.bal_start + stat.opSum - stat.balEnd, 2)
+            bal_err = round(stat.bal_start + stat.op_sum - stat.bal_end, 2)
             if bal_err == 0.0:
                 win.addstr(str(bal_err).ljust(LEN_AMOUNT),
                            curses.color_pair(self.COLOR_PAIR_ID_GREEN_BLACK))
@@ -453,7 +453,7 @@ class DisplayCurses():
             win.addstr(y, x, "end balance : ")
             val_str = win.get_str().decode(encoding="utf-8")
             try:
-                balEnd = float(val_str)
+                bal_end = float(val_str)
                 is_converted = True
             except ValueError:
                 pass
@@ -465,7 +465,7 @@ class DisplayCurses():
 
         # Statement CSV file does not exit
         # Read will create it
-        stat = Statement(date.strftime(FMT_DATE), bal_start, balEnd)
+        stat = Statement(date.strftime(FMT_DATE), bal_start, bal_end)
         stat.read()
 
         # Append statement to statements list
@@ -511,7 +511,7 @@ class DisplayCurses():
         win.addstr(y, x, "| ")
         win.addnstr("date".ljust(LEN_DATE), LEN_DATE, A_BOLD)
         win.addstr(" | ")
-        win.addnstr("type".ljust(LEN_TYPE), LEN_TYPE, A_BOLD)
+        win.addnstr("mode".ljust(LEN_MODE), LEN_MODE, A_BOLD)
         win.addstr(" | ")
         win.addnstr("tier".ljust(LEN_TIER), LEN_TIER, A_BOLD)
         win.addstr(" | ")
@@ -544,7 +544,7 @@ class DisplayCurses():
             win.addstr(y, x, "| ")
             win.addnstr(op.date.strftime(FMT_DATE).ljust(LEN_DATE), LEN_DATE, disp_flag)
             win.addstr(" | ")
-            win.addnstr(op.type.ljust(LEN_TYPE), LEN_TYPE, disp_flag)
+            win.addnstr(op.mode.ljust(LEN_MODE), LEN_MODE, disp_flag)
             win.addstr(" | ")
             win.addnstr(op.tier.ljust(LEN_TIER), LEN_TIER, disp_flag)
             win.addstr(" | ")
@@ -595,18 +595,18 @@ class DisplayCurses():
         y = y + 1
         win.addstr(y, x, f"start : {stat.bal_start}")
         y = y + 1
-        win.addstr(y, x, f"end : {stat.balEnd}")
+        win.addstr(y, x, f"end : {stat.bal_end}")
         y = y + 1
-        win.addstr(y, x, f"actual end : {(stat.bal_start + stat.opSum):.2f}")
+        win.addstr(y, x, f"actual end : {(stat.bal_start + stat.op_sum):.2f}")
         y = y + 1
-        bal_diff = round(stat.balEnd - stat.bal_start, 2)
+        bal_diff = round(stat.bal_end - stat.bal_start, 2)
         win.addstr(y, x, f"diff : ")
         if bal_diff >= 0.0:
             win.addstr(str(bal_diff), curses.color_pair(self.COLOR_PAIR_ID_GREEN_BLACK))
         else:
             win.addstr(str(bal_diff), curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
         y = y + 1
-        bal_err = round(stat.bal_start + stat.opSum - stat.balEnd, 2)
+        bal_err = round(stat.bal_start + stat.op_sum - stat.bal_end, 2)
         win.addstr(y, x, f"err : ")
         if bal_err == 0.0:
             win.addstr(str(bal_err), curses.color_pair(self.COLOR_PAIR_ID_GREEN_BLACK))
@@ -774,7 +774,8 @@ class DisplayCurses():
             # Open highlighted operation
             elif key == "\n":
 
-                (is_edited, is_date_edited) = self.OP_browse(op_hl)
+                op_curses = OperationCurses(op_hl)
+                (is_edited, is_date_edited) = op_curses.browse(self.win_list[self.WIN_ID_INPUT])
                 # If operation edited
                 if is_edited:
                     stat.is_unsaved = True
@@ -913,88 +914,6 @@ class DisplayCurses():
         # Save source and destination statement
         statSrc.save()
         stat_dst.save()
-
-    def OP_disp(self, op: Operation, field_hl_idx: int) -> None:
-
-        # Use input window
-        win = self.win_list[self.WIN_ID_INPUT]
-
-        win.clear()
-        win.border()
-        win.move(0, 2)
-        win.addstr(" OPERATION ", A_BOLD)
-
-        (y, x) = (2, 2)
-        for field_idx in range(op.IDX_AMOUNT + 1):
-
-            disp_flag = A_NORMAL
-            if field_idx == field_hl_idx:
-                disp_flag = A_STANDOUT
-
-            (name_str, val_str) = op.get_field(field_idx)
-            win.addstr(y, x, f"{name_str} : {val_str}", disp_flag)
-            y = y + 1
-
-        y = y + 1
-        win.addstr(y, x, "")
-
-        win.refresh()
-
-    def OP_browse(self, op: Operation) -> Tuple[bool, bool]:
-
-        is_edited = False
-        is_date_edited = False
-        field_hl_idx = 0
-
-        while True:
-
-            self.OP_disp(op, field_hl_idx)
-            (y, _) = (self.win_list[self.WIN_ID_MAIN].getyx()[0], 2)
-            y = y + 2
-
-            key = self.win_list[self.WIN_ID_MAIN].getkey()
-
-            # Highlight previous field
-            if key == "KEY_UP":
-                field_hl_idx = field_hl_idx - 1
-                if field_hl_idx < op.IDX_DATE:
-                    field_hl_idx = op.IDX_AMOUNT
-
-            # Highlight next field
-            elif key == "KEY_DOWN":
-                field_hl_idx = field_hl_idx + 1
-                if field_hl_idx > op.IDX_AMOUNT:
-                    field_hl_idx = op.IDX_DATE
-
-            # Edit highlighted field
-            elif key == "\n":
-
-                # Use input window
-                win: Window = self.win_list[self.WIN_ID_INPUT]
-                win.addstr("Value : ")
-                win.keypad(False)
-                curses.echo()
-                val_str = win.get_str().decode(encoding="utf-8")
-                win.keypad(True)
-                curses.noecho()
-
-                if val_str != "":
-
-                    status = op.set_field(field_hl_idx, val_str)
-                    if status == ERROR:
-                        continue
-
-                    # Field edited
-                    is_edited = True
-                    # If date edited
-                    if field_hl_idx == op.IDX_DATE:
-                        is_date_edited = True
-
-            # Exit
-            elif key == '\x1b':
-                break
-
-        return (is_edited, is_date_edited)
 
 if __name__ == "__main__":
 
