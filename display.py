@@ -94,10 +94,13 @@ class DisplayCurses():
     MISS_OP += " " + "...".ljust(LEN_DESC, ' ') + " |"
     MISS_OP += " " + "...".ljust(LEN_AMOUNT, ' ') + " |"
 
-    def __init__(self, account : Account) -> None :
+    def __init__(self, account: Account) -> None:
 
         # Account
-        self.account : Account = account
+        self.account: Account = account
+
+        # Main window height
+        self.win_main_h: int = 0
 
         # TODO define and use
         # Highlighted item
@@ -106,65 +109,65 @@ class DisplayCurses():
         self.itemFocus = None
 
         # Windows list
-        self.pWin : List[Window] = [None] * (self.WIN_ID_LAST + 1)
+        self.win_list: List[Window] = [None] * (self.WIN_ID_LAST + 1)
 
-    def main(self, winMain: Window) -> None :
+    def main(self, win_main: Window) -> None:
 
         # Main window height
-        self.WIN_MAIN_H = curses.LINES
-        WIN_MAIN_W = curses.COLS - 2
+        self.win_main_h = curses.LINES
+        win_main_w = curses.COLS - 2
 
-        WIN_CMD_H = 3
-        WIN_CMD_W = int(2 * WIN_MAIN_W / 3) - 2
-        WIN_CMD_Y = self.WIN_MAIN_H - WIN_CMD_H - 1
-        WIN_CMD_X = 2
+        win_cmd_h = 3
+        win_cmd_w = int(2 * win_main_w / 3) - 2
+        win_cmd_y = self.win_main_h - win_cmd_h - 1
+        win_cmd_x = 2
 
-        WIN_INFO_H = int((self.WIN_MAIN_H - WIN_CMD_H) / 2) - 2
-        WIN_INFO_W = int(WIN_MAIN_W / 3) - 2
-        WIN_INFO_Y = 2
-        WIN_INFO_X = WIN_MAIN_W - WIN_INFO_W - 1
+        win_info_h = int((self.win_main_h - win_cmd_h) / 2) - 2
+        win_info_w = int(win_main_w / 3) - 2
+        win_info_y = 2
+        win_info_x = win_main_w - win_info_w - 1
 
-        WIN_INPUT_H = WIN_INFO_H
-        WIN_INPUT_W = WIN_INFO_W
-        WIN_INPUT_Y = WIN_INFO_Y + WIN_INFO_H + 1
-        WIN_INPUT_X = WIN_INFO_X
+        win_input_h = win_info_h
+        win_input_w = win_info_w
+        win_input_y = win_info_y + win_info_h + 1
+        win_input_x = win_info_x
 
-        WIN_STATUS_H = WIN_CMD_H
-        WIN_STATUS_W = WIN_INFO_W
-        WIN_STATUS_Y = WIN_CMD_Y
-        WIN_STATUS_X = WIN_INFO_X
+        win_status_h = win_cmd_h
+        win_status_w = win_info_w
+        win_status_y = win_cmd_y
+        win_status_x = win_info_x
 
         curses.init_pair(self.COLOR_PAIR_ID_RED_BLACK, curses.COLOR_RED, curses.COLOR_BLACK)
         curses.init_pair(self.COLOR_PAIR_ID_GREEN_BLACK, curses.COLOR_GREEN, curses.COLOR_BLACK)
 
-        self.pWin[self.WIN_ID_MAIN] = winMain
+        self.win_list[self.WIN_ID_MAIN] = win_main
 
-        winInfo = curses.newwin(WIN_INFO_H, WIN_INFO_W, WIN_INFO_Y, WIN_INFO_X)
-        self.pWin[self.WIN_ID_INFO] = winInfo
+        win_info = curses.newwin(win_info_h, win_info_w, win_info_y, win_info_x)
+        self.win_list[self.WIN_ID_INFO] = win_info
 
-        winInput = curses.newwin(WIN_INPUT_H, WIN_INPUT_W, WIN_INPUT_Y, WIN_INPUT_X)
-        winInput.keypad(True)
-        self.pWin[self.WIN_ID_INPUT] = winInput
+        win_input = curses.newwin(win_input_h, win_input_w, win_input_y, win_input_x)
+        win_input.keypad(True)
+        self.win_list[self.WIN_ID_INPUT] = win_input
 
-        winCmd = curses.newwin(WIN_CMD_H, WIN_CMD_W, WIN_CMD_Y, WIN_CMD_X)
-        self.pWin[self.WIN_ID_CMD] = winCmd
+        win_cmd = curses.newwin(win_cmd_h, win_cmd_w, win_cmd_y, win_cmd_x)
+        self.win_list[self.WIN_ID_CMD] = win_cmd
 
-        winStatus = curses.newwin(WIN_STATUS_H, WIN_STATUS_W, WIN_STATUS_Y, WIN_STATUS_X)
-        self.pWin[self.WIN_ID_STATUS] = winStatus
+        win_status = curses.newwin(win_status_h, win_status_w, win_status_y, win_status_x)
+        self.win_list[self.WIN_ID_STATUS] = win_status
 
         self.ACCOUNT_browse()
 
-    def ACCOUNT_disp(self, iStatFirst : int, statHl : Statement) -> None :
+    def ACCOUNT_disp(self, stat_first_idx: int, stat_hl: Statement) -> None:
 
         # Number of statements to display
-        nStatDisp : int = self.WIN_MAIN_H - 11
-        if len(self.account.pStat) < nStatDisp:
-            nStatDisp = len(self.account.pStat)
+        stat_disp_nb: int = self.win_main_h - 11
+        if len(self.account.stat_list) < stat_disp_nb:
+            stat_disp_nb = len(self.account.stat_list)
         # TODO
-        # iStatLast
+        # stat_last_idx
 
         # Use main window
-        win : Window = self.pWin[self.WIN_ID_MAIN]
+        win: Window = self.win_list[self.WIN_ID_MAIN]
 
         win.clear()
         win.border()
@@ -191,7 +194,7 @@ class DisplayCurses():
         y = y + 1
 
         # Statement separator or missing
-        if iStatFirst == 0:
+        if stat_first_idx == 0:
             win.addstr(y, x, self.SEP_STAT)
         else:
             win.addstr(y, x, self.MISS_STAT)
@@ -199,47 +202,47 @@ class DisplayCurses():
 
         # For each statement in display range
         # TODO
-        # for iStat in range(iStatFirst, iStatLast):
-        iStat = iStatFirst
-        while iStat < len(self.account.pStat) and iStat < iStatFirst + nStatDisp:
+        # for stat_idx in range(stat_first_idx, stat_last_idx):
+        stat_idx = stat_first_idx
+        while stat_idx < len(self.account.stat_list) and stat_idx < stat_first_idx + stat_disp_nb:
 
-            stat : Statement = self.account.pStat[iStat]
+            stat: Statement = self.account.stat_list[stat_idx]
 
-            dispFlag = A_NORMAL
-            if stat == statHl:
-                dispFlag += A_STANDOUT
+            disp_flag = A_NORMAL
+            if stat == stat_hl:
+                disp_flag += A_STANDOUT
 
             win.addstr(y, x, "| ")
-            win.addstr(stat.name.ljust(LEN_NAME), dispFlag)
+            win.addstr(stat.name.ljust(LEN_NAME), disp_flag)
             win.addstr(" | ")
-            win.addstr(stat.date.strftime(FMT_DATE).ljust(LEN_DATE), dispFlag)
+            win.addstr(stat.date.strftime(FMT_DATE).ljust(LEN_DATE), disp_flag)
             win.addstr(" | ")
-            win.addstr(str(stat.balStart).ljust(LEN_AMOUNT), dispFlag)
+            win.addstr(str(stat.bal_start).ljust(LEN_AMOUNT), disp_flag)
             win.addstr(" | ")
-            win.addstr(str(stat.balEnd).ljust(LEN_AMOUNT), dispFlag)
+            win.addstr(str(stat.balEnd).ljust(LEN_AMOUNT), disp_flag)
             win.addstr(" | ")
-            balanceDiff = round(stat.balEnd - stat.balStart, 2)
-            if balanceDiff >= 0.0:
-                win.addstr(str(balanceDiff).ljust(LEN_AMOUNT),
-                    curses.color_pair(self.COLOR_PAIR_ID_GREEN_BLACK))
+            bal_diff = round(stat.balEnd - stat.bal_start, 2)
+            if bal_diff >= 0.0:
+                win.addstr(str(bal_diff).ljust(LEN_AMOUNT),
+                           curses.color_pair(self.COLOR_PAIR_ID_GREEN_BLACK))
             else:
-                win.addstr(str(balanceDiff).ljust(LEN_AMOUNT),
-                    curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
+                win.addstr(str(bal_diff).ljust(LEN_AMOUNT),
+                           curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
             win.addstr(" | ")
-            balanceErr = round(stat.balStart + stat.opSum - stat.balEnd, 2)
-            if balanceErr == 0.0:
-                win.addstr(str(balanceErr).ljust(LEN_AMOUNT),
-                    curses.color_pair(self.COLOR_PAIR_ID_GREEN_BLACK))
+            bal_err = round(stat.bal_start + stat.opSum - stat.balEnd, 2)
+            if bal_err == 0.0:
+                win.addstr(str(bal_err).ljust(LEN_AMOUNT),
+                           curses.color_pair(self.COLOR_PAIR_ID_GREEN_BLACK))
             else:
-                win.addstr(str(balanceErr).ljust(LEN_AMOUNT),
-                    curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
+                win.addstr(str(bal_err).ljust(LEN_AMOUNT),
+                           curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
             win.addstr(" |")
             y = y + 1
 
-            iStat = iStat + 1
+            stat_idx = stat_idx + 1
 
         # Statement separator or missing
-        if iStat == len(self.account.pStat):
+        if stat_idx == len(self.account.stat_list):
             win.addstr(y, x, self.SEP_STAT)
         else:
             win.addstr(y, x, self.MISS_STAT)
@@ -248,156 +251,157 @@ class DisplayCurses():
         # Slider
         # Move to top right of table
         (y, x) = (5, win.getyx()[1])
-        for i in range(int(iStatFirst * nStatDisp / len(self.account.pStat))):
+        for _ in range(int(stat_first_idx * stat_disp_nb / len(self.account.stat_list))):
             win.addstr(y, x, " ")
             y = y + 1
-        for i in range(int(nStatDisp * nStatDisp / len(self.account.pStat)) + 1):
+        for _ in range(int(stat_disp_nb * stat_disp_nb / len(self.account.stat_list)) + 1):
             win.addstr(y, x, " ", A_STANDOUT)
             y = y + 1
 
         win.refresh()
 
-    def ACCOUNT_browse(self) -> None :
+    def ACCOUNT_browse(self) -> None:
 
         # Index of first displayed statement
-        iStatFirst : int = 0
+        stat_first_idx: int = 0
         # Highlighted statement
-        statHl : Statement = self.account.pStat[0]
+        stat_hl: Statement = self.account.stat_list[0]
 
         while True:
 
-            self.ACCOUNT_disp(iStatFirst, statHl)
+            self.ACCOUNT_disp(stat_first_idx, stat_hl)
 
             # Status window
-            win : Window = self.pWin[self.WIN_ID_STATUS]
+            win: Window = self.win_list[self.WIN_ID_STATUS]
             win.clear()
             win.border()
             win.addstr(0, 2, " STATUS ", A_BOLD)
-            if self.account.bUnsav == True:
+            if self.account.is_unsaved:
                 win.addstr(1, 2, "Unsaved", curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
             else:
                 win.addstr(1, 2, "Saved", curses.color_pair(self.COLOR_PAIR_ID_GREEN_BLACK))
             win.refresh()
 
             # Command window
-            win : Window = self.pWin[self.WIN_ID_CMD]
+            win: Window = self.win_list[self.WIN_ID_CMD]
             win.clear()
             win.border()
             win.addstr(0, 2, " COMMANDS ", A_BOLD)
-            sCmd = "Add : INS/+, Del : DEL/-"
-            sCmd = sCmd + ", Open : ENTER"
-            sCmd = sCmd + ", Save : S, Ret : ESCAPE"
-            win.addstr(1, 2, sCmd)
+            cmd_str = "Add : INS/+, Del : DEL/-"
+            cmd_str = cmd_str + ", Open : ENTER"
+            cmd_str = cmd_str + ", Save : S, Ret : ESCAPE"
+            win.addstr(1, 2, cmd_str)
             win.refresh()
 
-            key = self.pWin[self.WIN_ID_MAIN].getkey()
+            key = self.win_list[self.WIN_ID_MAIN].getkey()
 
             # Highlight previous statement
             if key == "KEY_UP":
 
                 # Highlight previous statement
-                iStatHl = self.account.pStat.index(statHl) - 1
-                if iStatHl < 0:
-                    iStatHl = 0
-                statHl = self.account.pStat[iStatHl]
+                stat_hl_idx = self.account.stat_list.index(stat_hl) - 1
+                if stat_hl_idx < 0:
+                    stat_hl_idx = 0
+                stat_hl = self.account.stat_list[stat_hl_idx]
 
                 # If out of display range
-                if iStatHl < iStatFirst:
+                if stat_hl_idx < stat_first_idx:
                     # Previous page
-                    iStatFirst = iStatFirst - 1
-                    if iStatFirst < 0:
-                        iStatFirst = 0
+                    stat_first_idx = stat_first_idx - 1
+                    if stat_first_idx < 0:
+                        stat_first_idx = 0
 
             # Highlight next statement
             if key == "KEY_DOWN":
 
                 # Highlight next statement
-                iStatHl = self.account.pStat.index(statHl) + 1
-                if iStatHl >= len(self.account.pStat):
-                    iStatHl = len(self.account.pStat) - 1
-                statHl = self.account.pStat[iStatHl]
+                stat_hl_idx = self.account.stat_list.index(stat_hl) + 1
+                if stat_hl_idx >= len(self.account.stat_list):
+                    stat_hl_idx = len(self.account.stat_list) - 1
+                stat_hl = self.account.stat_list[stat_hl_idx]
 
                 # If out of display range
-                if iStatHl - iStatFirst >= self.WIN_MAIN_H - 11:
+                if stat_hl_idx - stat_first_idx >= self.win_main_h - 11:
                     # Next page
-                    iStatFirst = iStatFirst + 1
-                    if iStatFirst > len(self.account.pStat) - (self.WIN_MAIN_H - 11):
-                        iStatFirst = len(self.account.pStat) - (self.WIN_MAIN_H - 11)
+                    stat_first_idx = stat_first_idx + 1
+                    if stat_first_idx > len(self.account.stat_list) - (self.win_main_h - 11):
+                        stat_first_idx = len(self.account.stat_list) - (self.win_main_h - 11)
 
             # Previous page
             elif key == "KEY_PPAGE":
 
                 # Previous page
-                iStatFirst = iStatFirst - 3
-                if iStatFirst < 0:
-                    iStatFirst = 0
+                stat_first_idx = stat_first_idx - 3
+                if stat_first_idx < 0:
+                    stat_first_idx = 0
 
                 # If out of display range
-                iStatHl = self.account.pStat.index(statHl)
-                if iStatHl < iStatFirst:
-                    statHl = self.account.pStat[iStatFirst]
-                elif iStatHl >= iStatFirst + self.WIN_MAIN_H - 11:
-                    statHl = self.account.pStat[iStatFirst + self.WIN_MAIN_H - 11 - 1]
+                stat_hl_idx = self.account.stat_list.index(stat_hl)
+                if stat_hl_idx < stat_first_idx:
+                    stat_hl = self.account.stat_list[stat_first_idx]
+                elif stat_hl_idx >= stat_first_idx + self.win_main_h - 11:
+                    stat_hl = self.account.stat_list[stat_first_idx + self.win_main_h - 11 - 1]
 
             # Next page
             elif key == "KEY_NPAGE":
 
                 # Next page
-                iStatFirst = iStatFirst + 3
-                if iStatFirst > len(self.account.pStat) - (self.WIN_MAIN_H - 11):
-                    iStatFirst = len(self.account.pStat) - (self.WIN_MAIN_H - 11)
-                    if iStatFirst < 0:
-                        iStatFirst = 0
+                stat_first_idx = stat_first_idx + 3
+                if stat_first_idx > len(self.account.stat_list) - (self.win_main_h - 11):
+                    stat_first_idx = len(self.account.stat_list) - (self.win_main_h - 11)
+                    if stat_first_idx < 0:
+                        stat_first_idx = 0
 
                 # If out of display range
-                iStatHl = self.account.pStat.index(statHl)
-                if iStatHl < iStatFirst:
-                    statHl = self.account.pStat[iStatFirst]
-                elif iStatHl >= iStatFirst + self.WIN_MAIN_H - 11:
-                    statHl = self.account.pStat[iStatFirst + self.WIN_MAIN_H - 11 - 1]
+                stat_hl_idx = self.account.stat_list.index(stat_hl)
+                if stat_hl_idx < stat_first_idx:
+                    stat_hl = self.account.stat_list[stat_first_idx]
+                elif stat_hl_idx >= stat_first_idx + self.win_main_h - 11:
+                    stat_hl = self.account.stat_list[stat_first_idx + self.win_main_h - 11 - 1]
 
             # Add statement
-            elif key == "KEY_IC" or key == "+":
+            elif key in ("KEY_IC", "+"):
                 self.ACCOUNT_addStat()
 
             # Delete highlighted statement
-            elif key == "KEY_DC" or key == "-":
-                self.ACCOUNT_del_stat(statHl)
+            elif key in ("KEY_DC", "-"):
+                self.ACCOUNT_del_stat(stat_hl)
                 # Reset highlighted statement
-                statHl = self.account.pStat[0]
+                stat_hl = self.account.stat_list[0]
 
             # Open highligthed statement
             elif key == "\n":
-                self.STAT_browse(statHl)
+                self.STAT_browse(stat_hl)
 
             elif key == "s":
                 self.account.save()
                 pass
 
             elif key == '\x1b':
-                if self.account.bUnsav == True:
+                if self.account.is_unsaved:
                     # Input window
-                    win : Window = self.pWin[self.WIN_ID_INPUT]
+                    win: Window = self.win_list[self.WIN_ID_INPUT]
                     win.clear()
                     win.border()
                     win.addstr(0, 2, " UNSAVED CHANGES ", A_BOLD)
                     win.addstr(2, 2, "Save ? (y/n) : ")
-                    cSave = win.getch()
-                    if cSave != ord('n'):
+                    save_c = win.getch()
+                    if save_c != ord('n'):
                         win.addstr(4, 2, f"Saving")
                         win.refresh()
                         time.sleep(1)
                         self.account.save()
                     else:
-                        win.addstr(4, 2, f"Discard changes", curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
+                        win.addstr(4, 2, f"Discard changes",
+                                   curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
                         win.refresh()
                         time.sleep(1)
                 break
 
-    def ACCOUNT_addStat(self) -> None :
+    def ACCOUNT_addStat(self) -> None:
 
         # Use input window
-        win : Window = self.pWin[self.WIN_ID_INPUT]
+        win: Window = self.win_list[self.WIN_ID_INPUT]
 
         win.clear()
         win.border()
@@ -417,41 +421,41 @@ class DisplayCurses():
 
         (y, x) = (2, 2)
 
-        bConvert = False
-        while bConvert != True:
+        is_converted = False
+        while not is_converted:
             win.addstr(y, x, "date :                  ")
             win.addstr(y, x, "date : ")
-            sVal = win.get_str().decode(encoding="utf-8")
+            val_str = win.get_str().decode(encoding="utf-8")
             try:
-                date = datetime.strptime(sVal, FMT_DATE)
-                bConvert = True
-            except:
+                date = datetime.strptime(val_str, FMT_DATE)
+                is_converted = True
+            except ValueError:
                 pass
 
         y = y + 1
 
-        bConvert = False
-        while bConvert != True:
+        is_converted = False
+        while not is_converted:
             win.addstr(y, x, "start balance :         ")
             win.addstr(y, x, "start balance : ")
-            sVal = win.get_str().decode(encoding="utf-8")
+            val_str = win.get_str().decode(encoding="utf-8")
             try:
-                balStart = float(sVal)
-                bConvert = True
-            except:
+                bal_start = float(val_str)
+                is_converted = True
+            except ValueError:
                 pass
 
         y = y + 1
 
-        bConvert = False
-        while bConvert != True:
+        is_converted = False
+        while not is_converted:
             win.addstr(y, x, "end balance :           ")
             win.addstr(y, x, "end balance : ")
-            sVal = win.get_str().decode(encoding="utf-8")
+            val_str = win.get_str().decode(encoding="utf-8")
             try:
-                balEnd = float(sVal)
-                bConvert = True
-            except:
+                balEnd = float(val_str)
+                is_converted = True
+            except ValueError:
                 pass
 
         y = y + 1
@@ -461,22 +465,22 @@ class DisplayCurses():
 
         # Statement CSV file does not exit
         # Read will create it
-        stat = Statement(date.strftime(FMT_DATE), balStart, balEnd)
+        stat = Statement(date.strftime(FMT_DATE), bal_start, balEnd)
         stat.read()
 
         # Append statement to statements list
         self.account.insertStat(stat)
 
-    def ACCOUNT_del_stat(self, stat : Statement) -> None :
+    def ACCOUNT_del_stat(self, stat: Statement) -> None:
 
         # Input window
-        win : Window = self.pWin[self.WIN_ID_INPUT]
+        win: Window = self.win_list[self.WIN_ID_INPUT]
         win.clear()
         win.border()
         win.addstr(0, 2, " DELETE STATEMENT ", A_BOLD)
         win.addstr(2, 2, "Confirm ? (y/n) : ")
-        cConfirm = win.getch()
-        if cConfirm != ord('y'):
+        confirm_c = win.getch()
+        if confirm_c != ord('y'):
             win.addstr(7, 2, f"Canceled", curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
             win.refresh()
             time.sleep(1)
@@ -485,15 +489,15 @@ class DisplayCurses():
         # Delete highlighted statement
         self.account.del_stat(stat)
 
-    def STAT_dispOps(self, stat : Statement,
-        iOpFirst : int, opHl : Operation, pOpSel : List[Operation]) -> None :
+    def STAT_disp_op_list(self, stat: Statement,
+        op_first_idx: int, op_hl: Operation, op_listSel: List[Operation]) -> None:
 
-        nOpDisp = self.WIN_MAIN_H - 11
-        if len(stat.pOp) < nOpDisp:
-            nOpDisp = len(stat.pOp)
+        op_disp_nb = self.win_main_h - 11
+        if len(stat.op_list) < op_disp_nb:
+            op_disp_nb = len(stat.op_list)
 
         # Use main window
-        win : Window = self.pWin[self.WIN_ID_MAIN]
+        win: Window = self.win_list[self.WIN_ID_MAIN]
 
         win.clear()
         win.border()
@@ -520,64 +524,64 @@ class DisplayCurses():
         y = y + 1
 
         # Operation separator or missing
-        if iOpFirst == 0:
+        if op_first_idx == 0:
             win.addstr(y, x, self.SEP_OP)
         else:
             win.addstr(y, x, self.MISS_OP)
         y = y + 1
 
-        opIdx = iOpFirst
-        while opIdx < len(stat.pOp) and opIdx < iOpFirst + nOpDisp:
+        op_idx = op_first_idx
+        while op_idx < len(stat.op_list) and op_idx < op_first_idx + op_disp_nb:
 
-            op = stat.pOp[opIdx]
+            op = stat.op_list[op_idx]
 
-            dispFlag = A_NORMAL
-            if op == opHl:
-                dispFlag += A_STANDOUT
-            if op in pOpSel:
-                dispFlag += A_BOLD
+            disp_flag = A_NORMAL
+            if op == op_hl:
+                disp_flag += A_STANDOUT
+            if op in op_listSel:
+                disp_flag += A_BOLD
 
             win.addstr(y, x, "| ")
-            win.addnstr(op.date.strftime(FMT_DATE).ljust(LEN_DATE), LEN_DATE, dispFlag)
+            win.addnstr(op.date.strftime(FMT_DATE).ljust(LEN_DATE), LEN_DATE, disp_flag)
             win.addstr(" | ")
-            win.addnstr(op.type.ljust(LEN_TYPE), LEN_TYPE, dispFlag)
+            win.addnstr(op.type.ljust(LEN_TYPE), LEN_TYPE, disp_flag)
             win.addstr(" | ")
-            win.addnstr(op.tier.ljust(LEN_TIER), LEN_TIER, dispFlag)
+            win.addnstr(op.tier.ljust(LEN_TIER), LEN_TIER, disp_flag)
             win.addstr(" | ")
-            win.addnstr(op.cat.ljust(LEN_CAT), LEN_CAT, dispFlag)
+            win.addnstr(op.cat.ljust(LEN_CAT), LEN_CAT, disp_flag)
             win.addstr(" | ")
-            win.addnstr(op.desc.ljust(LEN_DESC), LEN_DESC, dispFlag)
+            win.addnstr(op.desc.ljust(LEN_DESC), LEN_DESC, disp_flag)
             win.addstr(" | ")
-            win.addnstr(str(op.amount).ljust(LEN_AMOUNT), LEN_AMOUNT, dispFlag)
+            win.addnstr(str(op.amount).ljust(LEN_AMOUNT), LEN_AMOUNT, disp_flag)
             win.addstr(" |")
             y = y + 1
 
-            opIdx = opIdx + 1
+            op_idx = op_idx + 1
 
         # Operation separator or missing
-        if opIdx == len(stat.pOp):
+        if op_idx == len(stat.op_list):
             win.addstr(y, x, self.SEP_OP)
         else:
             win.addstr(y, x, self.MISS_OP)
         y = y + 1
 
-        if len(stat.pOp) != 0:
+        if len(stat.op_list) != 0:
             # Slider
             # Move to top right of table
             (y, x) = (5, win.getyx()[1])
-            for i in range(int(iOpFirst * nOpDisp / len(stat.pOp))):
+            for _ in range(int(op_first_idx * op_disp_nb / len(stat.op_list))):
                 win.addstr(y, x, " ")
                 y = y + 1
-            for i in range(int(nOpDisp * nOpDisp / len(stat.pOp))):
+            for _ in range(int(op_disp_nb * op_disp_nb / len(stat.op_list))):
                 win.addstr(y, x, " ", A_STANDOUT)
                 y = y + 1
 
         win.refresh()
 
-    def STAT_dispFields(self, stat : Statement) -> None :
+    def STAT_dispFields(self, stat: Statement) -> None:
 
         # Use info window
-        win : Window = self.pWin[self.WIN_ID_INFO]
+        win: Window = self.win_list[self.WIN_ID_INFO]
 
         win.clear()
         win.border()
@@ -589,207 +593,208 @@ class DisplayCurses():
         y = y + 1
         win.addstr(y, x, f"date : {stat.date.strftime(FMT_DATE)}")
         y = y + 1
-        win.addstr(y, x, f"start : {stat.balStart}")
+        win.addstr(y, x, f"start : {stat.bal_start}")
         y = y + 1
         win.addstr(y, x, f"end : {stat.balEnd}")
         y = y + 1
-        win.addstr(y, x, f"actual end : {(stat.balStart + stat.opSum):.2f}")
+        win.addstr(y, x, f"actual end : {(stat.bal_start + stat.opSum):.2f}")
         y = y + 1
-        balanceDiff = round(stat.balEnd - stat.balStart, 2)
+        bal_diff = round(stat.balEnd - stat.bal_start, 2)
         win.addstr(y, x, f"diff : ")
-        if balanceDiff >= 0.0:
-            win.addstr(str(balanceDiff), curses.color_pair(self.COLOR_PAIR_ID_GREEN_BLACK))
+        if bal_diff >= 0.0:
+            win.addstr(str(bal_diff), curses.color_pair(self.COLOR_PAIR_ID_GREEN_BLACK))
         else:
-            win.addstr(str(balanceDiff), curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
+            win.addstr(str(bal_diff), curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
         y = y + 1
-        balanceErr = round(stat.balStart + stat.opSum - stat.balEnd, 2)
+        bal_err = round(stat.bal_start + stat.opSum - stat.balEnd, 2)
         win.addstr(y, x, f"err : ")
-        if balanceErr == 0.0:
-            win.addstr(str(balanceErr), curses.color_pair(self.COLOR_PAIR_ID_GREEN_BLACK))
+        if bal_err == 0.0:
+            win.addstr(str(bal_err), curses.color_pair(self.COLOR_PAIR_ID_GREEN_BLACK))
         else:
-            win.addstr(str(balanceErr), curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
+            win.addstr(str(bal_err), curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
         y = y + 1
 
         win.refresh()
 
-    def STAT_browse(self, stat : Statement) -> None :
+    def STAT_browse(self, stat: Statement) -> None:
 
         # Selected operations list
-        pOpSel : List[Operation] = []
+        op_listSel: List[Operation] = []
 
         # First displayed operation
-        iOpFirst : int = 0
+        op_first_idx: int = 0
 
         # Highlighted operation
-        if len(stat.pOp) != 0:
-            opHl : Operation = stat.pOp[0]
+        if len(stat.op_list) != 0:
+            op_hl: Operation = stat.op_list[0]
         else:
-            opHl : Operation = None
+            op_hl: Operation = None
 
         while True:
 
-            self.STAT_dispOps(stat, iOpFirst, opHl, pOpSel)
+            self.STAT_disp_op_list(stat, op_first_idx, op_hl, op_listSel)
             self.STAT_dispFields(stat)
 
             # Command window
-            win : Window = self.pWin[self.WIN_ID_CMD]
+            win: Window = self.win_list[self.WIN_ID_CMD]
             win.clear()
             win.border()
             win.addstr(0, 2, " COMMANDS ", A_BOLD)
-            sCmd = "Add : INS/+, Del : DEL/-"
-            sCmd = sCmd + ", Dupl : D, (Un)sel : SPACE, Move : M "
-            sCmd = sCmd + ", Open : ENTER"
-            sCmd = sCmd + ", Save : S, Ret : ESCAPE"
-            win.addstr(1, 2, sCmd)
+            cmd_str = "Add : INS/+, Del : DEL/-"
+            cmd_str = cmd_str + ", Dupl : D, (Un)sel : SPACE, Move : M "
+            cmd_str = cmd_str + ", Open : ENTER"
+            cmd_str = cmd_str + ", Save : S, Ret : ESCAPE"
+            win.addstr(1, 2, cmd_str)
             win.refresh()
 
             # Status window
-            win : Window = self.pWin[self.WIN_ID_STATUS]
+            win: Window = self.win_list[self.WIN_ID_STATUS]
             win.clear()
             win.border()
             win.addstr(0, 2, " STATUS ", A_BOLD)
-            if stat.bUnsav == True:
+            if stat.is_unsaved:
                 win.addstr(1, 2, "Unsaved", curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
             else:
                 win.addstr(1, 2, "Saved", curses.color_pair(self.COLOR_PAIR_ID_GREEN_BLACK))
             win.refresh()
 
-            key = self.pWin[self.WIN_ID_MAIN].getkey()
+            key = self.win_list[self.WIN_ID_MAIN].getkey()
 
             # Highlight previous operation
             if key == "KEY_UP":
 
-                opHlIdx = stat.pOp.index(opHl) - 1
-                if opHlIdx < 0:
-                    opHlIdx = 0
-                opHl = stat.pOp[opHlIdx]
+                op_hl_idx = stat.op_list.index(op_hl) - 1
+                if op_hl_idx < 0:
+                    op_hl_idx = 0
+                op_hl = stat.op_list[op_hl_idx]
 
                 # If out of display range
-                if opHlIdx < iOpFirst:
+                if op_hl_idx < op_first_idx:
                     # Previous page
-                    iOpFirst = iOpFirst - 1
-                    if iOpFirst < 0:
-                        iOpFirst = 0
+                    op_first_idx = op_first_idx - 1
+                    if op_first_idx < 0:
+                        op_first_idx = 0
 
             # Highlight next operation
             elif key == "KEY_DOWN":
 
-                opHlIdx = stat.pOp.index(opHl) + 1
-                if opHlIdx >= len(stat.pOp):
-                    opHlIdx = len(stat.pOp) - 1
-                opHl = stat.pOp[opHlIdx]
+                op_hl_idx = stat.op_list.index(op_hl) + 1
+                if op_hl_idx >= len(stat.op_list):
+                    op_hl_idx = len(stat.op_list) - 1
+                op_hl = stat.op_list[op_hl_idx]
 
                 # If out of display range
-                if opHlIdx - iOpFirst >= self.WIN_MAIN_H - 11:
+                if op_hl_idx - op_first_idx >= self.win_main_h - 11:
                     # Next page
-                    iOpFirst = iOpFirst + 1
-                    if iOpFirst > len(stat.pOp) - (self.WIN_MAIN_H - 11):
-                        iOpFirst = len(stat.pOp) - (self.WIN_MAIN_H - 11)
+                    op_first_idx = op_first_idx + 1
+                    if op_first_idx > len(stat.op_list) - (self.win_main_h - 11):
+                        op_first_idx = len(stat.op_list) - (self.win_main_h - 11)
 
             # Previous page
             elif key == "KEY_PPAGE":
 
                 # Previous page
-                iOpFirst = iOpFirst - 3
-                if iOpFirst < 0:
-                    iOpFirst = 0
+                op_first_idx = op_first_idx - 3
+                if op_first_idx < 0:
+                    op_first_idx = 0
 
                 # If out of display range
-                opHlIdx = stat.pOp.index(opHl)
-                if opHlIdx < iOpFirst:
-                    opHl = stat.pOp[iOpFirst]
-                elif opHlIdx >= iOpFirst + self.WIN_MAIN_H - 11:
-                    opHl = stat.pOp[iOpFirst + self.WIN_MAIN_H - 11 - 1]
+                op_hl_idx = stat.op_list.index(op_hl)
+                if op_hl_idx < op_first_idx:
+                    op_hl = stat.op_list[op_first_idx]
+                elif op_hl_idx >= op_first_idx + self.win_main_h - 11:
+                    op_hl = stat.op_list[op_first_idx + self.win_main_h - 11 - 1]
 
             # Next page
             elif key == "KEY_NPAGE":
 
                 # Next page
-                iOpFirst = iOpFirst + 3
-                if iOpFirst > len(stat.pOp) - (self.WIN_MAIN_H - 11):
-                    iOpFirst = len(stat.pOp) - (self.WIN_MAIN_H - 11)
-                    if iOpFirst < 0:
-                        iOpFirst = 0
+                op_first_idx = op_first_idx + 3
+                if op_first_idx > len(stat.op_list) - (self.win_main_h - 11):
+                    op_first_idx = len(stat.op_list) - (self.win_main_h - 11)
+                    if op_first_idx < 0:
+                        op_first_idx = 0
 
                 # If out of display range
-                opHlIdx = stat.pOp.index(opHl)
-                if opHlIdx < iOpFirst:
-                    opHl = stat.pOp[iOpFirst]
-                elif opHlIdx >= iOpFirst + self.WIN_MAIN_H - 11:
-                    opHl = stat.pOp[iOpFirst + self.WIN_MAIN_H - 11 - 1]
+                op_hl_idx = stat.op_list.index(op_hl)
+                if op_hl_idx < op_first_idx:
+                    op_hl = stat.op_list[op_first_idx]
+                elif op_hl_idx >= op_first_idx + self.win_main_h - 11:
+                    op_hl = stat.op_list[op_first_idx + self.win_main_h - 11 - 1]
 
             # (Un)select operation
             elif key == " ":
                 # If operation not selected
-                if opHl not in pOpSel:
+                if op_hl not in op_listSel:
                     # Add operation to selected ones
-                    pOpSel.append(opHl)
+                    op_listSel.append(op_hl)
                 # Else, operation selected
                 else:
                     # Remove operation from selected ones
-                    pOpSel.remove(opHl)
+                    op_listSel.remove(op_hl)
 
             # Add operation
-            elif key == "KEY_IC" or key == "+":
+            elif key in ("KEY_IC", "+"):
                 self.STAT_addOp(stat)
 
             # Delete operation(s)
-            elif key == "KEY_DC" or key == "-":
+            elif key in ("KEY_DC", "-"):
 
                 # If no selected operations
-                if len(pOpSel) == 0:
+                if len(op_listSel) == 0:
                     # Selected is highlighted operation
-                    pOpSel.append(opHl)
+                    op_listSel.append(op_hl)
 
                 # Highlight closest operation
-                opHl = stat.get_closest_op(pOpSel)
+                op_hl = stat.get_closest_op(op_listSel)
 
                 # Delete selected operations from statement
-                self.STAT_del_op_list(stat, pOpSel)
+                self.STAT_del_op_list(stat, op_listSel)
 
                 # Clear select operations
-                pOpSel.clear()
+                op_listSel.clear()
 
             # Move selected operations
             elif key == "m":
 
                 # If no selected operations
-                if len(pOpSel) == 0:
+                if len(op_listSel) == 0:
                     # Selected is highlighted operation
-                    pOpSel.append(opHl)
+                    op_listSel.append(op_hl)
 
                 # Highlight closest operation
-                opHl = stat.get_closest_op(pOpSel)
+                op_hl = stat.get_closest_op(op_listSel)
 
                 # Move selected operations from statement
-                self.STAT_moveOps(stat, pOpSel)
+                self.STAT_moveOps(stat, op_listSel)
 
                 # Clear select operations
-                pOpSel.clear()
+                op_listSel.clear()
 
             # Open highlighted operation
             elif key == "\n":
 
-                (bEdit, bDateEdit) = self.OP_browse(opHl)
+                (is_edited, is_date_edited) = self.OP_browse(op_hl)
                 # If operation edited
-                if bEdit == True:
-                    stat.bUnsav = True
+                if is_edited:
+                    stat.is_unsaved = True
                     # If date edited
-                    if bDateEdit == True:
+                    if is_date_edited:
                         # Delete and insert opearion from/to statement
                         # To update index
-                        stat.del_op_list([opHl])
-                        stat.insert_op(opHl)
+                        stat.del_op_list([op_hl])
+                        stat.insert_op(op_hl)
 
             # Duplicate highlighted operation
             elif key == "d":
 
                 # Create new operation from highlighted one
-                opNew = Operation(opHl.date, opHl.type, opHl.tier, opHl.cat, opHl.desc, opHl.amount)
+                op_new = Operation(op_hl.date, op_hl.mode, op_hl.tier,
+                                   op_hl.cat, op_hl.desc, op_hl.amount)
                 # Add new operation to statement
-                stat.insert_op(opNew)
+                stat.insert_op(op_new)
                 # Highlight new operation
-                opHl = opNew
+                op_hl = op_new
 
             # Save
             elif key == "s":
@@ -797,75 +802,76 @@ class DisplayCurses():
 
             # Exit
             elif key == '\x1b':
-                if stat.bUnsav == True:
+                if stat.is_unsaved:
                     # Input window
-                    win : Window = self.pWin[self.WIN_ID_INPUT]
+                    win: Window = self.win_list[self.WIN_ID_INPUT]
                     win.clear()
                     win.border()
                     win.addstr(0, 2, " UNSAVED CHANGES ", A_BOLD)
                     win.addstr(2, 2, "Save ? (y/n) : ")
-                    cSave = win.getch()
-                    if cSave != ord('n'):
+                    save_c = win.getch()
+                    if save_c != ord('n'):
                         win.addstr(4, 2, f"Saving")
                         win.refresh()
                         time.sleep(1)
                         stat.save()
                     else:
-                        win.addstr(4, 2, f"Discard changes", curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
+                        win.addstr(4, 2, f"Discard changes",
+                                   curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
                         win.refresh()
                         time.sleep(1)
                         stat.reset()
                 break
 
-    def STAT_addOp(self, stat : Statement) -> None :
+    def STAT_addOp(self, stat: Statement) -> None:
 
         # Create empty opeartion
         op = Operation(datetime.now(), "", "", "", "", 0.0)
 
         # Use input window
-        win = self.pWin[self.WIN_ID_INPUT]
+        win = self.win_list[self.WIN_ID_INPUT]
 
         # For each operation field
-        for iField in range(op.IDX_AMOUNT + 1):
+        for field_idx in range(op.IDX_AMOUNT + 1):
 
-            self.OP_disp(op, iField)
+            self.OP_disp(op, field_idx)
             (y, x) = (win.getyx()[0], 2)
 
             win.addstr(y, x, "Value : ")
             win.keypad(False)
             curses.echo()
-            sVal = win.get_str().decode(encoding="utf-8")
+            val_str = win.get_str().decode(encoding="utf-8")
             win.keypad(True)
             curses.noecho()
 
-            if sVal != "":
-                op.set_field(iField, sVal)
+            if val_str != "":
+                op.set_field(field_idx, val_str)
 
         stat.insert_op(op)
 
-    def STAT_del_op_list(self, stat : Statement, pOp : List[Operation]) -> None:
+    def STAT_del_op_list(self, stat: Statement, op_list: List[Operation]) -> None:
 
         # Use input window
-        win = self.pWin[self.WIN_ID_INPUT]
+        win = self.win_list[self.WIN_ID_INPUT]
 
         win.clear()
         win.border()
         win.addstr(0, 2, " DELETE OPERATIONS ", A_BOLD)
-        win.addstr(2, 2, f"Delete {len(pOp)} operations")
+        win.addstr(2, 2, f"Delete {len(op_list)} operations")
         win.addstr(4, 2, "Confirm ? (y/n) : ")
-        cConfirm = win.getch()
-        if cConfirm != ord('y'):
+        confirm_c = win.getch()
+        if confirm_c != ord('y'):
             win.addstr(7, 2, f"Canceled", curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
             win.refresh()
             time.sleep(1)
             return
 
-        stat.del_op_list(pOp)
+        stat.del_op_list(op_list)
 
-    def STAT_moveOps(self, statSrc : Statement, pOp : List[Operation]) -> None :
+    def STAT_moveOps(self, statSrc: Statement, op_list: List[Operation]) -> None:
 
         # Use input window
-        win = self.pWin[self.WIN_ID_INPUT]
+        win = self.win_list[self.WIN_ID_INPUT]
 
         win.clear()
         win.border()
@@ -873,11 +879,12 @@ class DisplayCurses():
         win.addstr(2, 2, f"Destination statement : ")
         win.addstr(3, 2, f"  Name (date) : ")
         curses.echo()
-        sStatDstName = win.get_str().decode(encoding="utf-8")
+        stat_dst_name = win.get_str().decode(encoding="utf-8")
         curses.noecho()
-        statDst = account.get_stat(sStatDstName)
-        if statDst is None:
-            win.addstr(5, 2, f"Destination statement", curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
+        stat_dst = self.account.get_stat(stat_dst_name)
+        if stat_dst is None:
+            win.addstr(5, 2, f"Destination statement",
+                       curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
             win.addstr(6, 2, f"not found", curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
             win.refresh()
             time.sleep(1)
@@ -886,31 +893,31 @@ class DisplayCurses():
         win.clear()
         win.border()
         win.addstr(0, 2, " MOVE OPERATIONS ", A_BOLD)
-        win.addstr(2, 2, f"Move {len(pOp)} operations")
-        win.addstr(3, 2, f"To statement {statDst.name}")
+        win.addstr(2, 2, f"Move {len(op_list)} operations")
+        win.addstr(3, 2, f"To statement {stat_dst.name}")
         win.addstr(5, 2, "Confirm ? (y/n) : ")
-        cConfirm = win.getch()
-        if cConfirm != ord('y'):
+        confirm_c = win.getch()
+        if confirm_c != ord('y'):
             win.addstr(7, 2, f"Canceled", curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
             win.refresh()
             time.sleep(1)
             return
 
         # For each operation
-        for op in pOp:
+        for op in op_list:
             # Insert operation in target statement
-            statDst.insert_op(op)
+            stat_dst.insert_op(op)
             # Delete operation from source statement
             statSrc.del_op_list([op])
 
         # Save source and destination statement
         statSrc.save()
-        statDst.save()
+        stat_dst.save()
 
-    def OP_disp(self, op : Operation, iFieldHl : int) -> None :
+    def OP_disp(self, op: Operation, field_hl_idx: int) -> None:
 
         # Use input window
-        win = self.pWin[self.WIN_ID_INPUT]
+        win = self.win_list[self.WIN_ID_INPUT]
 
         win.clear()
         win.border()
@@ -918,14 +925,14 @@ class DisplayCurses():
         win.addstr(" OPERATION ", A_BOLD)
 
         (y, x) = (2, 2)
-        for iField in range(op.IDX_AMOUNT + 1):
+        for field_idx in range(op.IDX_AMOUNT + 1):
 
-            dispFlag = A_NORMAL
-            if iField == iFieldHl:
-                dispFlag = A_STANDOUT
+            disp_flag = A_NORMAL
+            if field_idx == field_hl_idx:
+                disp_flag = A_STANDOUT
 
-            (sName, sVal) = op.get_field(iField)
-            win.addstr(y, x, f"{sName} : {sVal}", dispFlag)
+            (name_str, val_str) = op.get_field(field_idx)
+            win.addstr(y, x, f"{name_str} : {val_str}", disp_flag)
             y = y + 1
 
         y = y + 1
@@ -933,68 +940,68 @@ class DisplayCurses():
 
         win.refresh()
 
-    def OP_browse(self, op : Operation) -> Tuple[bool, bool]:
+    def OP_browse(self, op: Operation) -> Tuple[bool, bool]:
 
-        bEdit = False
-        bDateEdit = False
-        iFieldHl = 0
+        is_edited = False
+        is_date_edited = False
+        field_hl_idx = 0
 
         while True:
 
-            self.OP_disp(op, iFieldHl)
-            (y, x) = (self.pWin[self.WIN_ID_MAIN].getyx()[0], 2)
+            self.OP_disp(op, field_hl_idx)
+            (y, _) = (self.win_list[self.WIN_ID_MAIN].getyx()[0], 2)
             y = y + 2
 
-            key = self.pWin[self.WIN_ID_MAIN].getkey()
+            key = self.win_list[self.WIN_ID_MAIN].getkey()
 
             # Highlight previous field
             if key == "KEY_UP":
-                iFieldHl = iFieldHl - 1
-                if iFieldHl < op.IDX_DATE:
-                    iFieldHl = op.IDX_AMOUNT
+                field_hl_idx = field_hl_idx - 1
+                if field_hl_idx < op.IDX_DATE:
+                    field_hl_idx = op.IDX_AMOUNT
 
             # Highlight next field
             elif key == "KEY_DOWN":
-                iFieldHl = iFieldHl + 1
-                if iFieldHl > op.IDX_AMOUNT:
-                    iFieldHl = op.IDX_DATE
+                field_hl_idx = field_hl_idx + 1
+                if field_hl_idx > op.IDX_AMOUNT:
+                    field_hl_idx = op.IDX_DATE
 
             # Edit highlighted field
             elif key == "\n":
 
                 # Use input window
-                win : Window = self.pWin[self.WIN_ID_INPUT]
+                win: Window = self.win_list[self.WIN_ID_INPUT]
                 win.addstr("Value : ")
                 win.keypad(False)
                 curses.echo()
-                sVal = win.get_str().decode(encoding="utf-8")
+                val_str = win.get_str().decode(encoding="utf-8")
                 win.keypad(True)
                 curses.noecho()
 
-                if sVal != "":
+                if val_str != "":
 
-                    status = op.set_field(iFieldHl, sVal)
+                    status = op.set_field(field_hl_idx, val_str)
                     if status == ERROR:
                         continue
 
                     # Field edited
-                    bEdit = True
+                    is_edited = True
                     # If date edited
-                    if iFieldHl == op.IDX_DATE:
-                        bDateEdit = True
+                    if field_hl_idx == op.IDX_DATE:
+                        is_date_edited = True
 
             # Exit
             elif key == '\x1b':
                 break
 
-        return (bEdit, bDateEdit)
+        return (is_edited, is_date_edited)
 
 if __name__ == "__main__":
 
-    account = Account()
+    ACCOUNT = Account()
 
     # Curses
-    display = DisplayCurses(account)
-    wrapper(display.main)
+    DISPLAY = DisplayCurses(ACCOUNT)
+    wrapper(DISPLAY.main)
 
     sys.exit(0)
