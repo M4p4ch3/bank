@@ -1,16 +1,19 @@
 
+"""
+Statement
+"""
+
 import csv
-import curses
-from curses import *
 from datetime import datetime
-import time
 from typing import (List, Tuple)
 
-from utils import *
+from utils import (OK, ERROR, FMT_DATE)
 from operation import Operation
-import account
 
-class Statement(object):
+class Statement():
+    """
+    Statement
+    """
 
     # Field index
     IDX_INVALID = -1
@@ -19,220 +22,247 @@ class Statement(object):
     IDX_BAL_END = 2
     IDX_LAST = IDX_BAL_END
 
-    def __init__(self, name: str, balStart: float, balEnd: float) -> None:
+    def __init__(self, name: str, bal_start: float, bal_end: float) -> None:
 
-        self.name : str = name
-        self.filePath : str = f"statements/{name}.csv"
+        self.name: str = name
+        self.file_path: str = f"statements/{name}.csv"
         try:
-            self.date : datetime= datetime.strptime(name, FMT_DATE)
-        except:
-            self.date : datetime = datetime.now()
-        self.balStart : float = balStart
-        self.balEnd : float = balEnd
-        self.opSum : float = 0.0
-        self.pOp : List[Operation] = list()
-        self.bUnsav : bool = False
+            self.date: datetime = datetime.strptime(name, FMT_DATE)
+        except ValueError:
+            self.date: datetime = datetime.now()
+        self.bal_start: float = bal_start
+        self.bal_end: float = bal_end
+        self.op_sum: float = 0.0
+        self.op_list: List[Operation] = list()
+        self.is_unsaved: bool = False
 
-    def getStr(self, indent: int = 0) -> str:
+    def get_str(self, indent: int = 0) -> str:
+        """
+        Get string representation
+        """
 
-        sIndent = ""
-        for i in range(indent):
-            sIndent += "    "
+
+        indent_str = ""
+        for _ in range(indent):
+            indent_str += "    "
 
         ret = ""
-        ret += f"{sIndent}date : {self.date.strftime(FMT_DATE)}\n"
-        ret += f"{sIndent}balance : [{str(self.balStart)}, {str(self.balEnd)}]\n"
-        ret += f"{sIndent}operations sum : {str(self.opSum)}\n"
-        ret += f"{sIndent}balance diff : {str(self.opSum - self.balEnd)}\n"
-        ret += f"{sIndent}operations : [\n"
-        for op in self.pOp:
-            ret += f"{sIndent}    {{\n"
-            ret += op.getStr(indent + 2) + "\n"
-            ret += f"{sIndent}    }}\n"
-        ret += f"{sIndent}]"
+        ret += f"{indent_str}date : {self.date.strftime(FMT_DATE)}\n"
+        ret += f"{indent_str}balance : [{str(self.bal_start)}, {str(self.bal_end)}]\n"
+        ret += f"{indent_str}operations sum : {str(self.op_sum)}\n"
+        ret += f"{indent_str}balance diff : {str(self.op_sum - self.bal_end)}\n"
+        ret += f"{indent_str}operations : [\n"
+        for op in self.op_list:
+            ret += f"{indent_str}    {{\n"
+            ret += op.get_str(indent + 2) + "\n"
+            ret += f"{indent_str}    }}\n"
+        ret += f"{indent_str}]"
 
-    # Get field (name, value), identified by field index
-    def getField(self, iField : int) -> Tuple[str, str]:
+    def get_field(self, field_idx: int) -> Tuple[str, str]:
+        """
+        Get field (name, value), identified by field index
+        Useful for iterating over fields
+        """
 
         ret = ("", "")
-        if iField == self.IDX_DATE:
+        if field_idx == self.IDX_DATE:
             ret = ("date", self.date.strftime(FMT_DATE))
-        elif iField == self.IDX_BAL_START:
-            ret = ("start balance", str(self.balStart))
-        elif iField == self.IDX_BAL_END:
-            ret = ("start balance", str(self.balEnd))
+        elif field_idx == self.IDX_BAL_START:
+            ret = ("start balance", str(self.bal_start))
+        elif field_idx == self.IDX_BAL_END:
+            ret = ("start balance", str(self.bal_end))
         return ret
 
-    def getClosestOp(self, pOp : List[Operation]) -> Operation:
+    def get_closest_op(self, op_list: List[Operation]) -> Operation:
+        """
+        Get closest operation from list
+        None if not found
+        """
 
         # Operation to return
-        opRet : Operation = pOp[0]
+        op_ret: Operation = op_list[0]
 
         # While operation in list
-        while (opRet in pOp) and (opRet is not None):
+        while (op_ret in op_list) and (op_ret is not None):
 
             # Get operation index in statement
-            opRetIdx = self.pOp.index(opRet)
+            op_ret_idx = self.op_list.index(op_ret)
 
             # If first operation in list is first operation in statement
-            if self.pOp.index(pOp[0]) == 0:
+            if self.op_list.index(op_list[0]) == 0:
                 # Search forward
-                opRetIdx = opRetIdx + 1
+                op_ret_idx = op_ret_idx + 1
             # Else, first operation in list is not first one
             else:
                 # Search backward
-                opRetIdx = opRetIdx - 1
+                op_ret_idx = op_ret_idx - 1
 
             # If operation out of statement
-            if opRetIdx < 0 or opRetIdx >= len(self.pOp):
-                opRet = None
+            if op_ret_idx < 0 or op_ret_idx >= len(self.op_list):
+                op_ret = None
             else:
-                opRet = self.pOp[opRetIdx]
+                op_ret = self.op_list[op_ret_idx]
 
-        return opRet
+        return op_ret
 
-    # Set field value, identified by field index, from string
-    def setField(self, iField, sVal) -> int:
+    def set_field(self, field_idx, val_str) -> int:
+        """
+        Set field value, identified by field index, from string
+        Useful for iterating over fields
+        """
 
-        if iField == self.IDX_DATE:
+        if field_idx == self.IDX_DATE:
             try:
-                self.date = datetime.strptime(sVal, FMT_DATE)
-                self.bUnsav = True
-            except:
+                self.date = datetime.strptime(val_str, FMT_DATE)
+            except ValueError:
                 return ERROR
-        elif iField == self.IDX_BAL_START:
+        elif field_idx == self.IDX_BAL_START:
             try:
-                self.balStart = float(sVal)
-                self.bUnsav = True
-            except:
+                self.bal_start = float(val_str)
+            except ValueError:
                 return ERROR
-        elif iField == self.IDX_BAL_END:
+        elif field_idx == self.IDX_BAL_END:
             try:
-                self.balEnd = float(sVal)
-                self.bUnsav = True
-            except:
+                self.bal_end = float(val_str)
+            except ValueError:
                 return ERROR
+
+        self.is_unsaved = True
 
         return OK
 
     def read(self) -> int:
-
-        status : int = OK
+        """
+        Read from file
+        """
 
         try:
             # Open CSV file
-            file = open(self.filePath, "r")
-            fileCsv = csv.reader(file)
+            file = open(self.file_path, "r")
+            file_csv = csv.reader(file)
         except FileNotFoundError:
             # File not found
             # Create new statement
-            file = open(self.filePath, "w+")
+            file = open(self.file_path, "w+")
             file.close()
             # Don't proceed with read
             return OK
 
+        # Clear operations list
+        self.op_list.clear()
+        # Reset operations sum
+        self.op_sum = 0.0
+
         # For each operation line in statement CSV file
-        for opLine in fileCsv:
+        for op_line in file_csv:
 
             # Create operation
-            opDate = datetime.strptime(opLine[Operation.IDX_DATE], FMT_DATE)
-            op = Operation(opDate, opLine[Operation.IDX_TYPE], opLine[Operation.IDX_TIER],
-                opLine[Operation.IDX_CAT], opLine[Operation.IDX_DESC],
-                float(opLine[Operation.IDX_AMOUNT]))
+            op_date = datetime.strptime(op_line[Operation.IDX_DATE], FMT_DATE)
+            op = Operation(op_date, op_line[Operation.IDX_MODE], op_line[Operation.IDX_TIER],
+                           op_line[Operation.IDX_CAT], op_line[Operation.IDX_DESC],
+                           float(op_line[Operation.IDX_AMOUNT]))
 
             # Add operation to list
-            self.pOp.append(op)
+            self.op_list.append(op)
 
             # Update operations sum
-            self.opSum = self.opSum + op.amount
+            self.op_sum = self.op_sum + op.amount
 
-        self.bUnsav = False
+        self.is_unsaved = False
 
         file.close()
 
         return OK
 
-    # Write CSV file
     def write(self) -> int:
+        """
+        Write CSV file
+        """
 
         try:
             # Open CSV file
-            file = open(self.filePath, "w")
-        except:
+            file = open(self.file_path, "w")
+        except FileNotFoundError:
             return ERROR
 
-        fileCsv = csv.writer(file, delimiter=',', quotechar='"')
+        file_csv = csv.writer(file, delimiter=',', quotechar='"')
 
         # For each operation
-        for op in self.pOp:
+        for op in self.op_list:
+
+            # TODO check if op has (date, op, tier, car desc, amount)
 
             # Create operation line
-            opCsv = [op.date.strftime(FMT_DATE), op.type, op.tier,
-                op.cat, op.desc, str(op.amount)]
+            op_csv = [op.date.strftime(FMT_DATE), op.mode, op.tier,
+                      op.cat, op.desc, str(op.amount)]
 
             try:
                 # Write operation line to CSV file
-                fileCsv.writerow(opCsv)
+                file_csv.writerow(op_csv)
+            # TODO add error type
             except:
                 return ERROR
 
-        self.bUnsav = False
+        self.is_unsaved = False
 
         file.close()
 
         return OK
 
     def reset(self) -> int:
+        """
+        Reset : Read
+        """
 
-        status : int = OK
-
-        # Clear operations list
-        self.pOp.clear()
-        # Reset operations sum
-        self.opSum = 0.0
+        status: int = OK
 
         status = self.read()
         if status != OK:
             return ERROR
 
-        self.bUnsav = False
-
         return OK
 
     def save(self) -> int:
+        """
+        Save : Write
+        """
 
-        status : int = OK
+        status: int = OK
 
         status = self.write()
         if status != OK:
             return ERROR
 
-        self.bUnsav = False
-
         return OK
 
-    def insertOp(self, op: Operation) -> int:
+    def insert_op(self, op: Operation) -> int:
+        """
+        Insert operation
+        """
 
         # Find index
         idx = 0
-        while idx < len(self.pOp) and op.date > self.pOp[idx].date:
+        while idx < len(self.op_list) and op.date > self.op_list[idx].date:
             idx = idx + 1
 
         # Insert operation at dedicated index
-        self.pOp.insert(idx, op)
+        self.op_list.insert(idx, op)
 
-        self.bUnsav = True
+        self.is_unsaved = True
 
         return OK
 
-    def delOps(self, pOp : List[Operation]) -> None:
+    def del_op_list(self, op_list: List[Operation]) -> None:
+        """
+        Delete operation list
+        """
 
         # For each operation
-        for op in pOp:
+        for op in op_list:
             # Remove operation from statement
-            self.pOp.remove(op)
+            self.op_list.remove(op)
 
-        self.bUnsav = True
+        self.is_unsaved = True
 
     # def editStat(self, pWin: List[Window]) -> None:
 
@@ -263,12 +293,12 @@ class Statement(object):
     #             pWin[WIN_IDX_INPUT].addstr("New value : ")
     #             pWin[WIN_IDX_INPUT].keypad(False)
     #             curses.echo()
-    #             sVal = pWin[WIN_IDX_INPUT].getstr().decode(encoding="utf-8")
+    #             val_str = pWin[WIN_IDX_INPUT].get_str().decode(encoding="utf-8")
     #             pWin[WIN_IDX_INPUT].keypad(True)
     #             curses.noecho()
 
-    #             if sVal != "":
-    #                 bEdit = self.setField(idxSel, sVal)
+    #             if val_str != "":
+    #                 bEdit = self.setField(idxSel, val_str)
     #                 # If date edited
     #                 if idxSel == self.IDX_DATE and bEdit == True:
     #                     bDateEdit = True
@@ -289,13 +319,13 @@ class Statement(object):
     #     win.clear()
     #     win.border()
     #     win.addstr(0, 2, " EDIT FIELD ", A_BOLD)
-    #     win.addstr(2, 2, f"{self.getField(fiedlIdx)}")
+    #     win.addstr(2, 2, f"{self.get_field(fiedlIdx)}")
     #     win.addstr(4, 2, "New value : ")
     #     win.keypad(False)
     #     curses.echo()
-    #     sVal = win.getstr().decode(encoding="utf-8")
+    #     val_str = win.get_str().decode(encoding="utf-8")
     #     win.keypad(True)
     #     curses.noecho()
 
-    #     if sVal != "":
-    #         self.setField(fiedlIdx, sVal)
+    #     if val_str != "":
+    #         self.setField(fiedlIdx, val_str)

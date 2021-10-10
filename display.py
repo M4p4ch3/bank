@@ -1,4 +1,8 @@
 
+"""
+Display
+"""
+
 import curses
 from curses import *
 from datetime import datetime
@@ -6,7 +10,9 @@ import sys
 import time
 from typing import (TYPE_CHECKING, List, Tuple)
 
-from utils import *
+from utils import (ERROR,
+                   LEN_DATE, LEN_NAME, LEN_TYPE, LEN_TIER, LEN_CAT, LEN_DESC, LEN_AMOUNT,
+                   FMT_DATE)
 from account import Account
 from statement import Statement
 from operation import Operation
@@ -18,7 +24,10 @@ else:
     from typing import Any
     Window = Any
 
-class DisplayCurses(object):
+class DisplayCurses():
+    """
+    Display
+    """
 
     # Color pair ID
     COLOR_PAIR_ID_RED_BLACK = 1
@@ -89,6 +98,12 @@ class DisplayCurses(object):
 
         # Account
         self.account : Account = account
+
+        # TODO define and use
+        # Highlighted item
+        self.itemHl = None
+        # Focused item (first item in view)
+        self.itemFocus = None
 
         # Windows list
         self.pWin : List[Window] = [None] * (self.WIN_ID_LAST + 1)
@@ -347,7 +362,7 @@ class DisplayCurses(object):
 
             # Delete highlighted statement
             elif key == "KEY_DC" or key == "-":
-                self.ACCOUNT_delStat(statHl)
+                self.ACCOUNT_del_stat(statHl)
                 # Reset highlighted statement
                 statHl = self.account.pStat[0]
 
@@ -406,7 +421,7 @@ class DisplayCurses(object):
         while bConvert != True:
             win.addstr(y, x, "date :                  ")
             win.addstr(y, x, "date : ")
-            sVal = win.getstr().decode(encoding="utf-8")
+            sVal = win.get_str().decode(encoding="utf-8")
             try:
                 date = datetime.strptime(sVal, FMT_DATE)
                 bConvert = True
@@ -419,7 +434,7 @@ class DisplayCurses(object):
         while bConvert != True:
             win.addstr(y, x, "start balance :         ")
             win.addstr(y, x, "start balance : ")
-            sVal = win.getstr().decode(encoding="utf-8")
+            sVal = win.get_str().decode(encoding="utf-8")
             try:
                 balStart = float(sVal)
                 bConvert = True
@@ -432,7 +447,7 @@ class DisplayCurses(object):
         while bConvert != True:
             win.addstr(y, x, "end balance :           ")
             win.addstr(y, x, "end balance : ")
-            sVal = win.getstr().decode(encoding="utf-8")
+            sVal = win.get_str().decode(encoding="utf-8")
             try:
                 balEnd = float(sVal)
                 bConvert = True
@@ -452,7 +467,7 @@ class DisplayCurses(object):
         # Append statement to statements list
         self.account.insertStat(stat)
 
-    def ACCOUNT_delStat(self, stat : Statement) -> None :
+    def ACCOUNT_del_stat(self, stat : Statement) -> None :
 
         # Input window
         win : Window = self.pWin[self.WIN_ID_INPUT]
@@ -468,7 +483,7 @@ class DisplayCurses(object):
             return
 
         # Delete highlighted statement
-        self.account.delStat(stat)
+        self.account.del_stat(stat)
 
     def STAT_dispOps(self, stat : Statement,
         iOpFirst : int, opHl : Operation, pOpSel : List[Operation]) -> None :
@@ -727,10 +742,10 @@ class DisplayCurses(object):
                     pOpSel.append(opHl)
 
                 # Highlight closest operation
-                opHl = stat.getClosestOp(pOpSel)
+                opHl = stat.get_closest_op(pOpSel)
 
                 # Delete selected operations from statement
-                self.STAT_delOps(stat, pOpSel)
+                self.STAT_del_op_list(stat, pOpSel)
 
                 # Clear select operations
                 pOpSel.clear()
@@ -744,7 +759,7 @@ class DisplayCurses(object):
                     pOpSel.append(opHl)
 
                 # Highlight closest operation
-                opHl = stat.getClosestOp(pOpSel)
+                opHl = stat.get_closest_op(pOpSel)
 
                 # Move selected operations from statement
                 self.STAT_moveOps(stat, pOpSel)
@@ -763,8 +778,8 @@ class DisplayCurses(object):
                     if bDateEdit == True:
                         # Delete and insert opearion from/to statement
                         # To update index
-                        stat.delOps([opHl])
-                        stat.insertOp(opHl)
+                        stat.del_op_list([opHl])
+                        stat.insert_op(opHl)
 
             # Duplicate highlighted operation
             elif key == "d":
@@ -772,7 +787,7 @@ class DisplayCurses(object):
                 # Create new operation from highlighted one
                 opNew = Operation(opHl.date, opHl.type, opHl.tier, opHl.cat, opHl.desc, opHl.amount)
                 # Add new operation to statement
-                stat.insertOp(opNew)
+                stat.insert_op(opNew)
                 # Highlight new operation
                 opHl = opNew
 
@@ -819,16 +834,16 @@ class DisplayCurses(object):
             win.addstr(y, x, "Value : ")
             win.keypad(False)
             curses.echo()
-            sVal = win.getstr().decode(encoding="utf-8")
+            sVal = win.get_str().decode(encoding="utf-8")
             win.keypad(True)
             curses.noecho()
 
             if sVal != "":
-                op.setField(iField, sVal)
+                op.set_field(iField, sVal)
 
-        stat.insertOp(op)
+        stat.insert_op(op)
 
-    def STAT_delOps(self, stat : Statement, pOp : List[Operation]) -> None:
+    def STAT_del_op_list(self, stat : Statement, pOp : List[Operation]) -> None:
 
         # Use input window
         win = self.pWin[self.WIN_ID_INPUT]
@@ -845,7 +860,7 @@ class DisplayCurses(object):
             time.sleep(1)
             return
 
-        stat.delOps(pOp)
+        stat.del_op_list(pOp)
 
     def STAT_moveOps(self, statSrc : Statement, pOp : List[Operation]) -> None :
 
@@ -858,9 +873,9 @@ class DisplayCurses(object):
         win.addstr(2, 2, f"Destination statement : ")
         win.addstr(3, 2, f"  Name (date) : ")
         curses.echo()
-        sStatDstName = win.getstr().decode(encoding="utf-8")
+        sStatDstName = win.get_str().decode(encoding="utf-8")
         curses.noecho()
-        statDst = account.getStatByName(sStatDstName)
+        statDst = account.get_stat(sStatDstName)
         if statDst is None:
             win.addstr(5, 2, f"Destination statement", curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
             win.addstr(6, 2, f"not found", curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
@@ -884,9 +899,9 @@ class DisplayCurses(object):
         # For each operation
         for op in pOp:
             # Insert operation in target statement
-            statDst.insertOp(op)
+            statDst.insert_op(op)
             # Delete operation from source statement
-            statSrc.delOps([op])
+            statSrc.del_op_list([op])
 
         # Save source and destination statement
         statSrc.save()
@@ -909,7 +924,7 @@ class DisplayCurses(object):
             if iField == iFieldHl:
                 dispFlag = A_STANDOUT
 
-            (sName, sVal) = op.getField(iField)
+            (sName, sVal) = op.get_field(iField)
             win.addstr(y, x, f"{sName} : {sVal}", dispFlag)
             y = y + 1
 
@@ -952,13 +967,13 @@ class DisplayCurses(object):
                 win.addstr("Value : ")
                 win.keypad(False)
                 curses.echo()
-                sVal = win.getstr().decode(encoding="utf-8")
+                sVal = win.get_str().decode(encoding="utf-8")
                 win.keypad(True)
                 curses.noecho()
 
                 if sVal != "":
 
-                    status = op.setField(iFieldHl, sVal)
+                    status = op.set_field(iFieldHl, sVal)
                     if status == ERROR:
                         continue
 
