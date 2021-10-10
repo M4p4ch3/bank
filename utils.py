@@ -1,4 +1,8 @@
 
+"""
+Utils
+"""
+
 from datetime import date
 
 # Return code
@@ -18,11 +22,14 @@ LEN_AMOUNT = 8
 FMT_DATE = "%Y-%m-%d"
 
 # Get next month of date
-def getNextMonth(inDate: date):
+def get_next_month(date_in: date):
+    """
+    Get next month from date
+    """
 
-    if inDate.month == 12:
-        outDate = date(inDate.year + 1, 1, inDate.day)
+    if date_in.month == 12:
+        date_ret = date(date_in.year + 1, 1, date_in.day)
     else:
-        outDate = date(inDate.year, inDate.month + 1, inDate.day)
+        date_ret = date(date_in.year, date_in.month + 1, date_in.day)
 
-    return outDate
+    return date_ret
