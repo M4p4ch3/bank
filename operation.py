@@ -37,6 +37,9 @@ class Operation():
         self.desc: str = desc
         self.amount: float = amount
 
+        # Display manager
+        self.disp_mgr: OperationDispMgrCurses = OperationDispMgrCurses(self)
+
     def get_str(self, indent: int = 0) -> str:
         """
         Get string representation
@@ -106,14 +109,13 @@ class Operation():
 
         return OK
 
-class OperationCurses(Operation):
+class OperationDispMgrCurses():
     """
-    Operation display with curses
+    Curses operation display manager
     """
 
-    def __init__(self, op_date: datetime, mode: str,
-                 tier: str, cat: str, desc: str, amount: float) -> None:
-        super(OperationCurses, self).__init__(op_date, mode, tier, cat, desc, amount)
+    def __init__(self, op: Operation) -> None:
+        self.op: Operation = op
 
     def display(self, win, field_hl_idx):
         """
@@ -126,13 +128,13 @@ class OperationCurses(Operation):
         win.addstr(" OPERATION ", A_BOLD)
 
         (y, x) = (2, 2)
-        for field_idx in range(self.IDX_AMOUNT + 1):
+        for field_idx in range(self.op.IDX_AMOUNT + 1):
 
             disp_flag = A_NORMAL
             if field_idx == field_hl_idx:
                 disp_flag = A_STANDOUT
 
-            (name_str, val_str) = self.get_field(field_idx)
+            (name_str, val_str) = self.op.get_field(field_idx)
             win.addstr(y, x, f"{name_str} : {val_str}", disp_flag)
             y = y + 1
 
@@ -161,14 +163,14 @@ class OperationCurses(Operation):
             # Highlight previous field
             if key == "KEY_UP":
                 field_hl_idx = field_hl_idx - 1
-                if field_hl_idx < self.IDX_DATE:
-                    field_hl_idx = self.IDX_AMOUNT
+                if field_hl_idx < self.op.IDX_DATE:
+                    field_hl_idx = self.op.IDX_AMOUNT
 
             # Highlight next field
             elif key == "KEY_DOWN":
                 field_hl_idx = field_hl_idx + 1
-                if field_hl_idx > self.IDX_AMOUNT:
-                    field_hl_idx = self.IDX_DATE
+                if field_hl_idx > self.op.IDX_AMOUNT:
+                    field_hl_idx = self.op.IDX_DATE
 
             # Edit highlighted field
             elif key == "\n":
@@ -182,14 +184,14 @@ class OperationCurses(Operation):
 
                 if val_str != "":
 
-                    status = self.set_field(field_hl_idx, val_str)
+                    status = self.op.set_field(field_hl_idx, val_str)
                     if status == ERROR:
                         continue
 
                     # Field edited
                     is_edited = True
                     # If date edited
-                    if field_hl_idx == self.IDX_DATE:
+                    if field_hl_idx == self.op.IDX_DATE:
                         is_date_edited = True
 
             # Exit

@@ -15,7 +15,7 @@ from utils import (ERROR,
                    FMT_DATE)
 from account import Account
 from statement import Statement
-from operation import (Operation, OperationCurses)
+from operation import Operation
 
 if TYPE_CHECKING:
     from _curses import _CursesWindow
@@ -493,7 +493,7 @@ class DisplayCurses():
         self.account.del_stat(stat)
 
     def STAT_disp_op_list(self, stat: Statement,
-        op_first_idx: int, op_hl: OperationCurses, op_listSel: List[OperationCurses]) -> None:
+        op_first_idx: int, op_hl: Operation, op_listSel: List[Operation]) -> None:
 
         op_disp_nb = self.win_main_h - 11
         if len(stat.op_list) < op_disp_nb:
@@ -622,13 +622,13 @@ class DisplayCurses():
     def STAT_browse(self, stat: Statement) -> None:
 
         # Selected operations list
-        op_listSel: List[OperationCurses] = []
+        op_listSel: List[Operation] = []
 
         # First displayed operation
         op_first_idx: int = 0
 
         # Highlighted operation
-        op_hl: OperationCurses = None
+        op_hl: Operation = None
         if len(stat.op_list) != 0:
             op_hl = stat.op_list[0]
 
@@ -776,8 +776,7 @@ class DisplayCurses():
             # Open highlighted operation
             elif key == "\n":
 
-                op_curses = OperationCurses(op_hl)
-                (is_edited, is_date_edited) = op_curses.browse(self.win_list[self.WIN_ID_INPUT])
+                (is_edited, is_date_edited) = op_hl.disp_mgr.browse(self.win_list[self.WIN_ID_INPUT])
                 # If operation edited
                 if is_edited:
                     stat.is_unsaved = True
@@ -792,7 +791,7 @@ class DisplayCurses():
             elif key == "d":
 
                 # Create new operation from highlighted one
-                op_new = OperationCurses(op_hl.date, op_hl.mode, op_hl.tier,
+                op_new = Operation(op_hl.date, op_hl.mode, op_hl.tier,
                                    op_hl.cat, op_hl.desc, op_hl.amount)
                 # Add new operation to statement
                 stat.insert_op(op_new)
@@ -829,7 +828,7 @@ class DisplayCurses():
     def STAT_addOp(self, stat: Statement) -> None:
 
         # Create empty opeartion
-        op = OperationCurses(datetime.now(), "", "", "", "", 0.0)
+        op = Operation(datetime.now(), "", "", "", "", 0.0)
 
         # Use input window
         win = self.win_list[self.WIN_ID_INPUT]
@@ -852,7 +851,7 @@ class DisplayCurses():
 
         stat.insert_op(op)
 
-    def STAT_del_op_list(self, stat: Statement, op_list: List[OperationCurses]) -> None:
+    def STAT_del_op_list(self, stat: Statement, op_list: List[Operation]) -> None:
 
         # Use input window
         win = self.win_list[self.WIN_ID_INPUT]
@@ -871,7 +870,7 @@ class DisplayCurses():
 
         stat.del_op_list(op_list)
 
-    def STAT_moveOps(self, statSrc: Statement, op_list: List[OperationCurses]) -> None:
+    def STAT_moveOps(self, statSrc: Statement, op_list: List[Operation]) -> None:
 
         # Use input window
         win = self.win_list[self.WIN_ID_INPUT]
