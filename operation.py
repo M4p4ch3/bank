@@ -143,10 +143,13 @@ class OperationDispMgrCurses():
 
         win.refresh()
 
-    def browse(self, win):
+    def browse(self, win_main):
         """
         Browse
         """
+
+        win = curses.newwin(20, 50, 10, 10)
+        win.keypad(True)
 
         is_edited = False
         is_date_edited = False
