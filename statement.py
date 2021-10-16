@@ -248,6 +248,9 @@ class Statement():
         # Insert operation at dedicated index
         self.op_list.insert(idx, op)
 
+        # Update operation sum
+        self.op_sum += op.amount
+
         self.is_unsaved = True
 
         return OK
@@ -261,6 +264,8 @@ class Statement():
         for op in op_list:
             # Remove operation from statement
             self.op_list.remove(op)
+            # Update operation sum
+            self.op_sum -= op.amount
 
         self.is_unsaved = True
 
