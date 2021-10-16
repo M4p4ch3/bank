@@ -425,7 +425,7 @@ class DisplayCurses():
         while not is_converted:
             win.addstr(y, x, "date :                  ")
             win.addstr(y, x, "date : ")
-            val_str = win.get_str().decode(encoding="utf-8")
+            val_str = win.getstr().decode(encoding="utf-8")
             try:
                 date = datetime.strptime(val_str, FMT_DATE)
                 is_converted = True
@@ -438,7 +438,7 @@ class DisplayCurses():
         while not is_converted:
             win.addstr(y, x, "start balance :         ")
             win.addstr(y, x, "start balance : ")
-            val_str = win.get_str().decode(encoding="utf-8")
+            val_str = win.getstr().decode(encoding="utf-8")
             try:
                 bal_start = float(val_str)
                 is_converted = True
@@ -451,7 +451,7 @@ class DisplayCurses():
         while not is_converted:
             win.addstr(y, x, "end balance :           ")
             win.addstr(y, x, "end balance : ")
-            val_str = win.get_str().decode(encoding="utf-8")
+            val_str = win.getstr().decode(encoding="utf-8")
             try:
                 bal_end = float(val_str)
                 is_converted = True
@@ -490,7 +490,7 @@ class DisplayCurses():
         self.account.del_stat(stat)
 
     def STAT_disp_op_list(self, stat: Statement,
-        op_first_idx: int, op_hl: Operation, op_listSel: List[Operation]) -> None:
+        op_first_idx: int, op_hl: OperationCurses, op_listSel: List[OperationCurses]) -> None:
 
         op_disp_nb = self.win_main_h - 11
         if len(stat.op_list) < op_disp_nb:
@@ -619,16 +619,16 @@ class DisplayCurses():
     def STAT_browse(self, stat: Statement) -> None:
 
         # Selected operations list
-        op_listSel: List[Operation] = []
+        op_listSel: List[OperationCurses] = []
 
         # First displayed operation
         op_first_idx: int = 0
 
         # Highlighted operation
         if len(stat.op_list) != 0:
-            op_hl: Operation = stat.op_list[0]
+            op_hl: OperationCurses = stat.op_list[0]
         else:
-            op_hl: Operation = None
+            op_hl: OperationCurses = None
 
         while True:
 
@@ -790,7 +790,7 @@ class DisplayCurses():
             elif key == "d":
 
                 # Create new operation from highlighted one
-                op_new = Operation(op_hl.date, op_hl.mode, op_hl.tier,
+                op_new = OperationCurses(op_hl.date, op_hl.mode, op_hl.tier,
                                    op_hl.cat, op_hl.desc, op_hl.amount)
                 # Add new operation to statement
                 stat.insert_op(op_new)
@@ -827,7 +827,7 @@ class DisplayCurses():
     def STAT_addOp(self, stat: Statement) -> None:
 
         # Create empty opeartion
-        op = Operation(datetime.now(), "", "", "", "", 0.0)
+        op = OperationCurses(datetime.now(), "", "", "", "", 0.0)
 
         # Use input window
         win = self.win_list[self.WIN_ID_INPUT]
@@ -835,13 +835,13 @@ class DisplayCurses():
         # For each operation field
         for field_idx in range(op.IDX_AMOUNT + 1):
 
-            self.OP_disp(op, field_idx)
+            op.display(win, field_idx)
             (y, x) = (win.getyx()[0], 2)
 
             win.addstr(y, x, "Value : ")
             win.keypad(False)
             curses.echo()
-            val_str = win.get_str().decode(encoding="utf-8")
+            val_str = win.getstr().decode(encoding="utf-8")
             win.keypad(True)
             curses.noecho()
 
@@ -850,7 +850,7 @@ class DisplayCurses():
 
         stat.insert_op(op)
 
-    def STAT_del_op_list(self, stat: Statement, op_list: List[Operation]) -> None:
+    def STAT_del_op_list(self, stat: Statement, op_list: List[OperationCurses]) -> None:
 
         # Use input window
         win = self.win_list[self.WIN_ID_INPUT]
@@ -869,7 +869,7 @@ class DisplayCurses():
 
         stat.del_op_list(op_list)
 
-    def STAT_moveOps(self, statSrc: Statement, op_list: List[Operation]) -> None:
+    def STAT_moveOps(self, statSrc: Statement, op_list: List[OperationCurses]) -> None:
 
         # Use input window
         win = self.win_list[self.WIN_ID_INPUT]
@@ -880,7 +880,7 @@ class DisplayCurses():
         win.addstr(2, 2, f"Destination statement : ")
         win.addstr(3, 2, f"  Name (date) : ")
         curses.echo()
-        stat_dst_name = win.get_str().decode(encoding="utf-8")
+        stat_dst_name = win.getstr().decode(encoding="utf-8")
         curses.noecho()
         stat_dst = self.account.get_stat(stat_dst_name)
         if stat_dst is None:

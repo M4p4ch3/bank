@@ -111,8 +111,9 @@ class OperationCurses(Operation):
     Operation display with curses
     """
 
-    def __init__(self, op: Operation):
-        super(OperationCurses, self).__init__(op.date, op.mode, op.tier, op.cat, op.desc, op.amount)
+    def __init__(self, op_date: datetime, mode: str,
+                 tier: str, cat: str, desc: str, amount: float) -> None:
+        super(OperationCurses, self).__init__(op_date, mode, tier, cat, desc, amount)
 
     def display(self, win, field_hl_idx):
         """
