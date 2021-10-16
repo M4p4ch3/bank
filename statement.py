@@ -9,6 +9,12 @@ from typing import (List, Tuple)
 
 from utils import (OK, ERROR, FMT_DATE)
 from operation import Operation
+try:
+    from account import Account
+except ImportError:
+    # Fix cyclic import
+    import sys
+    Account = sys.modules["account"]
 
 class Statement():
     """
@@ -22,25 +28,31 @@ class Statement():
     IDX_BAL_END = 2
     IDX_LAST = IDX_BAL_END
 
-    def __init__(self, name: str, bal_start: float, bal_end: float) -> None:
+    def __init__(self, name: str, bal_start: float, bal_end: float, account: Account) -> None:
 
         self.name: str = name
         self.file_path: str = f"statements/{name}.csv"
+
         try:
             self.date: datetime = datetime.strptime(name, FMT_DATE)
         except ValueError:
+            # For pending statement
             self.date: datetime = datetime.now()
+
         self.bal_start: float = bal_start
         self.bal_end: float = bal_end
         self.op_sum: float = 0.0
         self.op_list: List[Operation] = list()
+
+        # Reference to account for operations buffer list
+        self.account: Account = account
+
         self.is_unsaved: bool = False
 
     def get_str(self, indent: int = 0) -> str:
         """
         Get string representation
         """
-
 
         indent_str = ""
         for _ in range(indent):
@@ -58,6 +70,8 @@ class Statement():
             ret += f"{indent_str}    }}\n"
         ret += f"{indent_str}]"
 
+        return ret
+
     def get_field(self, field_idx: int) -> Tuple[str, str]:
         """
         Get field (name, value), identified by field index
@@ -71,6 +85,7 @@ class Statement():
             ret = ("start balance", str(self.bal_start))
         elif field_idx == self.IDX_BAL_END:
             ret = ("start balance", str(self.bal_end))
+
         return ret
 
     def get_closest_op(self, op_list: List[Operation]) -> Operation:
@@ -268,69 +283,3 @@ class Statement():
             self.op_sum -= op.amount
 
         self.is_unsaved = True
-
-    # def editStat(self, pWin: List[Window]) -> None:
-
-    #     bDateEdit = False
-    #     idxSel = 0
-
-    #     while True:
-
-    #         self.dispStat(pWin[WIN_IDX_INPUT], idxSel)
-
-    #         key = pWin[WIN_IDX_INPUT].getkey()
-
-    #         # Highlight previous field
-    #         if key == "KEY_UP":
-    #             idxSel = idxSel - 1
-    #             if idxSel < self.IDX_DATE:
-    #                 idxSel = self.IDX_BAL_END
-
-    #         # Highlight next field
-    #         elif key == "KEY_DOWN":
-    #             idxSel = idxSel + 1
-    #             if idxSel > self.IDX_BAL_END:
-    #                 idxSel = self.IDX_DATE
-
-    #         # Edit highlighted field
-    #         elif key == "\n":
-
-    #             pWin[WIN_IDX_INPUT].addstr("New value : ")
-    #             pWin[WIN_IDX_INPUT].keypad(False)
-    #             curses.echo()
-    #             val_str = pWin[WIN_IDX_INPUT].get_str().decode(encoding="utf-8")
-    #             pWin[WIN_IDX_INPUT].keypad(True)
-    #             curses.noecho()
-
-    #             if val_str != "":
-    #                 bEdit = self.setField(idxSel, val_str)
-    #                 # If date edited
-    #                 if idxSel == self.IDX_DATE and bEdit == True:
-    #                     bDateEdit = True
-
-    #             # Highlight next field
-    #             idxSel = idxSel + 1
-    #             if idxSel > self.IDX_BAL_END:
-    #                 idxSel = self.IDX_DATE
-
-    #         # Exit
-    #         elif key == '\x1b':
-    #             break
-
-    #     return bDateEdit
-
-    # def editFiel(self, fiedlIdx : int, win):
-
-    #     win.clear()
-    #     win.border()
-    #     win.addstr(0, 2, " EDIT FIELD ", A_BOLD)
-    #     win.addstr(2, 2, f"{self.get_field(fiedlIdx)}")
-    #     win.addstr(4, 2, "New value : ")
-    #     win.keypad(False)
-    #     curses.echo()
-    #     val_str = win.get_str().decode(encoding="utf-8")
-    #     win.keypad(True)
-    #     curses.noecho()
-
-    #     if val_str != "":
-    #         self.setField(fiedlIdx, val_str)

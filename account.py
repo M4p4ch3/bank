@@ -87,7 +87,8 @@ class Account():
             # Create and read statement
             stat = Statement(stat_line[Statement.IDX_DATE],
                              float(stat_line[Statement.IDX_BAL_START]),
-                             float(stat_line[Statement.IDX_BAL_END]))
+                             float(stat_line[Statement.IDX_BAL_END]),
+                             self)
             stat.read()
 
             # Add statement to statements list

@@ -468,7 +468,7 @@ class DisplayCurses():
 
         # Statement CSV file does not exit
         # Read will create it
-        stat = Statement(date.strftime(FMT_DATE), bal_start, bal_end)
+        stat = Statement(date.strftime(FMT_DATE), bal_start, bal_end, self.account)
         stat.read()
 
         # Append statement to statements list
@@ -875,52 +875,6 @@ class DisplayCurses():
             return
 
         stat.del_op_list(op_list)
-
-    def STAT_moveOps(self, statSrc: Statement, op_list: List[Operation]) -> None:
-
-        # Use input window
-        win = self.win_list[self.WIN_ID_INPUT]
-
-        win.clear()
-        win.border()
-        win.addstr(0, 2, " MOVE OPERATIONS ", A_BOLD)
-        win.addstr(2, 2, f"Destination statement : ")
-        win.addstr(3, 2, f"  Name (date) : ")
-        curses.echo()
-        stat_dst_name = win.getstr().decode(encoding="utf-8")
-        curses.noecho()
-        stat_dst = self.account.get_stat(stat_dst_name)
-        if stat_dst is None:
-            win.addstr(5, 2, f"Destination statement",
-                       curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
-            win.addstr(6, 2, f"not found", curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
-            win.refresh()
-            time.sleep(1)
-            return
-
-        win.clear()
-        win.border()
-        win.addstr(0, 2, " MOVE OPERATIONS ", A_BOLD)
-        win.addstr(2, 2, f"Move {len(op_list)} operations")
-        win.addstr(3, 2, f"To statement {stat_dst.name}")
-        win.addstr(5, 2, "Confirm ? (y/n) : ")
-        confirm_c = win.getch()
-        if confirm_c != ord('y'):
-            win.addstr(7, 2, f"Canceled", curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
-            win.refresh()
-            time.sleep(1)
-            return
-
-        # For each operation
-        for op in op_list:
-            # Insert operation in target statement
-            stat_dst.insert_op(op)
-            # Delete operation from source statement
-            statSrc.del_op_list([op])
-
-        # Save source and destination statement
-        statSrc.save()
-        stat_dst.save()
 
 if __name__ == "__main__":
 
