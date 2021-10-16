@@ -9,6 +9,7 @@ from typing import List
 
 from utils import (OK, ERROR)
 from statement import Statement
+from operation import Operation
 
 class Account():
     """
@@ -30,6 +31,9 @@ class Account():
         status = self.read()
         if status != OK:
             self.log.error("Account.__init__ ERROR : Read statements FAILED")
+
+        # Operations buffer list
+        self.op_buffer_list = list()
 
         self.is_unsaved: bool = False
 
@@ -189,3 +193,34 @@ class Account():
         self.is_unsaved = True
 
         return OK
+
+    def clear_op_buffer(self) -> None:
+        """
+        Clear operations buffer
+        """
+
+        self.op_buffer_list.clear()
+
+    def set_op_buffer(self, op_list: List[Operation]) -> None:
+        """
+        Set operations in buffer
+
+        Args:
+            op_list (List[Operation]): Operations list to set in buffer
+        """
+
+        self.clear_op_buffer()
+        for op in op_list:
+            # Deep copy
+            op_new = op.copy()
+            self.op_buffer_list.append(op_new)
+
+    def get_op_buffer(self) -> List[Operation]:
+        """
+        Get operations from buffer
+
+        Returns:
+            List[Operation]: Operations in buffer
+        """
+        
+        return self.op_buffer_list

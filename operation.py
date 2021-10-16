@@ -109,6 +109,16 @@ class Operation():
 
         return OK
 
+    def copy(self):
+        """
+        Deep copy : Create and return new operation
+
+        Returns:
+            Operation: Created deep copy
+        """
+
+        return Operation(self.date, self.mode, self.tier, self.cat, self.desc, self.amount)
+
 class OperationDispMgrCurses():
     """
     Curses operation display manager

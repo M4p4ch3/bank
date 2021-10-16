@@ -756,22 +756,39 @@ class DisplayCurses():
                 # Clear select operations
                 op_listSel.clear()
 
-            # Move selected operations
-            elif key == "m":
+            # Copy operations(s)
+            elif key == "c":
 
-                # If no selected operations
                 if len(op_listSel) == 0:
-                    # Selected is highlighted operation
-                    op_listSel.append(op_hl)
+                    op_buffer_list = [op_hl]
+                else:
+                    op_buffer_list = op_listSel
 
-                # Highlight closest operation
-                op_hl = stat.get_closest_op(op_listSel)
+                self.account.set_op_buffer(op_buffer_list)
 
-                # Move selected operations from statement
-                self.STAT_moveOps(stat, op_listSel)
+            # Cut operation(s)
+            elif key == "x":
 
-                # Clear select operations
-                op_listSel.clear()
+                if len(op_listSel) == 0:
+                    op_buffer_list = [op_hl]
+                else:
+                    op_buffer_list = op_listSel
+                self.account.set_op_buffer(op_buffer_list)
+
+                if op_hl in op_buffer_list:
+                    op_hl = stat.get_closest_op(op_buffer_list)
+
+                stat.del_op_list(op_buffer_list)
+
+            # Paste operation(s)
+            elif key == "v":
+
+                op_buffer_list = self.account.get_op_buffer()
+
+                for op in op_buffer_list:
+                    # Deep copy
+                    op_new = op.copy()
+                    stat.insert_op(op_new)
 
             # Open highlighted operation
             elif key == "\n":
@@ -786,17 +803,6 @@ class DisplayCurses():
                         # To update index
                         stat.del_op_list([op_hl])
                         stat.insert_op(op_hl)
-
-            # Duplicate highlighted operation
-            elif key == "d":
-
-                # Create new operation from highlighted one
-                op_new = Operation(op_hl.date, op_hl.mode, op_hl.tier,
-                                   op_hl.cat, op_hl.desc, op_hl.amount)
-                # Add new operation to statement
-                stat.insert_op(op_new)
-                # Highlight new operation
-                op_hl = op_new
 
             # Save
             elif key == "s":
