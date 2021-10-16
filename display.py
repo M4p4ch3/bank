@@ -264,8 +264,11 @@ class DisplayCurses():
 
         # Index of first displayed statement
         stat_first_idx: int = 0
+
         # Highlighted statement
-        stat_hl: Statement = self.account.stat_list[0]
+        stat_hl: Statement = None
+        if len(self.account.stat_list) != 0:
+            stat_hl = self.account.stat_list[0]
 
         while True:
 
@@ -625,10 +628,9 @@ class DisplayCurses():
         op_first_idx: int = 0
 
         # Highlighted operation
+        op_hl: OperationCurses = None
         if len(stat.op_list) != 0:
-            op_hl: OperationCurses = stat.op_list[0]
-        else:
-            op_hl: OperationCurses = None
+            op_hl = stat.op_list[0]
 
         while True:
 
