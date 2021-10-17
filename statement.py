@@ -342,17 +342,61 @@ class StatementDispMgrCurses():
         
         self.stat: Statement = stat
 
-        # First displayed opeartion index
+        # First displayed operation index
         self.op_disp_start_idx: int = 0
 
-        # Last displayed opeartion index
-        self.op_disp_last_idx: int = 0
-
-        # Highlighted opeartion
+        # Highlighted operation
         self.op_hl: Operation = None
 
         # Selected operations list
         self.op_sel_list: List[Operation] = []
+
+    def init_win_list(self, win_main) -> None:
+
+        # Get main window size
+        (self.win_main_h, win_main_w) = win_main.getmaxyx()
+
+        win_cmd_h = 3
+        win_cmd_w = int(2 * win_main_w / 3) - 2
+        win_cmd_y = self.win_main_h - win_cmd_h - 1
+        win_cmd_x = 2
+
+        win_info_h = int((self.win_main_h - win_cmd_h) / 2) - 2
+        win_info_w = int(win_main_w / 3) - 2
+        win_info_y = 2
+        win_info_x = win_main_w - win_info_w - 1
+
+        win_input_h = win_info_h
+        win_input_w = win_info_w
+        win_input_y = win_info_y + win_info_h + 1
+        win_input_x = win_info_x
+
+        win_status_h = win_cmd_h
+        win_status_w = win_info_w
+        win_status_y = win_cmd_y
+        win_status_x = win_info_x
+
+        curses.init_pair(self.COLOR_PAIR_ID_RED_BLACK, curses.COLOR_RED, curses.COLOR_BLACK)
+        curses.init_pair(self.COLOR_PAIR_ID_GREEN_BLACK, curses.COLOR_GREEN, curses.COLOR_BLACK)
+
+        # Windows list
+        self.win_list: List[Window] = [None] * (self.WIN_ID_LAST + 1)
+
+        win_main.keypad(True)
+        self.win_list[self.WIN_ID_MAIN] = win_main
+
+        win_info = curses.newwin(win_info_h, win_info_w, win_info_y, win_info_x)
+        self.win_list[self.WIN_ID_INFO] = win_info
+
+        win_input = curses.newwin(win_input_h, win_input_w, win_input_y, win_input_x)
+        win_input.keypad(True)
+        self.win_list[self.WIN_ID_INPUT] = win_input
+
+        win_cmd = curses.newwin(win_cmd_h, win_cmd_w, win_cmd_y, win_cmd_x)
+        self.win_list[self.WIN_ID_CMD] = win_cmd
+
+        win_status = curses.newwin(win_status_h, win_status_w, win_status_y, win_status_x)
+        self.win_list[self.WIN_ID_STATUS] = win_status
 
     def display_op_list(self) -> None:
 
@@ -360,9 +404,6 @@ class StatementDispMgrCurses():
         self.op_disp_nb = self.win_main_h - 11
         if len(self.stat.op_list) < self.op_disp_nb:
             self.op_disp_nb = len(self.stat.op_list)
-
-        # Set last displayed operation index
-        self.op_disp_last_idx = self.op_disp_start_idx + self.op_disp_nb - 1
 
         # Use main window
         win: Window = self.win_list[self.WIN_ID_MAIN]
@@ -484,266 +525,186 @@ class StatementDispMgrCurses():
 
         win.refresh()
 
-    def browse(self, win_main: Window) -> None:
+    def display_commands(self) -> None:
 
-        # Get main window size
-        (self.win_main_h, win_main_w) = win_main.getmaxyx()
+        win: Window = self.win_list[self.WIN_ID_CMD]
+        win.clear()
+        win.border()
+        win.addstr(0, 2, " COMMANDS ", A_BOLD)
+        cmd_str = "Add : INS/+, Del : DEL/-"
+        cmd_str = cmd_str + ", Dupl : D, (Un)sel : SPACE, Move : M "
+        cmd_str = cmd_str + ", Open : ENTER"
+        cmd_str = cmd_str + ", Save : S, Ret : ESCAPE"
+        win.addstr(1, 2, cmd_str)
+        win.refresh()
 
-        win_cmd_h = 3
-        win_cmd_w = int(2 * win_main_w / 3) - 2
-        win_cmd_y = self.win_main_h - win_cmd_h - 1
-        win_cmd_x = 2
+    def display_status(self) -> None:
 
-        win_info_h = int((self.win_main_h - win_cmd_h) / 2) - 2
-        win_info_w = int(win_main_w / 3) - 2
-        win_info_y = 2
-        win_info_x = win_main_w - win_info_w - 1
+        win: Window = self.win_list[self.WIN_ID_STATUS]
+        win.clear()
+        win.border()
+        win.addstr(0, 2, " STATUS ", A_BOLD)
+        if self.stat.is_unsaved:
+            win.addstr(1, 2, "Unsaved", curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
+        else:
+            win.addstr(1, 2, "Saved", curses.color_pair(self.COLOR_PAIR_ID_GREEN_BLACK))
+        win.refresh()
 
-        win_input_h = win_info_h
-        win_input_w = win_info_w
-        win_input_y = win_info_y + win_info_h + 1
-        win_input_x = win_info_x
+    def hl_prev_op(self) -> None:
 
-        win_status_h = win_cmd_h
-        win_status_w = win_info_w
-        win_status_y = win_cmd_y
-        win_status_x = win_info_x
+        # Get highlighted operation index
+        op_hl_idx = self.stat.op_list.index(self.op_hl)
 
-        curses.init_pair(self.COLOR_PAIR_ID_RED_BLACK, curses.COLOR_RED, curses.COLOR_BLACK)
-        curses.init_pair(self.COLOR_PAIR_ID_GREEN_BLACK, curses.COLOR_GREEN, curses.COLOR_BLACK)
+        # Highlight previous operation
+        op_hl_idx -= 1
+        if op_hl_idx < 0:
+            op_hl_idx = 0
 
-        # Windows list
-        self.win_list: List[Window] = [None] * (self.WIN_ID_LAST + 1)
+        # Update highlighted operation
+        self.op_hl = self.stat.op_list[op_hl_idx]
 
-        win_main.keypad(True)
-        self.win_list[self.WIN_ID_MAIN] = win_main
+        # If highlighted operation out of display
+        if op_hl_idx < self.op_disp_first_idx:
+            
+            # Move focus up
+            self.op_disp_first_idx -= 1
+            if self.op_disp_first_idx < 0:
+                self.op_disp_first_idx = 0
 
-        win_info = curses.newwin(win_info_h, win_info_w, win_info_y, win_info_x)
-        self.win_list[self.WIN_ID_INFO] = win_info
+    def hl_next_op(self) -> None:
 
-        win_input = curses.newwin(win_input_h, win_input_w, win_input_y, win_input_x)
-        win_input.keypad(True)
-        self.win_list[self.WIN_ID_INPUT] = win_input
+        # Get highlighted operation index
+        op_hl_idx = self.stat.op_list.index(self.op_hl)
 
-        win_cmd = curses.newwin(win_cmd_h, win_cmd_w, win_cmd_y, win_cmd_x)
-        self.win_list[self.WIN_ID_CMD] = win_cmd
+        # Highlight next operation
+        op_hl_idx += 1
+        if op_hl_idx >= len(self.stat.op_list):
+            op_hl_idx = len(self.stat.op_list) - 1
 
-        win_status = curses.newwin(win_status_h, win_status_w, win_status_y, win_status_x)
-        self.win_list[self.WIN_ID_STATUS] = win_status
+        # Update highlighted operation
+        self.op_hl = self.stat.op_list[op_hl_idx]
 
-        # Selected operations list
-        self.op_sel_list: List[Operation] = []
+        # If highlighted operation out of display
+        if op_hl_idx > self.op_disp_start_idx + self.op_disp_nb - 1:
 
-        # First displayed operation
-        self.op_disp_first_idx: int = 0
+            # Move focus down
+            self.op_disp_first_idx += 1
+            if self.op_disp_first_idx > len(self.stat.op_list) - self.op_disp_nb:
+                self.op_disp_first_idx = len(self.stat.op_list) - self.op_disp_nb
 
-        # Highlighted operation
-        self.op_hl: Operation = None
-        if len(self.stat.op_list) != 0:
-            self.op_hl = self.stat.op_list[0]
+    def move_prev_page(self) -> None:
 
-        while True:
+        # Move display to previous page
+        self.op_disp_first_idx -= 3
+        if self.op_disp_first_idx < 0:
+            self.op_disp_first_idx = 0
 
-            self.display_op_list()
-            self.display_fields()
+        # Get highlighted operation index
+        op_hl_idx = self.stat.op_list.index(self.op_hl)
 
-            # Command window
-            win: Window = self.win_list[self.WIN_ID_CMD]
-            win.clear()
-            win.border()
-            win.addstr(0, 2, " COMMANDS ", A_BOLD)
-            cmd_str = "Add : INS/+, Del : DEL/-"
-            cmd_str = cmd_str + ", Dupl : D, (Un)sel : SPACE, Move : M "
-            cmd_str = cmd_str + ", Open : ENTER"
-            cmd_str = cmd_str + ", Save : S, Ret : ESCAPE"
-            win.addstr(1, 2, cmd_str)
-            win.refresh()
+        # If highlighted operation out of display
+        if op_hl_idx > self.op_disp_start_idx + self.op_disp_nb - 1:
 
-            # Status window
-            win: Window = self.win_list[self.WIN_ID_STATUS]
-            win.clear()
-            win.border()
-            win.addstr(0, 2, " STATUS ", A_BOLD)
-            if self.stat.is_unsaved:
-                win.addstr(1, 2, "Unsaved", curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
-            else:
-                win.addstr(1, 2, "Saved", curses.color_pair(self.COLOR_PAIR_ID_GREEN_BLACK))
-            win.refresh()
+            # Highlight last displayed information
+            op_hl_idx = self.op_disp_first_idx + self.op_disp_nb - 1
 
-            key = self.win_list[self.WIN_ID_MAIN].getkey()
+            # Update highlighted operation
+            self.op_hl = self.stat.op_list[op_hl_idx]
 
-            # Highlight previous operation
-            if key == "KEY_UP":
+    def move_next_page(self) -> None:
 
-                op_hl_idx = self.stat.op_list.index(self.op_hl) - 1
-                if op_hl_idx < 0:
-                    op_hl_idx = 0
-                self.op_hl = self.stat.op_list[op_hl_idx]
+        # Move display to next page
+        self.op_disp_first_idx += 3
+        if self.op_disp_first_idx > len(self.stat.op_list) - self.op_disp_nb:
+            self.op_disp_first_idx = len(self.stat.op_list) - self.op_disp_nb
 
-                # If out of display range
-                if op_hl_idx < self.op_disp_first_idx:
-                    # Previous page
-                    self.op_disp_first_idx = self.op_disp_first_idx - 1
-                    if self.op_disp_first_idx < 0:
-                        self.op_disp_first_idx = 0
+        # Get highlighted operation index
+        op_hl_idx = self.stat.op_list.index(self.op_hl)
 
-            # Highlight next operation
-            elif key == "KEY_DOWN":
+        # If highlighted operation out of display
+        if op_hl_idx < self.op_disp_first_idx:
 
-                op_hl_idx = self.stat.op_list.index(self.op_hl) + 1
-                if op_hl_idx >= len(self.stat.op_list):
-                    op_hl_idx = len(self.stat.op_list) - 1
-                self.op_hl = self.stat.op_list[op_hl_idx]
+            # Highlight first displayed information
+            op_hl_idx = self.op_disp_first_idx
 
-                # If out of display range
-                if op_hl_idx > self.op_disp_last_idx:
-                    # Next page
-                    self.op_disp_first_idx = self.op_disp_first_idx + 1
-                    if self.op_disp_first_idx > len(self.stat.op_list) - self.op_disp_nb:
-                        self.op_disp_first_idx = len(self.stat.op_list) - self.op_disp_nb
+            # Update highlighted operation
+            self.op_hl = self.stat.op_list[op_hl_idx]
 
-            # Previous page
-            elif key == "KEY_PPAGE":
+    def trigger_op_sel(self) -> None:
 
-                # Previous page
-                self.op_disp_first_idx = self.op_disp_first_idx - 3
-                if self.op_disp_first_idx < 0:
-                    self.op_disp_first_idx = 0
+        # If highlighted operation not selected
+        if self.op_hl not in self.op_sel_list:
+            # Select operation
+            self.op_sel_list.append(self.op_hl)
+        # Else, highlighted operation selected
+        else:
+            # Unseleect highlighted operation
+            self.op_sel_list.remove(self.op_hl)
 
-                # If out of display range
-                op_hl_idx = self.stat.op_list.index(self.op_hl)
-                if op_hl_idx < self.op_disp_first_idx:
-                    self.op_hl = self.stat.op_list[self.op_disp_first_idx]
-                elif op_hl_idx >= self.op_disp_first_idx + self.op_disp_nb:
-                    self.op_hl = self.stat.op_list[self.op_disp_first_idx + self.op_disp_nb - 1]
+    def copy_op_list(self) -> None:
 
-            # Next page
-            elif key == "KEY_NPAGE":
+        # Account operations buffer list : Selected operations
+        op_buffer_list = self.op_sel_list
+        # If no selected opearations
+        if len(op_buffer_list) == 0:
+            # Account operations buffer list : Highlighted one
+            op_buffer_list = [self.op_hl]
 
-                # Next page
-                self.op_disp_first_idx = self.op_disp_first_idx + 3
-                if self.op_disp_first_idx > len(self.stat.op_list) - self.op_disp_nb:
-                    self.op_disp_first_idx = len(self.stat.op_list) - self.op_disp_nb
-                    if self.op_disp_first_idx < 0:
-                        self.op_disp_first_idx = 0
+        # Set account operations buffer list
+        self.stat.account.set_op_buffer(op_buffer_list)
 
-                # If out of display range
-                op_hl_idx = self.stat.op_list.index(self.op_hl)
-                if op_hl_idx < self.op_disp_first_idx:
-                    self.op_hl = self.stat.op_list[self.op_disp_first_idx]
-                elif op_hl_idx >= self.op_disp_first_idx + self.op_disp_nb:
-                    self.op_hl = self.stat.op_list[self.op_disp_first_idx + self.op_disp_nb - 1]
+    def cut_op_list(self) -> None:
 
-            # (Un)select operation
-            elif key == " ":
-                # If operation not selected
-                if self.op_hl not in self.op_sel_list:
-                    # Add operation to selected ones
-                    self.op_sel_list.append(self.op_hl)
-                # Else, operation selected
-                else:
-                    # Remove operation from selected ones
-                    self.op_sel_list.remove(self.op_hl)
+        # Account operations buffer list : Selected operations
+        op_buffer_list = self.op_sel_list
+        # If no selected opearations
+        if len(op_buffer_list) == 0:
+            # Account operations buffer list : Highlighted one
+            op_buffer_list = [self.op_hl]
 
-            # Add operation
-            elif key in ("KEY_IC", "+"):
-                self.add_op()
+        # Set account operations buffer list
+        self.stat.account.set_op_buffer(op_buffer_list)
 
-            # Delete operation(s)
-            elif key in ("KEY_DC", "-"):
+        # If highlighted operation in buffer
+        if self.op_hl in op_buffer_list:
+            # Highlight closest opeartion
+            self.op_hl = self.stat.get_closest_op(op_buffer_list)
 
-                # If no selected operations
-                if len(self.op_sel_list) == 0:
-                    # Selected is highlighted operation
-                    self.op_sel_list.append(self.op_hl)
+        # Delete operations in buffer from statement
+        self.stat.del_op_list(op_buffer_list)
 
-                # Highlight closest operation
-                self.op_hl = self.stat.get_closest_op(self.op_sel_list)
+    def paste_op_list(self) -> None:
 
-                # Delete selected operations from statement
-                self.delete_op_list(self.op_sel_list)
+        # Get account operations buffer list
+        op_buffer_list = self.stat.account.get_op_buffer()
 
-                # Clear select operations
-                self.op_sel_list.clear()
+        # For each operation i buffer
+        for op in op_buffer_list:
+            # Deep copy
+            op_new = op.copy()
+            # Insert new operation in statement
+            self.stat.insert_op(op_new)
 
-            # Copy operations(s)
-            elif key == "c":
+    def browse_op(self) -> None:
 
-                if len(self.op_sel_list) == 0:
-                    op_buffer_list = [self.op_hl]
-                else:
-                    op_buffer_list = self.op_sel_list
+        # Browse highlighted operation
+        (is_edited, is_date_edited) = self.op_hl.disp_mgr.browse(self.win_list[self.WIN_ID_INPUT])
 
-                self.stat.account.set_op_buffer(op_buffer_list)
+        # If operation edited
+        if is_edited:
 
-            # Cut operation(s)
-            elif key == "x":
+            self.stat.is_unsaved = True
 
-                if len(self.op_sel_list) == 0:
-                    op_buffer_list = [self.op_hl]
-                else:
-                    op_buffer_list = self.op_sel_list
-                self.stat.account.set_op_buffer(op_buffer_list)
+            # If date edited
+            if is_date_edited:
 
-                if self.op_hl in op_buffer_list:
-                    self.op_hl = self.stat.get_closest_op(op_buffer_list)
-
-                self.stat.del_op_list(op_buffer_list)
-
-            # Paste operation(s)
-            elif key == "v":
-
-                op_buffer_list = self.stat.account.get_op_buffer()
-
-                for op in op_buffer_list:
-                    # Deep copy
-                    op_new = op.copy()
-                    self.stat.insert_op(op_new)
-
-            # Open highlighted operation
-            elif key == "\n":
-
-                (is_edited, is_date_edited) = self.op_hl.disp_mgr.browse(self.win_list[self.WIN_ID_INPUT])
-                # If operation edited
-                if is_edited:
-                    self.stat.is_unsaved = True
-                    # If date edited
-                    if is_date_edited:
-                        # Delete and insert opearion from/to statement
-                        # To update index
-                        self.stat.del_op_list([self.op_hl])
-                        self.stat.insert_op(self.op_hl)
-
-            # Save
-            elif key == "s":
-                self.stat.save()
-
-            # Exit
-            elif key == '\x1b':
-                if self.stat.is_unsaved:
-                    # Input window
-                    win: Window = self.win_list[self.WIN_ID_INPUT]
-                    win.clear()
-                    win.border()
-                    win.addstr(0, 2, " UNSAVED CHANGES ", A_BOLD)
-                    win.addstr(2, 2, "Save ? (y/n) : ")
-                    save_c = win.getch()
-                    if save_c != ord('n'):
-                        win.addstr(4, 2, f"Saving")
-                        win.refresh()
-                        time.sleep(1)
-                        self.stat.save()
-                    else:
-                        win.addstr(4, 2, f"Discard changes",
-                                   curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
-                        win.refresh()
-                        time.sleep(1)
-                        self.stat.reset()
-                break
+                # Re-insert opearation in statement to update index
+                self.stat.del_op_list([self.op_hl])
+                self.stat.insert_op(self.op_hl)
 
     def add_op(self) -> None:
 
-        # Create empty opeartion
+        # Create empty operation
         op = Operation(datetime.now(), "", "", "", "", 0.0)
 
         # Use input window
@@ -767,15 +728,26 @@ class StatementDispMgrCurses():
 
         self.stat.insert_op(op)
 
-    def delete_op_list(self, op_list: List[Operation]) -> None:
+    def delete_op(self) -> None:
+
+        # Operations delete list : Selected operations
+        op_del_list = self.op_sel_list
+        # If no selected operations
+        if len(self.op_sel_list) == 0:
+            # Operations delete list : Highlighted operation
+            op_del_list = [self.op_hl]
+
+        # If highlighted operation in buffer
+        if self.op_hl in op_del_list:
+            # Highlight closest opeartion
+            self.op_hl = self.stat.get_closest_op(op_del_list)
 
         # Use input window
         win = self.win_list[self.WIN_ID_INPUT]
-
         win.clear()
         win.border()
         win.addstr(0, 2, " DELETE OPERATIONS ", A_BOLD)
-        win.addstr(2, 2, f"Delete {len(op_list)} operations")
+        win.addstr(2, 2, f"Delete {len(op_del_list)} operations")
         win.addstr(4, 2, "Confirm ? (y/n) : ")
         confirm_c = win.getch()
         if confirm_c != ord('y'):
@@ -784,4 +756,118 @@ class StatementDispMgrCurses():
             time.sleep(1)
             return
 
-        self.stat.del_op_list(op_list)
+        # Delete operations from statement
+        self.stat.del_op_list(op_del_list)
+
+        # Clear selected operations
+        self.op_sel_list.clear()
+        
+    def exit(self) -> None:
+
+        # Check if unsaved changes
+        if self.stat.is_unsaved:
+
+            # Unsaved changes
+
+            # Input window, ask for save
+            win: Window = self.win_list[self.WIN_ID_INPUT]
+            win.clear()
+            win.border()
+            win.addstr(0, 2, " UNSAVED CHANGES ", A_BOLD)
+            win.addstr(2, 2, "Save ? (y/n) : ")
+            save_c = win.getch()
+
+            # If not 'n'
+            if save_c != ord('n'):
+
+                # Save changes
+                win.addstr(4, 2, f"Saving")
+                win.refresh()
+                time.sleep(1)
+                self.stat.save()
+
+            # Else, 'n'
+            else:
+
+                # Discard changes
+                win.addstr(4, 2, f"Discard changes",
+                            curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
+                win.refresh()
+                time.sleep(1)
+                self.stat.reset()
+
+    def browse(self, win_main: Window) -> None:
+
+        # Init windows list
+        self.init_win_list(win_main)
+
+        # First displayed operation
+        self.op_disp_first_idx: int = 0
+
+        # Highlighted operation
+        self.op_hl: Operation = None
+        if len(self.stat.op_list) != 0:
+            self.op_hl = self.stat.op_list[0]
+
+        # Selected operations list
+        self.op_sel_list: List[Operation] = []
+
+        while True:
+
+            # TODO select what to redisplay
+            # TODO sub window w/o border for operations list
+
+            # Displays operations list
+            self.display_op_list()
+
+            # Display statements fields
+            self.display_fields()
+
+            # Display commands
+            self.display_commands()
+
+            # Display status
+            self.display_status()
+
+            key = self.win_list[self.WIN_ID_MAIN].getkey()
+
+            # Highlight previous operation
+            if key == "KEY_UP":
+                self.hl_prev_op()
+            # Highlight next operation
+            elif key == "KEY_DOWN":
+                self.hl_next_op()
+            # Move to previous page
+            elif key == "KEY_PPAGE":
+                self.move_prev_page()
+            # Next page
+            elif key == "KEY_NPAGE":
+                self.move_next_page()
+            # (Un)select operation
+            elif key == " ":
+                self.trigger_op_sel()
+            # Copy operations(s)
+            elif key == "c":
+                self.copy_op_list()
+            # Cut operation(s)
+            elif key == "x":
+                self.cut_op_list()
+            # Paste operation(s)
+            elif key == "v":
+                self.paste_op_list()
+            # Open highlighted operation
+            elif key == "\n":
+                self.browse_op()
+            # Add operation
+            elif key in ("KEY_IC", "+"):
+                self.add_op()
+            # Delete operation(s)
+            elif key in ("KEY_DC", "-"):
+                self.delete_op()
+            # Save
+            elif key == "s":
+                self.stat.save()
+            # Exit
+            elif key == '\x1b':
+                self.exit()
+                break
