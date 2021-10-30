@@ -314,11 +314,10 @@ class StatementDispMgrCurses():
 
     # Window ID
     WIN_ID_MAIN = 0
-    WIN_ID_INFO = 1
-    WIN_ID_INPUT = 2
-    WIN_ID_CMD = 3
-    WIN_ID_STATUS = 4
-    WIN_ID_LAST = WIN_ID_STATUS
+    WIN_ID_SUB = 1
+    WIN_ID_INFO = 2
+    WIN_ID_INPUT = 3
+    WIN_ID_LAST = WIN_ID_INPUT
 
     # Operation separator
     SEP_OP = "|"
@@ -351,69 +350,37 @@ class StatementDispMgrCurses():
         # Selected operations list
         self.op_sel_list: List[Operation] = []
 
-    def init_win_list(self, win_main) -> None:
-
-        # Get main window size
-        (self.win_main_h, win_main_w) = win_main.getmaxyx()
-
-        win_cmd_h = 3
-        win_cmd_w = int(2 * win_main_w / 3) - 2
-        win_cmd_y = self.win_main_h - win_cmd_h - 1
-        win_cmd_x = 2
-
-        win_info_h = int((self.win_main_h - win_cmd_h) / 2) - 2
-        win_info_w = int(win_main_w / 3) - 2
-        win_info_y = 2
-        win_info_x = win_main_w - win_info_w - 1
-
-        win_input_h = win_info_h
-        win_input_w = win_info_w
-        win_input_y = win_info_y + win_info_h + 1
-        win_input_x = win_info_x
-
-        win_status_h = win_cmd_h
-        win_status_w = win_info_w
-        win_status_y = win_cmd_y
-        win_status_x = win_info_x
-
-        curses.init_pair(self.COLOR_PAIR_ID_RED_BLACK, curses.COLOR_RED, curses.COLOR_BLACK)
-        curses.init_pair(self.COLOR_PAIR_ID_GREEN_BLACK, curses.COLOR_GREEN, curses.COLOR_BLACK)
-
-        # Windows list
-        self.win_list: List[Window] = [None] * (self.WIN_ID_LAST + 1)
-
-        win_main.keypad(True)
-        self.win_list[self.WIN_ID_MAIN] = win_main
-
-        win_info = curses.newwin(win_info_h, win_info_w, win_info_y, win_info_x)
-        self.win_list[self.WIN_ID_INFO] = win_info
-
-        win_input = curses.newwin(win_input_h, win_input_w, win_input_y, win_input_x)
-        win_input.keypad(True)
-        self.win_list[self.WIN_ID_INPUT] = win_input
-
-        win_cmd = curses.newwin(win_cmd_h, win_cmd_w, win_cmd_y, win_cmd_x)
-        self.win_list[self.WIN_ID_CMD] = win_cmd
-
-        win_status = curses.newwin(win_status_h, win_status_w, win_status_y, win_status_x)
-        self.win_list[self.WIN_ID_STATUS] = win_status
-
     def display_op_list(self) -> None:
 
         # Set displayed operations number
-        self.op_disp_nb = self.win_main_h - 11
+        win_sub_h = self.win_list[self.WIN_ID_SUB].getmaxyx()[0]
+        self.op_disp_nb = win_sub_h - 4
         if len(self.stat.op_list) < self.op_disp_nb:
             self.op_disp_nb = len(self.stat.op_list)
 
-        # Use main window
+        # Main window
         win: Window = self.win_list[self.WIN_ID_MAIN]
 
+        # Border
         win.clear()
         win.border()
         win.move(0, 2)
         win.addstr(" STATEMENT ", A_BOLD)
 
-        (y, x) = (2, 2)
+        # Status
+        win_main_w = self.win_list[self.WIN_ID_MAIN].getmaxyx()[1]
+        if self.stat.is_unsaved:
+            win.addstr(0, win_main_w - 10, "Unsaved", curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
+        else:
+            win.addstr(0, win_main_w - 10, "Saved", curses.color_pair(self.COLOR_PAIR_ID_GREEN_BLACK))
+
+        # Refresh
+        win.refresh()
+
+        # Use sub main window
+        win: Window = self.win_list[self.WIN_ID_SUB]
+
+        (y, x) = (0, 0)
         win.addstr(y, x, self.SEP_OP)
         y = y + 1
 
@@ -477,7 +444,7 @@ class StatementDispMgrCurses():
         if len(self.stat.op_list) != 0:
             # Slider
             # Move to top right of table
-            (y, x) = (5, win.getyx()[1])
+            (y, x) = (3, win.getyx()[1])
             for _ in range(int(self.op_disp_first_idx * self.op_disp_nb / len(self.stat.op_list))):
                 win.addstr(y, x, " ")
                 y = y + 1
@@ -525,30 +492,30 @@ class StatementDispMgrCurses():
 
         win.refresh()
 
-    def display_commands(self) -> None:
+    # def display_commands(self) -> None:
 
-        win: Window = self.win_list[self.WIN_ID_CMD]
-        win.clear()
-        win.border()
-        win.addstr(0, 2, " COMMANDS ", A_BOLD)
-        cmd_str = "Add : INS/+, Del : DEL/-"
-        cmd_str = cmd_str + ", Dupl : D, (Un)sel : SPACE, Move : M "
-        cmd_str = cmd_str + ", Open : ENTER"
-        cmd_str = cmd_str + ", Save : S, Ret : ESCAPE"
-        win.addstr(1, 2, cmd_str)
-        win.refresh()
+    #     win: Window = self.win_list[self.WIN_ID_CMD]
+    #     win.clear()
+    #     win.border()
+    #     win.addstr(0, 2, " COMMANDS ", A_BOLD)
+    #     cmd_str = "Add : INS/+, Del : DEL/-"
+    #     cmd_str = cmd_str + ", Dupl : D, (Un)sel : SPACE, Move : M "
+    #     cmd_str = cmd_str + ", Open : ENTER"
+    #     cmd_str = cmd_str + ", Save : S, Ret : ESCAPE"
+    #     win.addstr(1, 2, cmd_str)
+    #     win.refresh()
 
-    def display_status(self) -> None:
+    # def display_status(self) -> None:
 
-        win: Window = self.win_list[self.WIN_ID_STATUS]
-        win.clear()
-        win.border()
-        win.addstr(0, 2, " STATUS ", A_BOLD)
-        if self.stat.is_unsaved:
-            win.addstr(1, 2, "Unsaved", curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
-        else:
-            win.addstr(1, 2, "Saved", curses.color_pair(self.COLOR_PAIR_ID_GREEN_BLACK))
-        win.refresh()
+    #     win: Window = self.win_list[self.WIN_ID_STATUS]
+    #     win.clear()
+    #     win.border()
+    #     win.addstr(0, 2, " STATUS ", A_BOLD)
+    #     if self.stat.is_unsaved:
+    #         win.addstr(1, 2, "Unsaved", curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
+    #     else:
+    #         win.addstr(1, 2, "Saved", curses.color_pair(self.COLOR_PAIR_ID_GREEN_BLACK))
+    #     win.refresh()
 
     def hl_prev_op(self) -> None:
 
@@ -781,10 +748,9 @@ class StatementDispMgrCurses():
                 time.sleep(1)
                 self.stat.reset()
 
-    def browse(self, win_main: Window) -> None:
+    def browse(self, win_list: List[Window]) -> None:
 
-        # Init windows list
-        self.init_win_list(win_main)
+        self.win_list = win_list
 
         # First displayed operation
         self.op_disp_first_idx: int = 0
@@ -809,10 +775,10 @@ class StatementDispMgrCurses():
             self.display_fields()
 
             # Display commands
-            self.display_commands()
+            # self.display_commands()
 
             # Display status
-            self.display_status()
+            # self.display_status()
 
             key = self.win_list[self.WIN_ID_MAIN].getkey()
 
