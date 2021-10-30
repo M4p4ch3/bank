@@ -4,13 +4,20 @@ Operation
 """
 
 from datetime import datetime
-from typing import Tuple
+from typing import (Tuple, TYPE_CHECKING)
 
 from utils import (OK, ERROR, FMT_DATE)
 
 # Display
 import curses
 from curses import *
+
+if TYPE_CHECKING:
+    from _curses import _CursesWindow
+    Window = _CursesWindow
+else:
+    from typing import Any
+    Window = Any
 
 class Operation():
     """
@@ -166,13 +173,13 @@ class OperationDispMgrCurses():
 
         self.win.refresh()
 
-    def browse(self, win_main):
+    def browse(self, win: Window):
         """
         Browse
         """
 
-        # Create window
-        self.win = curses.newwin(20, 50, 10, 10)
+        # Use parameter window
+        self.win = win
         self.win.keypad(True)
 
         self.op_field_hl_idx = 0
@@ -236,3 +243,34 @@ class OperationDispMgrCurses():
                 break
 
         return (is_edited, is_date_edited)
+
+    def set_fields(self, win: Window) -> None:
+        """
+        Iterate over fields and set
+        """
+
+        # Use parameter window
+        self.win = win
+        self.win.keypad(True)
+
+        # For each field
+        for field_idx in range(self.op.IDX_AMOUNT + 1):
+
+            # Highlight current field
+            self.op_field_hl_idx = field_idx
+
+            # Display
+            self.display()
+            (y, x) = (win.getyx()[0], 2)
+
+            # Get value
+            win.addstr(y, x, "Value : ")
+            win.keypad(False)
+            curses.echo()
+            val_str = win.getstr().decode(encoding="utf-8")
+            win.keypad(True)
+            curses.noecho()
+
+            # Set value
+            if val_str != "":
+                self.op.set_field(field_idx, val_str)

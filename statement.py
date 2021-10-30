@@ -707,25 +707,10 @@ class StatementDispMgrCurses():
         # Create empty operation
         op = Operation(datetime.now(), "", "", "", "", 0.0)
 
-        # Use input window
-        win = self.win_list[self.WIN_ID_INPUT]
+        # Set operation fields using display manager
+        op.disp_mgr.set_fields(self.win_list[self.WIN_ID_INPUT])
 
-        # For each operation field
-        for field_idx in range(op.IDX_AMOUNT + 1):
-
-            op.display(win, field_idx)
-            (y, x) = (win.getyx()[0], 2)
-
-            win.addstr(y, x, "Value : ")
-            win.keypad(False)
-            curses.echo()
-            val_str = win.getstr().decode(encoding="utf-8")
-            win.keypad(True)
-            curses.noecho()
-
-            if val_str != "":
-                op.set_field(field_idx, val_str)
-
+        # Insert new operation
         self.stat.insert_op(op)
 
     def delete_op(self) -> None:
