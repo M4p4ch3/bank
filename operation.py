@@ -1,4 +1,3 @@
-
 """
 Operation
 """
@@ -6,7 +5,7 @@ Operation
 from datetime import datetime
 from typing import (Tuple, TYPE_CHECKING)
 
-from utils import (OK, ERROR, FMT_DATE)
+from utils import FMT_DATE
 
 # Display
 import curses
@@ -43,9 +42,6 @@ class Operation():
         self.cat: str = cat
         self.desc: str = desc
         self.amount: float = amount
-
-        # Display manager
-        self.disp_mgr: OperationDispMgrCurses = OperationDispMgrCurses(self)
 
     def get_str(self, indent: int = 0) -> str:
         """
@@ -89,17 +85,19 @@ class Operation():
 
         return ret
 
-    def set_field(self, field_idx, val_str) -> int:
+    def set_field(self, field_idx, val_str) -> bool:
         """
         Set field value, identified by field index, from string
         Useful for iterating over fields
         """
 
+        is_edited = True
+
         if field_idx == self.IDX_DATE:
             try:
                 self.date = datetime.strptime(val_str, FMT_DATE)
             except ValueError:
-                return ERROR
+                is_edited = False
         elif field_idx == self.IDX_MODE:
             self.mode = val_str
         elif field_idx == self.IDX_TIER:
@@ -112,9 +110,9 @@ class Operation():
             try:
                 self.amount = float(val_str)
             except ValueError:
-                return ERROR
+                is_edited = False
 
-        return OK
+        return is_edited
 
     def copy(self):
         """
@@ -131,9 +129,13 @@ class OperationDispMgrCurses():
     Curses operation display manager
     """
 
-    def __init__(self, op: Operation) -> None:
+    def __init__(self, operation: Operation, win: Window) -> None:
 
-        self.op: Operation = op
+        # Operation
+        self.operation: Operation = operation
+
+        # Window
+        self.win: Window = win
 
         # Index of operation highlighted field
         self.op_field_hl_idx = 0
@@ -153,7 +155,7 @@ class OperationDispMgrCurses():
         (win_y, win_x) = (2, 2)
 
         # For each field
-        for field_idx in range(self.op.IDX_AMOUNT + 1):
+        for field_idx in range(self.operation.IDX_AMOUNT + 1):
 
             # Set display flag for highlighted field
             disp_flag = A_NORMAL
@@ -161,7 +163,7 @@ class OperationDispMgrCurses():
                 disp_flag = A_STANDOUT
 
             # Display field
-            (name_str, val_str) = self.op.get_field(field_idx)
+            (name_str, val_str) = self.operation.get_field(field_idx)
             self.win.addstr(win_y, win_x, f"{name_str} : {val_str}", disp_flag)
 
             # Update window cursor position
@@ -173,13 +175,11 @@ class OperationDispMgrCurses():
 
         self.win.refresh()
 
-    def browse(self, win: Window):
+    def browse(self):
         """
         Browse
         """
 
-        # Use parameter window
-        self.win = win
         self.win.keypad(True)
 
         self.op_field_hl_idx = 0
@@ -201,21 +201,21 @@ class OperationDispMgrCurses():
             # Highlight previous field
             if key == "KEY_UP":
                 self.op_field_hl_idx -= 1
-                if self.op_field_hl_idx < self.op.IDX_DATE:
-                    self.op_field_hl_idx = self.op.IDX_AMOUNT
+                if self.op_field_hl_idx < self.operation.IDX_DATE:
+                    self.op_field_hl_idx = self.operation.IDX_AMOUNT
 
             # Highlight next field
             elif key == "KEY_DOWN":
                 self.op_field_hl_idx += 1
-                if self.op_field_hl_idx > self.op.IDX_AMOUNT:
-                    self.op_field_hl_idx = self.op.IDX_DATE
+                if self.op_field_hl_idx > self.operation.IDX_AMOUNT:
+                    self.op_field_hl_idx = self.operation.IDX_DATE
 
             # Edit highlighted field
             elif key == "\n":
 
                 # Field value edit prompt
                 self.win.addstr("Value : ")
-                
+
                 # Get field value input
                 self.win.keypad(False)
                 curses.echo()
@@ -227,16 +227,11 @@ class OperationDispMgrCurses():
                 if val_str != "":
 
                     # Set field value
-                    status = self.op.set_field(self.op_field_hl_idx, val_str)
-                    if status == ERROR:
-                        continue
-
-                    # Field edited
-                    is_edited = True
-
-                    # Is date edited
-                    if self.op_field_hl_idx == self.op.IDX_DATE:
-                        is_date_edited = True
+                    is_edited_single = self.operation.set_field(self.op_field_hl_idx, val_str)
+                    if is_edited_single:
+                        is_edited = True
+                        if self.op_field_hl_idx == self.operation.IDX_DATE:
+                            is_date_edited = True
 
             # Exit
             elif key == '\x1b':
@@ -244,33 +239,31 @@ class OperationDispMgrCurses():
 
         return (is_edited, is_date_edited)
 
-    def set_fields(self, win: Window) -> None:
+    def set_fields(self) -> None:
         """
         Iterate over fields and set
         """
 
-        # Use parameter window
-        self.win = win
         self.win.keypad(True)
 
         # For each field
-        for field_idx in range(self.op.IDX_AMOUNT + 1):
+        for field_idx in range(self.operation.IDX_AMOUNT + 1):
 
             # Highlight current field
             self.op_field_hl_idx = field_idx
 
             # Display
             self.display()
-            (y, x) = (win.getyx()[0], 2)
+            (win_y, win_x) = (self.win.getyx()[0], 2)
 
             # Get value
-            win.addstr(y, x, "Value : ")
-            win.keypad(False)
+            self.win.addstr(win_y, win_x, "Value : ")
+            self.win.keypad(False)
             curses.echo()
-            val_str = win.getstr().decode(encoding="utf-8")
-            win.keypad(True)
+            val_str = self.win.getstr().decode(encoding="utf-8")
+            self.win.keypad(True)
             curses.noecho()
 
             # Set value
             if val_str != "":
-                self.op.set_field(field_idx, val_str)
+                self.operation.set_field(field_idx, val_str)

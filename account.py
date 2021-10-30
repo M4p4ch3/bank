@@ -1,4 +1,3 @@
-
 """
 Account
 """
@@ -6,14 +5,12 @@ Account
 import csv
 from datetime import datetime
 import logging
-import time
-from typing import (TYPE_CHECKING, List, Tuple)
+from typing import (TYPE_CHECKING, List)
 
-from utils import (OK, ERROR,
-                   LEN_DATE, LEN_NAME, LEN_MODE, LEN_TIER, LEN_CAT, LEN_DESC, LEN_AMOUNT,
-                   FMT_DATE)
-from statement import Statement
-from operation import Operation
+from statement import (Statement, StatementDispMgrCurses)
+from utils import (LEN_DATE, LEN_NAME, LEN_AMOUNT,
+                   FMT_DATE,
+                   WinId, ColorPairId, ObjListBuffer)
 
 # Display
 import curses
@@ -42,12 +39,6 @@ class Account():
 
         # Read statements
         self.read()
-
-        # Operations buffer list
-        self.op_buffer_list = list()
-
-        # Display manager
-        self.disp_mgr: AccountDispMgrCurses = AccountDispMgrCurses(self)
 
         self.is_unsaved: bool = False
 
@@ -88,7 +79,7 @@ class Account():
 
         try:
             # Open statements CSV file
-            file = open(self.file_path, "r")
+            file = open(self.file_path, "r", encoding="utf8")
         except FileNotFoundError:
             self.log.error("Account.read ERROR : Open statements CSV file FAILED")
             return
@@ -101,8 +92,7 @@ class Account():
             # Create and read statement
             stat = Statement(stat_line[Statement.IDX_DATE],
                              float(stat_line[Statement.IDX_BAL_START]),
-                             float(stat_line[Statement.IDX_BAL_END]),
-                             self)
+                             float(stat_line[Statement.IDX_BAL_END]))
             stat.read()
 
             # Add statement to statements list
@@ -117,7 +107,7 @@ class Account():
 
         try:
             # Open statements CSV file
-            file = open(self.file_path, "w")
+            file = open(self.file_path, "w", encoding="utf8")
         except FileNotFoundError:
             self.log.error("Account.write ERROR : Open statements CSV file FAILED")
             return
@@ -180,52 +170,10 @@ class Account():
 
         self.is_unsaved = True
 
-    def clear_op_buffer(self) -> None:
-        """
-        Clear operations buffer
-        """
-
-        self.op_buffer_list.clear()
-
-    def set_op_buffer(self, op_list: List[Operation]) -> None:
-        """
-        Set operations in buffer
-
-        Args:
-            op_list (List[Operation]): Operations list to set in buffer
-        """
-
-        self.clear_op_buffer()
-        for op in op_list:
-            # Deep copy
-            op_new = op.copy()
-            self.op_buffer_list.append(op_new)
-
-    def get_op_buffer(self) -> List[Operation]:
-        """
-        Get operations from buffer
-
-        Returns:
-            List[Operation]: Operations in buffer
-        """
-
-        return self.op_buffer_list
-
 class AccountDispMgrCurses():
     """
     Curses account display manager
     """
-
-    # Color pair ID
-    COLOR_PAIR_ID_RED_BLACK = 1
-    COLOR_PAIR_ID_GREEN_BLACK = 2
-
-    # Window ID
-    WIN_ID_MAIN = 0
-    WIN_ID_SUB = 1
-    WIN_ID_INFO = 2
-    WIN_ID_INPUT = 3
-    WIN_ID_LAST = WIN_ID_INPUT
 
     # Statement separator
     SEP_STAT = "|"
@@ -244,11 +192,17 @@ class AccountDispMgrCurses():
     MISS_STAT += " " + "...".ljust(LEN_AMOUNT, " ") + " |"
     MISS_STAT += " " + "...".ljust(LEN_AMOUNT, " ") + " |"
 
-    def __init__(self, account: Account) -> None:
+    def __init__(self, account: Account, win_list: List[Window],
+                 op_list_buffer: ObjListBuffer) -> None:
 
+        # Account
         self.account: Account = account
 
-        self.win_list: List[Window] = None
+        # Windows list
+        self.win_list: List[Window] = win_list
+
+        # Operations list buffer
+        self.op_list_buffer: ObjListBuffer = op_list_buffer
 
     def display(self, stat_first_idx: int, stat_hl: Statement) -> None:
         """
@@ -256,13 +210,13 @@ class AccountDispMgrCurses():
         """
 
         # Number of statements to display
-        win_sub_h = self.win_list[self.WIN_ID_SUB].getmaxyx()[0]
+        win_sub_h = self.win_list[WinId.SUB].getmaxyx()[0]
         stat_disp_nb: int = win_sub_h - 4
         if len(self.account.stat_list) < stat_disp_nb:
             stat_disp_nb = len(self.account.stat_list)
 
         # Main window
-        win: Window = self.win_list[self.WIN_ID_MAIN]
+        win: Window = self.win_list[WinId.MAIN]
 
         # Border
         win.clear()
@@ -271,19 +225,19 @@ class AccountDispMgrCurses():
         win.addstr(" STATEMENTS ", A_BOLD)
 
         # Status
-        win_main_w = self.win_list[self.WIN_ID_MAIN].getmaxyx()[1]
+        win_main_w = self.win_list[WinId.MAIN].getmaxyx()[1]
         if self.account.is_unsaved:
             win.addstr(0, win_main_w - 10, "Unsaved",
-                curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
+                curses.color_pair(ColorPairId.RED_BLACK))
         else:
             win.addstr(0, win_main_w - 10, "Saved",
-                curses.color_pair(self.COLOR_PAIR_ID_GREEN_BLACK))
+                curses.color_pair(ColorPairId.GREEN_BLACK))
 
         # Refresh
         win.refresh()
 
         # Use sub main window
-        win: Window = self.win_list[self.WIN_ID_SUB]
+        win: Window = self.win_list[WinId.SUB]
 
         (win_y, win_x) = (0, 0)
         win.addstr(win_y, win_x, f"{self.SEP_STAT}")
@@ -335,18 +289,18 @@ class AccountDispMgrCurses():
             bal_diff = round(stat.bal_end - stat.bal_start, 2)
             if bal_diff >= 0.0:
                 win.addstr(str(bal_diff).ljust(LEN_AMOUNT),
-                           curses.color_pair(self.COLOR_PAIR_ID_GREEN_BLACK))
+                           curses.color_pair(ColorPairId.GREEN_BLACK))
             else:
                 win.addstr(str(bal_diff).ljust(LEN_AMOUNT),
-                           curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
+                           curses.color_pair(ColorPairId.RED_BLACK))
             win.addstr(" | ")
             bal_err = round(stat.bal_start + stat.op_sum - stat.bal_end, 2)
             if bal_err == 0.0:
                 win.addstr(str(bal_err).ljust(LEN_AMOUNT),
-                           curses.color_pair(self.COLOR_PAIR_ID_GREEN_BLACK))
+                           curses.color_pair(ColorPairId.GREEN_BLACK))
             else:
                 win.addstr(str(bal_err).ljust(LEN_AMOUNT),
-                           curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
+                           curses.color_pair(ColorPairId.RED_BLACK))
             win.addstr(" |")
             win_y = win_y + 1
 
@@ -377,7 +331,7 @@ class AccountDispMgrCurses():
         """
 
         # Use input window
-        win: Window = self.win_list[self.WIN_ID_INPUT]
+        win: Window = self.win_list[WinId.INPUT]
 
         win.clear()
         win.border()
@@ -441,7 +395,7 @@ class AccountDispMgrCurses():
 
         # Statement CSV file does not exit
         # Read will create it
-        stat = Statement(date.strftime(FMT_DATE), bal_start, bal_end, self.account)
+        stat = Statement(date.strftime(FMT_DATE), bal_start, bal_end)
         stat.read()
 
         # Append statement to statements list
@@ -453,29 +407,26 @@ class AccountDispMgrCurses():
         """
 
         # Input window
-        win: Window = self.win_list[self.WIN_ID_INPUT]
+        win: Window = self.win_list[WinId.INPUT]
         win.clear()
         win.border()
         win.addstr(0, 2, " DELETE STATEMENT ", A_BOLD)
-        win.addstr(2, 2, "Confirm ? (win_y/n) : ")
+        win.addstr(2, 2, "Confirm ? (y/n) : ")
         confirm_c = win.getch()
         if confirm_c != ord('win_y'):
-            win.addstr(7, 2, "Canceled", curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
+            win.addstr(7, 2, "Canceled", curses.color_pair(ColorPairId.RED_BLACK))
             win.refresh()
-            time.sleep(1)
             return
 
         # Delete highlighted statement
         self.account.del_stat(stat)
 
-    def browse(self, win_list: List[Window]) -> None:
+    def browse(self) -> None:
         """
         Browse
         """
 
-        self.win_list = win_list
-
-        win_sub_h = self.win_list[self.WIN_ID_SUB].getmaxyx()[0]
+        win_sub_h = self.win_list[WinId.SUB].getmaxyx()[0]
 
         # Index of first displayed statement
         stat_first_idx: int = 0
@@ -490,7 +441,7 @@ class AccountDispMgrCurses():
             self.display(stat_first_idx, stat_hl)
 
             # # Command window
-            # win: Window = self.win_list[self.WIN_ID_CMD]
+            # win: Window = self.win_list[WinId.CMD]
             # win.clear()
             # win.border()
             # win.addstr(0, 2, " COMMANDS ", A_BOLD)
@@ -500,8 +451,8 @@ class AccountDispMgrCurses():
             # win.addstr(1, 2, cmd_str)
             # win.refresh()
 
-            self.win_list[self.WIN_ID_SUB].keypad(True)
-            key = self.win_list[self.WIN_ID_SUB].getkey()
+            self.win_list[WinId.SUB].keypad(True)
+            key = self.win_list[WinId.SUB].getkey()
 
             # Highlight previous statement
             if key == "KEY_UP":
@@ -579,7 +530,9 @@ class AccountDispMgrCurses():
 
             # Open highligthed statement
             elif key == "\n":
-                stat_hl.disp_mgr.browse(self.win_list)
+                stat_disp_mgr: StatementDispMgrCurses = StatementDispMgrCurses(
+                    stat_hl, self.win_list, self.op_list_buffer)
+                stat_disp_mgr.browse()
 
             elif key == "s":
                 self.account.save()
@@ -587,20 +540,18 @@ class AccountDispMgrCurses():
             elif key == '\x1b':
                 if self.account.is_unsaved:
                     # Input window
-                    win: Window = self.win_list[self.WIN_ID_INPUT]
+                    win: Window = self.win_list[WinId.INPUT]
                     win.clear()
                     win.border()
                     win.addstr(0, 2, " UNSAVED CHANGES ", A_BOLD)
-                    win.addstr(2, 2, "Save ? (win_y/n) : ")
+                    win.addstr(2, 2, "Save ? (y/n) : ")
                     save_c = win.getch()
                     if save_c != ord('n'):
                         win.addstr(4, 2, "Saving")
                         win.refresh()
-                        time.sleep(1)
                         self.account.save()
                     else:
                         win.addstr(4, 2, "Discard changes",
-                                   curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
+                                   curses.color_pair(ColorPairId.RED_BLACK))
                         win.refresh()
-                        time.sleep(1)
                 break

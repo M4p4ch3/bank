@@ -4,18 +4,11 @@ Display
 
 import curses
 from curses import *
-from datetime import datetime
-from enum import IntEnum
 import sys
-import time
-from typing import (TYPE_CHECKING, List, Tuple)
+from typing import (TYPE_CHECKING, List)
 
-from utils import (OK, ERROR,
-                   LEN_DATE, LEN_NAME, LEN_MODE, LEN_TIER, LEN_CAT, LEN_DESC, LEN_AMOUNT,
-                   FMT_DATE)
-from account import Account
-from statement import Statement
-from operation import Operation
+from account import (Account, AccountDispMgrCurses)
+from utils import (ColorPairId, WinId, ObjListBuffer)
 
 if TYPE_CHECKING:
     from _curses import _CursesWindow
@@ -24,36 +17,18 @@ else:
     from typing import Any
     Window = Any
 
-class ColorPairId(IntEnum):
+class DispMgrCurses():
     """
-    Curses color pair ID
-    """
-
-    RED_BLACK = 1
-    GREEN_BLACK = 2
-
-class WinId(IntEnum):
-    """
-    Window ID
-    """
-
-    MAIN = 0
-    SUB = 1
-    INFO = 2
-    INPUT = 3
-    # CMD = 4
-    # STATUS = 5
-    LAST = INPUT
-
-class DisplayCurses():
-    """
-    Display
+    Curses display manager
     """
 
     def __init__(self, account: Account) -> None:
 
         # Account
         self.account: Account = account
+
+        # Operations buffer
+        self.op_list_buffer: ObjListBuffer = ObjListBuffer()
 
         # Windows list
         self.win_list: List[Window] = [None] * (WinId.LAST + 1)
@@ -64,8 +39,7 @@ class DisplayCurses():
         """
 
         # Main window
-        win_main_h = curses.LINES
-        win_main_w = curses.COLS - 2
+        (win_main_h, win_main_w) = win_main.getmaxyx()
 
         # Sub main window
         win_sub_h = win_main_h - 2 - 2
@@ -116,14 +90,19 @@ class DisplayCurses():
         # win_status = curses.newwin(win_status_h, win_status_w, win_status_y, win_status_x)
         # self.win_list[WinId.STATUS] = win_status
 
-        self.account.disp_mgr.browse(self.win_list)
+        account_disp_mgr: AccountDispMgrCurses = AccountDispMgrCurses(
+            self.account, self.win_list, self.op_list_buffer)
+        account_disp_mgr.browse()
 
 if __name__ == "__main__":
 
+    # Init account
     ACCOUNT = Account()
 
-    # Curses
-    DISPLAY = DisplayCurses(ACCOUNT)
+    # Init display
+    DISPLAY = DispMgrCurses(ACCOUNT)
+
+    # Start display
     wrapper(DISPLAY.wrap)
 
     sys.exit(0)
