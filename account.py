@@ -4,6 +4,7 @@ Account
 """
 
 import csv
+from datetime import datetime
 import logging
 import time
 from typing import (TYPE_CHECKING, List, Tuple)
@@ -32,8 +33,6 @@ class Account():
 
     def __init__(self) -> None:
 
-        status: int = OK
-
         self.log = logging.getLogger("Account")
 
         self.file_path = "statements.csv"
@@ -42,9 +41,7 @@ class Account():
         self.stat_list: List[Statement] = list()
 
         # Read statements
-        status = self.read()
-        if status != OK:
-            self.log.error("Account.__init__ ERROR : Read statements FAILED")
+        self.read()
 
         # Operations buffer list
         self.op_buffer_list = list()
@@ -84,7 +81,7 @@ class Account():
 
         return None
 
-    def read(self) -> int:
+    def read(self) -> None:
         """
         Read from file
         """
@@ -94,7 +91,7 @@ class Account():
             file = open(self.file_path, "r")
         except FileNotFoundError:
             self.log.error("Account.read ERROR : Open statements CSV file FAILED")
-            return ERROR
+            return
 
         file_csv = csv.reader(file)
 
@@ -113,9 +110,7 @@ class Account():
 
         file.close()
 
-        return OK
-
-    def write(self) -> int:
+    def write(self):
         """
         Write to CSV file
         """
@@ -125,7 +120,7 @@ class Account():
             file = open(self.file_path, "w")
         except FileNotFoundError:
             self.log.error("Account.write ERROR : Open statements CSV file FAILED")
-            return ERROR
+            return
 
         file_csv = csv.writer(file, delimiter=',', quotechar='"')
 
@@ -135,51 +130,30 @@ class Account():
             # Create statement line
             stat_csv = [stat.name, str(stat.bal_start), str(stat.bal_end)]
 
-            try:
-                # Write statement line to CSV file
-                file_csv.writerow(stat_csv)
-            # TODO add error type
-            except:
-                self.log.error("Account.write ERROR : Write statement line to CSV file FAILED")
-                return ERROR
+            # Write statement line to CSV file
+            file_csv.writerow(stat_csv)
 
         self.is_unsaved = False
 
         file.close()
 
-        return OK
-
-    def reset(self) -> int:
+    def reset(self) -> None:
         """
         Reset : Read
         """
 
-        status: int = OK
-
         # Read statements
-        status = self.read()
-        if status != OK:
-            self.log.error("Account.reset ERROR : Read statements FAILED")
-            return ERROR
+        self.read()
 
-        return OK
-
-    def save(self) -> int:
+    def save(self) -> None:
         """
         Save : Write
         """
 
-        status: int = OK
-
         # Write statements
-        status = self.write()
-        if status != OK:
-            self.log.error("Account.save ERROR : Write statements FAILED")
-            return ERROR
+        self.write()
 
-        return OK
-
-    def insert_stat(self, stat: Statement) -> int:
+    def insert_stat(self, stat: Statement) -> None:
         """
         Insert statement
         """
@@ -194,23 +168,17 @@ class Account():
 
         self.is_unsaved = True
 
-        return OK
-
-    def del_stat(self, stat: Statement) -> int:
+    def del_stat(self, stat: Statement) -> None:
         """
         Delete statement
         """
 
-        try:
-            self.stat_list.remove(stat)
-        # TODO add error type
-        except:
-            self.log.error("Account.del_stat ERROR : Statement not found")
-            return ERROR
+        if stat not in self.stat_list:
+            return
+
+        self.stat_list.remove(stat)
 
         self.is_unsaved = True
-
-        return OK
 
     def clear_op_buffer(self) -> None:
         """
@@ -240,7 +208,7 @@ class Account():
         Returns:
             List[Operation]: Operations in buffer
         """
-        
+
         return self.op_buffer_list
 
 class AccountDispMgrCurses():
@@ -280,15 +248,18 @@ class AccountDispMgrCurses():
 
         self.account: Account = account
 
+        self.win_list: List[Window] = None
+
     def display(self, stat_first_idx: int, stat_hl: Statement) -> None:
+        """
+        Display
+        """
 
         # Number of statements to display
         win_sub_h = self.win_list[self.WIN_ID_SUB].getmaxyx()[0]
         stat_disp_nb: int = win_sub_h - 4
         if len(self.account.stat_list) < stat_disp_nb:
             stat_disp_nb = len(self.account.stat_list)
-        # TODO
-        # stat_last_idx
 
         # Main window
         win: Window = self.win_list[self.WIN_ID_MAIN]
@@ -302,9 +273,11 @@ class AccountDispMgrCurses():
         # Status
         win_main_w = self.win_list[self.WIN_ID_MAIN].getmaxyx()[1]
         if self.account.is_unsaved:
-            win.addstr(0, win_main_w - 10, "Unsaved", curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
+            win.addstr(0, win_main_w - 10, "Unsaved",
+                curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
         else:
-            win.addstr(0, win_main_w - 10, "Saved", curses.color_pair(self.COLOR_PAIR_ID_GREEN_BLACK))
+            win.addstr(0, win_main_w - 10, "Saved",
+                curses.color_pair(self.COLOR_PAIR_ID_GREEN_BLACK))
 
         # Refresh
         win.refresh()
@@ -312,11 +285,11 @@ class AccountDispMgrCurses():
         # Use sub main window
         win: Window = self.win_list[self.WIN_ID_SUB]
 
-        (y, x) = (0, 0)
-        win.addstr(y, x, f"{self.SEP_STAT}")
-        y = y + 1
+        (win_y, win_x) = (0, 0)
+        win.addstr(win_y, win_x, f"{self.SEP_STAT}")
+        win_y = win_y + 1
 
-        win.addstr(y, x, f"| ")
+        win.addstr(win_y, win_x, "| ")
         win.addstr("name".ljust(LEN_NAME), A_BOLD)
         win.addstr(" | ")
         win.addstr("date".ljust(LEN_DATE), A_BOLD)
@@ -329,14 +302,14 @@ class AccountDispMgrCurses():
         win.addstr(" | ")
         win.addstr("err".ljust(LEN_AMOUNT), A_BOLD)
         win.addstr(" |")
-        y = y + 1
+        win_y = win_y + 1
 
         # Statement separator or missing
         if stat_first_idx == 0:
-            win.addstr(y, x, self.SEP_STAT)
+            win.addstr(win_y, win_x, self.SEP_STAT)
         else:
-            win.addstr(y, x, self.MISS_STAT)
-        y = y + 1
+            win.addstr(win_y, win_x, self.MISS_STAT)
+        win_y = win_y + 1
 
         # For each statement in display range
         # TODO
@@ -350,7 +323,7 @@ class AccountDispMgrCurses():
             if stat == stat_hl:
                 disp_flag += A_STANDOUT
 
-            win.addstr(y, x, "| ")
+            win.addstr(win_y, win_x, "| ")
             win.addstr(stat.name.ljust(LEN_NAME), disp_flag)
             win.addstr(" | ")
             win.addstr(stat.date.strftime(FMT_DATE).ljust(LEN_DATE), disp_flag)
@@ -375,30 +348,33 @@ class AccountDispMgrCurses():
                 win.addstr(str(bal_err).ljust(LEN_AMOUNT),
                            curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
             win.addstr(" |")
-            y = y + 1
+            win_y = win_y + 1
 
             stat_idx = stat_idx + 1
 
         # Statement separator or missing
         if stat_idx == len(self.account.stat_list):
-            win.addstr(y, x, self.SEP_STAT)
+            win.addstr(win_y, win_x, self.SEP_STAT)
         else:
-            win.addstr(y, x, self.MISS_STAT)
-        y = y + 1
+            win.addstr(win_y, win_x, self.MISS_STAT)
+        win_y = win_y + 1
 
         # Slider
         # Move to top right of table
-        (y, x) = (3, win.getyx()[1])
+        (win_y, win_x) = (3, win.getyx()[1])
         for _ in range(int(stat_first_idx * stat_disp_nb / len(self.account.stat_list))):
-            win.addstr(y, x, " ")
-            y = y + 1
+            win.addstr(win_y, win_x, " ")
+            win_y = win_y + 1
         for _ in range(int(stat_disp_nb * stat_disp_nb / len(self.account.stat_list)) + 1):
-            win.addstr(y, x, " ", A_STANDOUT)
-            y = y + 1
+            win.addstr(win_y, win_x, " ", A_STANDOUT)
+            win_y = win_y + 1
 
         win.refresh()
 
     def add_stat(self) -> None:
+        """
+        Add statement
+        """
 
         # Use input window
         win: Window = self.win_list[self.WIN_ID_INPUT]
@@ -408,23 +384,23 @@ class AccountDispMgrCurses():
         win.move(0, 2)
         win.addstr(" STATEMENT ", A_BOLD)
 
-        (y, x) = (2, 2)
-        win.addstr(y, x, "date : ")
-        y = y + 1
-        win.addstr(y, x, "start balance : ")
-        y = y + 1
-        win.addstr(y, x, "end balance   : ")
-        y = y + 1
+        (win_y, win_x) = (2, 2)
+        win.addstr(win_y, win_x, "date : ")
+        win_y = win_y + 1
+        win.addstr(win_y, win_x, "start balance : ")
+        win_y = win_y + 1
+        win.addstr(win_y, win_x, "end balance   : ")
+        win_y = win_y + 1
 
         win.keypad(False)
         curses.echo()
 
-        (y, x) = (2, 2)
+        (win_y, win_x) = (2, 2)
 
         is_converted = False
         while not is_converted:
-            win.addstr(y, x, "date :                  ")
-            win.addstr(y, x, "date : ")
+            win.addstr(win_y, win_x, "date :                  ")
+            win.addstr(win_y, win_x, "date : ")
             val_str = win.getstr().decode(encoding="utf-8")
             try:
                 date = datetime.strptime(val_str, FMT_DATE)
@@ -432,12 +408,12 @@ class AccountDispMgrCurses():
             except ValueError:
                 pass
 
-        y = y + 1
+        win_y = win_y + 1
 
         is_converted = False
         while not is_converted:
-            win.addstr(y, x, "start balance :         ")
-            win.addstr(y, x, "start balance : ")
+            win.addstr(win_y, win_x, "start balance :         ")
+            win.addstr(win_y, win_x, "start balance : ")
             val_str = win.getstr().decode(encoding="utf-8")
             try:
                 bal_start = float(val_str)
@@ -445,12 +421,12 @@ class AccountDispMgrCurses():
             except ValueError:
                 pass
 
-        y = y + 1
+        win_y = win_y + 1
 
         is_converted = False
         while not is_converted:
-            win.addstr(y, x, "end balance :           ")
-            win.addstr(y, x, "end balance : ")
+            win.addstr(win_y, win_x, "end balance :           ")
+            win.addstr(win_y, win_x, "end balance : ")
             val_str = win.getstr().decode(encoding="utf-8")
             try:
                 bal_end = float(val_str)
@@ -458,7 +434,7 @@ class AccountDispMgrCurses():
             except ValueError:
                 pass
 
-        y = y + 1
+        win_y = win_y + 1
 
         win.keypad(True)
         curses.noecho()
@@ -472,16 +448,19 @@ class AccountDispMgrCurses():
         self.account.insertStat(stat)
 
     def delete_stat(self, stat: Statement) -> None:
+        """
+        Delete statement
+        """
 
         # Input window
         win: Window = self.win_list[self.WIN_ID_INPUT]
         win.clear()
         win.border()
         win.addstr(0, 2, " DELETE STATEMENT ", A_BOLD)
-        win.addstr(2, 2, "Confirm ? (y/n) : ")
+        win.addstr(2, 2, "Confirm ? (win_y/n) : ")
         confirm_c = win.getch()
-        if confirm_c != ord('y'):
-            win.addstr(7, 2, f"Canceled", curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
+        if confirm_c != ord('win_y'):
+            win.addstr(7, 2, "Canceled", curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
             win.refresh()
             time.sleep(1)
             return
@@ -490,6 +469,9 @@ class AccountDispMgrCurses():
         self.account.del_stat(stat)
 
     def browse(self, win_list: List[Window]) -> None:
+        """
+        Browse
+        """
 
         self.win_list = win_list
 
@@ -601,7 +583,6 @@ class AccountDispMgrCurses():
 
             elif key == "s":
                 self.account.save()
-                pass
 
             elif key == '\x1b':
                 if self.account.is_unsaved:
@@ -610,15 +591,15 @@ class AccountDispMgrCurses():
                     win.clear()
                     win.border()
                     win.addstr(0, 2, " UNSAVED CHANGES ", A_BOLD)
-                    win.addstr(2, 2, "Save ? (y/n) : ")
+                    win.addstr(2, 2, "Save ? (win_y/n) : ")
                     save_c = win.getch()
                     if save_c != ord('n'):
-                        win.addstr(4, 2, f"Saving")
+                        win.addstr(4, 2, "Saving")
                         win.refresh()
                         time.sleep(1)
                         self.account.save()
                     else:
-                        win.addstr(4, 2, f"Discard changes",
+                        win.addstr(4, 2, "Discard changes",
                                    curses.color_pair(self.COLOR_PAIR_ID_RED_BLACK))
                         win.refresh()
                         time.sleep(1)
