@@ -28,7 +28,6 @@ class Statement():
     """
 
     # Field index
-    IDX_INVALID = -1
     IDX_DATE = 0
     IDX_BAL_START = 1
     IDX_BAL_END = 2
@@ -51,6 +50,9 @@ class Statement():
         self.op_list: List[Operation] = list()
 
         self.is_unsaved: bool = False
+
+        # Import from file
+        self.import_file()
 
     def get_str(self, indent: int = 0) -> str:
         """
@@ -152,9 +154,9 @@ class Statement():
 
         return is_edited
 
-    def read(self) -> None:
+    def import_file(self) -> None:
         """
-        Read from file
+        Import operations from file
         """
 
         try:
@@ -166,7 +168,7 @@ class Statement():
             # Create new statement
             file = open(self.file_path, "w+", encoding="utf8")
             file.close()
-            # Don't proceed with read
+            # Don't proceed with import
             return
 
         # Clear operations list
@@ -193,9 +195,9 @@ class Statement():
 
         file.close()
 
-    def write(self) -> None:
+    def export_file(self) -> None:
         """
-        Write CSV file
+        Export operations to file
         """
 
         # Open CSV file
@@ -216,20 +218,6 @@ class Statement():
         self.is_unsaved = False
 
         file.close()
-
-    def reset(self):
-        """
-        Reset : Read
-        """
-
-        self.read()
-
-    def save(self):
-        """
-        Save : Write
-        """
-
-        self.write()
 
     def insert_op(self, operation: Operation) -> None:
         """
@@ -744,7 +732,7 @@ class StatementDispMgrCurses():
                 # Save changes
                 win.addstr(4, 2, "Saving")
                 win.refresh()
-                self.stat.save()
+                self.stat.export_file()
 
             # Else, 'n'
             else:
@@ -753,7 +741,7 @@ class StatementDispMgrCurses():
                 win.addstr(4, 2, "Discard changes",
                             curses.color_pair(ColorPairId.RED_BLACK))
                 win.refresh()
-                self.stat.reset()
+                self.stat.import_file()
 
     def browse(self) -> None:
         """
@@ -822,7 +810,7 @@ class StatementDispMgrCurses():
                 self.delete_op()
             # Save
             elif key == "s":
-                self.stat.save()
+                self.stat.export_file()
             # Exit
             elif key == '\x1b':
                 self.exit()

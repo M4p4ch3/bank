@@ -24,7 +24,6 @@ class Operation():
     """
 
     # Field index
-    IDX_INVALID = -1
     IDX_DATE = 0
     IDX_MODE = 1
     IDX_TIER = 2

@@ -37,8 +37,8 @@ class Account():
         # Statements list
         self.stat_list: List[Statement] = list()
 
-        # Read statements
-        self.read()
+        # Import statements from file
+        self.import_file()
 
         self.is_unsaved: bool = False
 
@@ -72,16 +72,16 @@ class Account():
 
         return None
 
-    def read(self) -> None:
+    def import_file(self) -> None:
         """
-        Read from file
+        Import statements from file
         """
 
         try:
             # Open statements CSV file
             file = open(self.file_path, "r", encoding="utf8")
         except FileNotFoundError:
-            self.log.error("Account.read ERROR : Open statements CSV file FAILED")
+            self.log.error("Account.import_file ERROR : Open statements CSV file FAILED")
             return
 
         file_csv = csv.reader(file)
@@ -89,27 +89,26 @@ class Account():
         # For each statement line
         for stat_line in file_csv:
 
-            # Create and read statement
+            # Create statement
             stat = Statement(stat_line[Statement.IDX_DATE],
                              float(stat_line[Statement.IDX_BAL_START]),
                              float(stat_line[Statement.IDX_BAL_END]))
-            stat.read()
 
             # Add statement to statements list
             self.stat_list.append(stat)
 
         file.close()
 
-    def write(self):
+    def export_file(self):
         """
-        Write to CSV file
+        Export statements to file
         """
 
         try:
             # Open statements CSV file
             file = open(self.file_path, "w", encoding="utf8")
         except FileNotFoundError:
-            self.log.error("Account.write ERROR : Open statements CSV file FAILED")
+            self.log.error("Account.export_file ERROR : Open statements CSV file FAILED")
             return
 
         file_csv = csv.writer(file, delimiter=',', quotechar='"')
@@ -126,22 +125,6 @@ class Account():
         self.is_unsaved = False
 
         file.close()
-
-    def reset(self) -> None:
-        """
-        Reset : Read
-        """
-
-        # Read statements
-        self.read()
-
-    def save(self) -> None:
-        """
-        Save : Write
-        """
-
-        # Write statements
-        self.write()
 
     def insert_stat(self, stat: Statement) -> None:
         """
@@ -393,10 +376,10 @@ class AccountDispMgrCurses():
         win.keypad(True)
         curses.noecho()
 
+        # Create statement
         # Statement CSV file does not exit
-        # Read will create it
+        # Import will create it
         stat = Statement(date.strftime(FMT_DATE), bal_start, bal_end)
-        stat.read()
 
         # Append statement to statements list
         self.account.insertStat(stat)
@@ -535,7 +518,7 @@ class AccountDispMgrCurses():
                 stat_disp_mgr.browse()
 
             elif key == "s":
-                self.account.save()
+                self.account.export_file()
 
             elif key == '\x1b':
                 if self.account.is_unsaved:
@@ -549,7 +532,7 @@ class AccountDispMgrCurses():
                     if save_c != ord('n'):
                         win.addstr(4, 2, "Saving")
                         win.refresh()
-                        self.account.save()
+                        self.account.export_file()
                     else:
                         win.addstr(4, 2, "Discard changes",
                                    curses.color_pair(ColorPairId.RED_BLACK))
