@@ -4,7 +4,7 @@ Utils
 
 from datetime import date
 from enum import IntEnum
-from typing import List
+from typing import (List, Any)
 
 # Length for display padding
 LEN_DATE = 10
@@ -52,46 +52,57 @@ def get_next_month(date_in: date):
 
     return date_ret
 
-class ObjListBuffer():
+class Clipboard():
     """
-    Objects list buffer
+    Clipboard
     """
 
     def __init__(self) -> None:
 
-        self.obj_list: List = []
+        # Items list
+        self.item_list: List[Any] = []
+
+    def get_len(self) -> int:
+        """
+        Get items list length
+        """
+
+        return len(self.item_list)
 
     def clear(self) -> None:
         """
-        Clear objects buffer
+        Clean items list
         """
 
-        if len(self.obj_list) > 0:
-            self.obj_list.clear()
+        if len(self.item_list) > 0:
+            self.item_list.clear()
 
-    def set(self, obj_list: List) -> None:
+    def set(self, item_list: List[Any]) -> None:
         """
-        Set objects in buffer
+        Set items list
 
         Args:
-            obj_list (List): objects list to set in buffer
+            item_list (List[Any]): Items list to set in buffer
         """
 
         self.clear()
 
-        for operation in obj_list:
+        for item in item_list:
 
-            # Deep copy
-            op_new = operation.copy()
+            if hasattr(item, "copy"):
+                # Deep copy
+                item_new = item.copy()
+            else:
+                item_new = item
 
-            self.obj_list.append(op_new)
+            self.item_list.append(item_new)
 
-    def get(self) -> List:
+    def get(self) -> List[Any]:
         """
-        Get objects from buffer
+        Get items list
 
         Returns:
-            List: objects in buffer
+            List[Any]: Items list
         """
 
-        return self.obj_list
+        return self.item_list

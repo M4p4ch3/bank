@@ -10,7 +10,7 @@ from typing import (TYPE_CHECKING, List)
 from statement import (Statement, StatementDispMgrCurses)
 from utils import (LEN_DATE, LEN_NAME, LEN_AMOUNT,
                    FMT_DATE,
-                   WinId, ColorPairId, ObjListBuffer)
+                   WinId, ColorPairId, Clipboard)
 
 # Display
 import curses
@@ -176,7 +176,7 @@ class AccountDispMgrCurses():
     MISS_STAT += " " + "...".ljust(LEN_AMOUNT, " ") + " |"
 
     def __init__(self, account: Account, win_list: List[Window],
-                 op_list_buffer: ObjListBuffer) -> None:
+                 op_list_buffer: Clipboard) -> None:
 
         # Account
         self.account: Account = account
@@ -185,7 +185,7 @@ class AccountDispMgrCurses():
         self.win_list: List[Window] = win_list
 
         # Operations list buffer
-        self.op_list_buffer: ObjListBuffer = op_list_buffer
+        self.op_list_buffer: Clipboard = op_list_buffer
 
     def display(self, stat_first_idx: int, stat_hl: Statement) -> None:
         """

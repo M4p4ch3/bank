@@ -8,7 +8,7 @@ import sys
 from typing import (TYPE_CHECKING, List)
 
 from account import (Account, AccountDispMgrCurses)
-from utils import (ColorPairId, WinId, ObjListBuffer)
+from utils import (ColorPairId, WinId, Clipboard)
 
 if TYPE_CHECKING:
     from _curses import _CursesWindow
@@ -28,7 +28,7 @@ class DispMgrCurses():
         self.account: Account = account
 
         # Operations buffer
-        self.op_list_buffer: ObjListBuffer = ObjListBuffer()
+        self.op_list_buffer: Clipboard = Clipboard()
 
         # Windows list
         self.win_list: List[Window] = [None] * (WinId.LAST + 1)
