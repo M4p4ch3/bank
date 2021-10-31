@@ -310,14 +310,6 @@ class StatementDispMgrCurses():
         Display operations list
         """
 
-        # Main window
-        win_main: Window = self.win_list[WinId.MAIN]
-        win_main.clear()
-        win_main.border()
-        win_main.move(0, 2)
-        win_main.addstr(" STATEMENT ", A_BOLD)
-        win_main.refresh()
-
         # Sub main window
         win_sub: Window = self.win_list[WinId.SUB]
         win_sub_h: int = win_sub.getmaxyx()[0]
@@ -422,13 +414,22 @@ class StatementDispMgrCurses():
             win_sub.addstr(win_y, win_x, self.OP_MISS)
         win_y += 1
 
-        # Slider
         if len(self.stat.op_list) != 0:
-            (win_y, win_x) = (3, win_sub.getyx()[1])
-            win_y += int(self.op_focus_idx * op_disp_nb / len(self.stat.op_list))
-            for _ in range(int(op_disp_nb * op_disp_nb / len(self.stat.op_list))):
-                win_sub.addstr(win_y, win_x, " ", A_STANDOUT)
-                win_y += 1
+            op_disp_ratio = op_disp_nb / len(self.stat.op_list)
+
+        # Slider
+        (win_y, win_x) = (3, win_sub.getyx()[1])
+        for _ in range(0, int(self.op_focus_idx * op_disp_ratio)):
+            win_sub.addstr(win_y, win_x, " ")
+            win_y += 1
+        for _ in range(int(self.op_focus_idx * op_disp_ratio),
+                       int((self.op_focus_idx + op_disp_nb) * op_disp_ratio)):
+            win_sub.addstr(win_y, win_x, " ", A_STANDOUT)
+            win_y += 1
+        for _ in range(int((self.op_focus_idx + op_disp_nb) * op_disp_ratio),
+                       int((len(self.stat.op_list)) * op_disp_ratio)):
+            win_sub.addstr(win_y, win_x, " ")
+            win_y += 1
 
         win_sub.refresh()
 
@@ -678,23 +679,28 @@ class StatementDispMgrCurses():
             self.op_hl = None
         self.op_sel_list = []
 
-        is_hl_updated = False
-        is_focus_updated = False
+        # Main window
+        win_main: Window = self.win_list[WinId.MAIN]
+        win_main.clear()
+        win_main.border()
+        win_main.move(0, 2)
+        win_main.addstr(" STATEMENT ", A_BOLD)
+        win_main.refresh()
+
+        # Display statement info
+        self.display_info()
+
+        # Display commands
+        # self.display_commands()
+
+        # Display operations list
+        self.display_op_list(False, False)
 
         while True:
 
-            # Display operations list
-            self.display_op_list(is_hl_updated, is_focus_updated)
-
-            # Display updated
+            info_updated = False
             is_hl_updated = False
             is_focus_updated = False
-
-            # Display statement info
-            self.display_info()
-
-            # Display commands
-            # self.display_commands()
 
             key = self.win_list[WinId.MAIN].getkey()
 
@@ -736,32 +742,49 @@ class StatementDispMgrCurses():
             # Copy operations(s)
             elif key == "c":
                 self.copy_op_list()
+                info_updated = True
 
             # Cut operation(s)
             elif key == "x":
                 self.cut_op_list()
+                info_updated = True
 
             # Paste operation(s)
             elif key == "v":
                 self.paste_op_list()
+                info_updated = True
 
             # Open highlighted operation
             elif key == "\n":
                 self.browse_op()
+                info_updated = True
 
             # Add operation
             elif key in ("KEY_IC", "+"):
                 self.add_op()
+                info_updated = True
 
             # Delete operation(s)
             elif key in ("KEY_DC", "-"):
                 self.delete_op()
+                info_updated = True
 
             # Save
             elif key == "s":
                 self.stat.export_file()
+                info_updated = True
 
             # Exit
             elif key == '\x1b':
                 self.exit()
                 break
+
+            if info_updated:
+                # Display statement info
+                self.display_info()
+
+            # Display commands
+            # self.display_commands()
+
+            # Display operations list
+            self.display_op_list(is_hl_updated, is_focus_updated)
