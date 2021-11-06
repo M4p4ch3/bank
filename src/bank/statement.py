@@ -4,9 +4,11 @@ Statement
 
 import csv
 from datetime import datetime
+import logging
 from typing import (List, Tuple)
 
 from .operation import Operation
+from .utils.error_code import (OK, ERROR)
 from .utils.my_date import FMT_DATE
 
 class Statement():
@@ -20,13 +22,14 @@ class Statement():
     IDX_BAL_END = 2
     IDX_LAST = IDX_BAL_END
 
-    def __init__(self, name: str, bal_start: float, bal_end: float) -> None:
+    def __init__(self, date_str: str, bal_start: float, bal_end: float) -> None:
 
-        self.name: str = name
-        self.file_path: str = f"./data/statements/{name}.csv"
+        self.logger = logging.getLogger("Statement")
+
+        self.file_path: str = f"./data/statements/{date_str}.csv"
 
         try:
-            self.date: datetime = datetime.strptime(name, FMT_DATE)
+            self.date: datetime = datetime.strptime(date_str, FMT_DATE)
         except ValueError:
             # For pending statement
             self.date: datetime = datetime.now()
@@ -37,10 +40,6 @@ class Statement():
         self.op_list: List[Operation] = list()
 
         self.is_unsaved: bool = False
-
-        # TODO remove from init
-        # Import from file
-        self.import_file()
 
     def get_str(self, indent: int = 0) -> str:
         """
@@ -142,9 +141,22 @@ class Statement():
 
         return is_edited
 
-    # TODO add create_file
+    def create_file(self) -> int:
+        """
+        Create file
+        """
 
-    def import_file(self) -> None:
+        try:
+            file = open(self.file_path, "w+", encoding="utf8")
+        except OSError:
+            self.logger.error("create_file : Open %s file FAILED", self.file_path)
+            return ERROR
+
+        file.close()
+
+        return OK
+
+    def import_file(self) -> int:
         """
         Import operations from file
         """
@@ -152,14 +164,11 @@ class Statement():
         try:
             # Open CSV file
             file = open(self.file_path, "r", encoding="utf8")
-            file_csv = csv.reader(file)
         except FileNotFoundError:
-            # File not found
-            # Create new statement
-            file = open(self.file_path, "w+", encoding="utf8")
-            file.close()
-            # Don't proceed with import
-            return
+            self.logger.error("import_file : Open %s file FAILED", self.file_path)
+            return ERROR
+
+        file_csv = csv.reader(file)
 
         # Clear operations list
         self.op_list.clear()
@@ -185,6 +194,8 @@ class Statement():
         self.is_unsaved = False
 
         file.close()
+
+        return OK
 
     def export_file(self) -> None:
         """

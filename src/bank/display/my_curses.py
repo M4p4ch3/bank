@@ -6,7 +6,7 @@ import curses
 from curses import *
 from datetime import datetime
 from enum import IntEnum
-import sys
+import logging
 from typing import (TYPE_CHECKING, List)
 
 from ..account import Account
@@ -154,6 +154,8 @@ class AccountDispMgrCurses():
     def __init__(self, account: Account, win_list: List[Window],
                  op_list_buffer: Clipboard) -> None:
 
+        self.logger = logging.getLogger("AccountDispMgrCurses")
+
         # Account
         self.account: Account = account
 
@@ -237,7 +239,7 @@ class AccountDispMgrCurses():
                 disp_flag += A_STANDOUT
 
             win.addstr(win_y, win_x, "| ")
-            win.addstr(stat.name.ljust(LEN_NAME), disp_flag)
+            win.addstr(stat.date.strftime(FMT_DATE).ljust(LEN_NAME), disp_flag)
             win.addstr(" | ")
             win.addstr(stat.date.strftime(FMT_DATE).ljust(LEN_DATE), disp_flag)
             win.addstr(" | ")
@@ -284,7 +286,8 @@ class AccountDispMgrCurses():
 
         win.refresh()
 
-    def add_stat(self) -> None:
+    # TODO rework like operation.set_fields
+    def add_stat(self) -> int:
         """
         Add statement
         """
@@ -352,13 +355,19 @@ class AccountDispMgrCurses():
         win.keypad(True)
         curses.noecho()
 
-        # Create statement
-        # Statement CSV file does not exit
-        # Import will create it
+        # Init statement
         stat = Statement(date.strftime(FMT_DATE), bal_start, bal_end)
+
+        # Create statement file
+        ret = stat.create_file()
+        if ret != OK:
+            self.logger.error("add_stat : Create statement file FAILED")
+            return ret
 
         # Append statement to statements list
         self.account.insert_stat(stat)
+
+        return OK
 
     def delete_stat(self, stat: Statement) -> None:
         """
@@ -718,9 +727,6 @@ class StatementDispMgrCurses():
         win_info.addstr(0, 2, " INFO ", A_BOLD)
 
         (win_y, win_x) = (2, 2)
-        win_info.addstr(win_y, win_x, f"name : {self.stat.name}")
-        win_y += 1
-
         win_info.addstr(win_y, win_x, f"date : {self.stat.date.strftime(FMT_DATE)}")
         win_y += 1
 

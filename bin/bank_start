@@ -1,15 +1,25 @@
 #!/usr/bin/env python
 
 from curses import wrapper
+import logging
+import sys
 
 from bank import Account
 from bank.display import DispMgrCurses
+from bank.utils import (OK, ERROR)
+
+logger = logging.getLogger("bank_start")
 
 # Init account
-ACCOUNT = Account()
+account = Account()
+
+ret = account.import_file()
+if ret != OK:
+    logger.error("Import account file FAILED")
+    sys.exit(ERROR)
 
 # Init display
-DISPLAY = DispMgrCurses(ACCOUNT)
+disp_mgr = DispMgrCurses(account)
 
 # Start display
-wrapper(DISPLAY.wrap)
+wrapper(disp_mgr.wrap)

@@ -3,10 +3,13 @@ Account
 """
 
 import csv
+from datetime import datetime
 import logging
 from typing import List
 
 from .statement import Statement
+from .utils.error_code import (OK, ERROR)
+from .utils.my_date import FMT_DATE
 
 class Account():
     """
@@ -21,9 +24,6 @@ class Account():
 
         # Statements list
         self.stat_list: List[Statement] = list()
-
-        # Import statements from file
-        self.import_file()
 
         self.is_unsaved: bool = False
 
@@ -46,18 +46,18 @@ class Account():
 
         return ret
 
-    def get_stat(self, stat_name: str) -> Statement:
+    def get_stat(self, date: datetime) -> Statement:
         """
-        Get statement by name
+        Get statement by date
         """
 
         for stat in self.stat_list:
-            if stat.name == stat_name:
+            if stat.date == date:
                 return stat
 
         return None
 
-    def import_file(self) -> None:
+    def import_file(self) -> int:
         """
         Import statements from file
         """
@@ -66,23 +66,31 @@ class Account():
             # Open statements CSV file
             file = open(self.file_path, "r", encoding="utf8")
         except FileNotFoundError:
-            self.logger.error("Account.import_file ERROR : Open statements CSV file FAILED")
-            return
+            self.logger.error("import_file : Open %s file FAILED", self.file_path)
+            return ERROR
 
         file_csv = csv.reader(file)
 
         # For each statement line
         for stat_line in file_csv:
 
-            # Create statement
+            # Init statement
             stat = Statement(stat_line[Statement.IDX_DATE],
                              float(stat_line[Statement.IDX_BAL_START]),
                              float(stat_line[Statement.IDX_BAL_END]))
+
+            # Import statement file
+            ret = stat.import_file()
+            if ret != OK:
+                self.logger.error("import_file : Import statement file FAILED")
+                return ret
 
             # Add statement to statements list
             self.stat_list.append(stat)
 
         file.close()
+
+        return OK
 
     def export_file(self):
         """
@@ -93,7 +101,7 @@ class Account():
             # Open statements CSV file
             file = open(self.file_path, "w", encoding="utf8")
         except FileNotFoundError:
-            self.logger.error("Account.export_file ERROR : Open statements CSV file FAILED")
+            self.logger.error("export_file : Open %s file FAILED", self.file_path)
             return
 
         file_csv = csv.writer(file, delimiter=',', quotechar='"')
@@ -102,7 +110,8 @@ class Account():
         for stat in self.stat_list:
 
             # Create statement line
-            stat_csv = [stat.name, str(stat.bal_start), str(stat.bal_end)]
+            stat_csv = [stat.date.strftime(FMT_DATE),
+                        str(stat.bal_start), str(stat.bal_end)]
 
             # Write statement line to CSV file
             file_csv.writerow(stat_csv)
