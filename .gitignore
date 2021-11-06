@@ -1,15 +1,14 @@
 
-# CSV files
-**.csv
-
 # VS code
-.vscode
+**/.vscode
 # Python cache
-__pycache__
+**/__pycache__
 
-# Data folder
-data
-# Save folder
-sav
-# Statements folder
-statements
+# Local data
+**/data
+**/*.csv
+
+# Package
+**/**egg-info
+**/build
+**/dist

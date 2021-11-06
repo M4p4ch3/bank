@@ -1,0 +1,15 @@
+#!/usr/bin/env python
+
+from curses import wrapper
+
+from bank import Account
+from bank.display import DispMgrCurses
+
+# Init account
+ACCOUNT = Account()
+
+# Init display
+DISPLAY = DispMgrCurses(ACCOUNT)
+
+# Start display
+wrapper(DISPLAY.wrap)
