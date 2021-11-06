@@ -181,9 +181,10 @@ class Statement():
 
             # Create operation
             op_date = datetime.strptime(op_line[Operation.IDX_DATE], FMT_DATE)
-            operation = Operation(op_date, op_line[Operation.IDX_MODE], op_line[Operation.IDX_TIER],
-                           op_line[Operation.IDX_CAT], op_line[Operation.IDX_DESC],
-                           float(op_line[Operation.IDX_AMOUNT]))
+            operation = Operation(
+                op_date, op_line[Operation.IDX_MODE], op_line[Operation.IDX_TIER],
+                op_line[Operation.IDX_CAT], op_line[Operation.IDX_DESC],
+                float(op_line[Operation.IDX_AMOUNT]))
 
             # Add operation to list
             self.op_list.append(operation)
@@ -376,6 +377,14 @@ class StatementDispMgrCurses():
         win_sub.addstr(win_y, win_x, self.OP_HEADER)
         win_y += 1
 
+        if len(self.stat.op_list) == 0:
+            win_sub.addstr(win_y, win_x, self.OP_SEP)
+            win_y += 1
+            win_sub.addstr(win_y, win_x, self.OP_SEP)
+            win_y += 1
+            win_sub.refresh()
+            return
+
         # Operation separator or missing
         if self.op_focus_idx == 0:
             win_sub.addstr(win_y, win_x, self.OP_SEP)
@@ -398,12 +407,12 @@ class StatementDispMgrCurses():
                 disp_flag += A_BOLD
 
             op_str = "|"
-            op_str += " " + operation.date.strftime(FMT_DATE).ljust(LEN_DATE, ' ') + " |"
+            op_str += " " + operation.date.strftime(FMT_DATE)[:LEN_DATE].ljust(LEN_DATE, ' ') + " |"
             op_str += " " + operation.mode.ljust(LEN_MODE, ' ') + " |"
-            op_str += " " + operation.tier.ljust(LEN_TIER, ' ') + " |"
-            op_str += " " + operation.cat.ljust(LEN_CAT, ' ') + " |"
-            op_str += " " + operation.desc.ljust(LEN_DESC, ' ') + " |"
-            op_str += " " + str(operation.amount).ljust(LEN_AMOUNT, ' ') + " |"
+            op_str += " " + operation.tier[:LEN_TIER].ljust(LEN_TIER, ' ') + " |"
+            op_str += " " + operation.cat[:LEN_CAT].ljust(LEN_CAT, ' ') + " |"
+            op_str += " " + operation.desc[:LEN_DESC].ljust(LEN_DESC, ' ') + " |"
+            op_str += " " + str(operation.amount)[:LEN_AMOUNT].ljust(LEN_AMOUNT, ' ') + " |"
             win_sub.addstr(win_y, win_x, op_str, disp_flag)
             win_y += 1
 
@@ -467,7 +476,7 @@ class StatementDispMgrCurses():
         win_y += 1
 
         win_info.addstr(win_y, win_x,
-            f"actual end : {(self.stat.bal_start + self.stat.op_sum):.2f}")
+                        f"actual end : {(self.stat.bal_start + self.stat.op_sum):.2f}")
         win_y += 1
 
         bal_err = round(self.stat.bal_start + self.stat.op_sum - self.stat.bal_end, 2)
@@ -512,8 +521,10 @@ class StatementDispMgrCurses():
 
         if len(self.op_sel_list) > 0:
             op_list = self.op_sel_list
-        else:
+        elif self.op_hl is not None:
             op_list = [self.op_hl]
+        else:
+            return
 
         self.op_list_clipboard.set(op_list)
 
@@ -527,8 +538,10 @@ class StatementDispMgrCurses():
 
         if len(self.op_sel_list) > 0:
             op_list = self.op_sel_list
-        else:
+        elif self.op_hl is not None:
             op_list = [self.op_hl]
+        else:
+            return
 
         self.op_list_clipboard.set(op_list)
 
@@ -588,8 +601,8 @@ class StatementDispMgrCurses():
         operation = Operation(datetime.now(), "", "", "", "", 0.0)
 
         # Set operation fields using display manager
-        op_disp_mgr: OperationDispMgrCurses = OperationDispMgrCurses(operation,
-            self.win_list[WinId.INPUT])
+        op_disp_mgr: OperationDispMgrCurses = OperationDispMgrCurses(
+            operation, self.win_list[WinId.INPUT])
         op_disp_mgr.set_fields()
 
         # Insert new operation
@@ -620,7 +633,7 @@ class StatementDispMgrCurses():
         win.addstr(2, 2, f"Delete {len(op_del_list)} operations")
         win.addstr(4, 2, "Confirm ? (y/n) : ")
         confirm_c = win.getch()
-        if confirm_c != ord('win_y'):
+        if confirm_c != ord('y'):
             win.addstr(7, 2, "Canceled", curses.color_pair(ColorPairId.RED_BLACK))
             win.refresh()
             return
@@ -662,7 +675,7 @@ class StatementDispMgrCurses():
 
                 # Discard changes
                 win.addstr(4, 2, "Discard changes",
-                            curses.color_pair(ColorPairId.RED_BLACK))
+                           curses.color_pair(ColorPairId.RED_BLACK))
                 win.refresh()
                 self.stat.import_file()
 
@@ -706,6 +719,8 @@ class StatementDispMgrCurses():
 
             # Highlight previous operation
             if key == "KEY_UP":
+                if self.op_hl is None:
+                    continue
                 op_hl_idx = self.stat.op_list.index(self.op_hl) - 1
                 if op_hl_idx < 0:
                     op_hl_idx = 0
@@ -715,6 +730,8 @@ class StatementDispMgrCurses():
 
             # Highlight next operation
             elif key == "KEY_DOWN":
+                if self.op_hl is None:
+                    continue
                 op_hl_idx = self.stat.op_list.index(self.op_hl) + 1
                 if op_hl_idx >= len(self.stat.op_list):
                     op_hl_idx = len(self.stat.op_list) - 1
@@ -724,16 +741,22 @@ class StatementDispMgrCurses():
 
             # Focus previous operations
             elif key == "KEY_PPAGE":
+                if self.op_hl is None:
+                    continue
                 self.op_focus_idx -= 3
                 is_focus_updated = True
 
             # Focus next operations
             elif key == "KEY_NPAGE":
+                if self.op_hl is None:
+                    continue
                 self.op_focus_idx += 3
                 is_focus_updated = True
 
             # Trigger operation selection
             elif key == " ":
+                if self.op_hl is None:
+                    continue
                 if self.op_hl not in self.op_sel_list:
                     self.op_sel_list.append(self.op_hl)
                 else:

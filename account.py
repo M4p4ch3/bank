@@ -382,7 +382,7 @@ class AccountDispMgrCurses():
         stat = Statement(date.strftime(FMT_DATE), bal_start, bal_end)
 
         # Append statement to statements list
-        self.account.insertStat(stat)
+        self.account.insert_stat(stat)
 
     def delete_stat(self, stat: Statement) -> None:
         """
