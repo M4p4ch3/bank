@@ -6,7 +6,7 @@ import sys
 
 from bank import Account
 from bank.display import (DispCurses, AccountDispCurses)
-from bank.utils import (OK, ERROR)
+from bank.utils import RetCode
 
 def wrap(win):
     """
@@ -29,9 +29,9 @@ account = Account()
 
 # Import account file
 ret = account.import_file()
-if ret != OK:
+if ret != RetCode.OK:
     logger.error("Import account file FAILED")
-    sys.exit(ERROR)
+    sys.exit(RetCode.ERROR)
 
 # Curses wrapper
 wrapper(wrap)

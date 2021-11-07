@@ -57,4 +57,16 @@ class Clipboard():
             List[Any]: Items list
         """
 
-        return self.item_list
+        item_list = []
+
+        for item in self.item_list:
+
+            if hasattr(item, "copy"):
+                # Deep copy
+                item_new = item.copy()
+            else:
+                item_new = item
+
+            item_list.append(item_new)
+
+        return item_list

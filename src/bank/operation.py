@@ -3,6 +3,7 @@ Operation
 """
 
 from datetime import datetime
+from enum import IntEnum
 from typing import Tuple
 
 from .utils import FMT_DATE
@@ -12,14 +13,18 @@ class Operation():
     Operation
     """
 
-    # Field index
-    IDX_DATE = 0
-    IDX_MODE = 1
-    IDX_TIER = 2
-    IDX_CAT = 3
-    IDX_DESC = 4
-    IDX_AMOUNT = 5
-    IDX_LAST = IDX_AMOUNT
+    class FieldIdx(IntEnum):
+        """
+        Field index
+        """
+
+        DATE = 0
+        MODE = 1
+        TIER = 2
+        CAT = 3
+        DESC = 4
+        AMOUNT = 5
+        LAST = AMOUNT
 
     def __init__(self, op_date: datetime, mode: str,
                  tier: str, cat: str, desc: str, amount: float) -> None:
@@ -58,17 +63,17 @@ class Operation():
 
         ret = ("", "")
 
-        if field_idx == self.IDX_DATE:
+        if field_idx == self.FieldIdx.DATE:
             ret = ("date", self.date.strftime(FMT_DATE))
-        elif field_idx == self.IDX_MODE:
+        elif field_idx == self.FieldIdx.MODE:
             ret = ("mode", self.mode)
-        elif field_idx == self.IDX_TIER:
+        elif field_idx == self.FieldIdx.TIER:
             ret = ("tier", self.tier)
-        elif field_idx == self.IDX_CAT:
+        elif field_idx == self.FieldIdx.CAT:
             ret = ("cat", self.cat)
-        elif field_idx == self.IDX_DESC:
+        elif field_idx == self.FieldIdx.DESC:
             ret = ("desc", self.desc)
-        elif field_idx == self.IDX_AMOUNT:
+        elif field_idx == self.FieldIdx.AMOUNT:
             ret = ("amount", str(self.amount))
 
         return ret
@@ -81,20 +86,20 @@ class Operation():
 
         is_edited = True
 
-        if field_idx == self.IDX_DATE:
+        if field_idx == self.FieldIdx.DATE:
             try:
                 self.date = datetime.strptime(val_str, FMT_DATE)
             except ValueError:
                 is_edited = False
-        elif field_idx == self.IDX_MODE:
+        elif field_idx == self.FieldIdx.MODE:
             self.mode = val_str
-        elif field_idx == self.IDX_TIER:
+        elif field_idx == self.FieldIdx.TIER:
             self.tier = val_str
-        elif field_idx == self.IDX_CAT:
+        elif field_idx == self.FieldIdx.CAT:
             self.cat = val_str
-        elif field_idx == self.IDX_DESC:
+        elif field_idx == self.FieldIdx.DESC:
             self.desc = val_str
-        elif field_idx == self.IDX_AMOUNT:
+        elif field_idx == self.FieldIdx.AMOUNT:
             try:
                 self.amount = float(val_str)
             except ValueError:

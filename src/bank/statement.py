@@ -4,11 +4,12 @@ Statement
 
 import csv
 from datetime import datetime
+from enum import IntEnum
 import logging
 from typing import (List, Tuple)
 
 from .operation import Operation
-from .utils.error_code import (OK, ERROR)
+from .utils.return_code import RetCode
 from .utils.my_date import FMT_DATE
 
 class Statement():
@@ -16,11 +17,15 @@ class Statement():
     Statement
     """
 
-    # Field index
-    IDX_DATE = 0
-    IDX_BAL_START = 1
-    IDX_BAL_END = 2
-    IDX_LAST = IDX_BAL_END
+    class FieldIdx(IntEnum):
+        """
+        Field index
+        """
+
+        DATE = 0
+        BAL_START = 1
+        BAL_END = 2
+        LAST = BAL_END
 
     def __init__(self, date_str: str, bal_start: float, bal_end: float) -> None:
 
@@ -71,11 +76,11 @@ class Statement():
         """
 
         ret = ("", "")
-        if field_idx == self.IDX_DATE:
+        if field_idx == self.FieldIdx.DATE:
             ret = ("date", self.date.strftime(FMT_DATE))
-        elif field_idx == self.IDX_BAL_START:
+        elif field_idx == self.FieldIdx.BAL_START:
             ret = ("start balance", str(self.bal_start))
-        elif field_idx == self.IDX_BAL_END:
+        elif field_idx == self.FieldIdx.BAL_END:
             ret = ("start balance", str(self.bal_end))
 
         return ret
@@ -120,17 +125,17 @@ class Statement():
 
         is_edited = True
 
-        if field_idx == self.IDX_DATE:
+        if field_idx == self.FieldIdx.DATE:
             try:
                 self.date = datetime.strptime(val_str, FMT_DATE)
             except ValueError:
                 is_edited = False
-        elif field_idx == self.IDX_BAL_START:
+        elif field_idx == self.FieldIdx.BAL_START:
             try:
                 self.bal_start = float(val_str)
             except ValueError:
                 is_edited = False
-        elif field_idx == self.IDX_BAL_END:
+        elif field_idx == self.FieldIdx.BAL_END:
             try:
                 self.bal_end = float(val_str)
             except ValueError:
@@ -141,7 +146,7 @@ class Statement():
 
         return is_edited
 
-    def create_file(self) -> int:
+    def create_file(self) -> RetCode:
         """
         Create file
         """
@@ -150,13 +155,13 @@ class Statement():
             file = open(self.file_path, "w+", encoding="utf8")
         except OSError:
             self.logger.error("create_file : Open %s file FAILED", self.file_path)
-            return ERROR
+            return RetCode.ERROR
 
         file.close()
 
-        return OK
+        return RetCode.OK
 
-    def import_file(self) -> int:
+    def import_file(self) -> RetCode:
         """
         Import operations from file
         """
@@ -166,7 +171,7 @@ class Statement():
             file = open(self.file_path, "r", encoding="utf8")
         except FileNotFoundError:
             self.logger.error("import_file : Open %s file FAILED", self.file_path)
-            return ERROR
+            return RetCode.ERROR
 
         file_csv = csv.reader(file)
 
@@ -179,11 +184,11 @@ class Statement():
         for op_line in file_csv:
 
             # Create operation
-            op_date = datetime.strptime(op_line[Operation.IDX_DATE], FMT_DATE)
+            op_date = datetime.strptime(op_line[Operation.FieldIdx.DATE], FMT_DATE)
             operation = Operation(
-                op_date, op_line[Operation.IDX_MODE], op_line[Operation.IDX_TIER],
-                op_line[Operation.IDX_CAT], op_line[Operation.IDX_DESC],
-                float(op_line[Operation.IDX_AMOUNT]))
+                op_date, op_line[Operation.FieldIdx.MODE], op_line[Operation.FieldIdx.TIER],
+                op_line[Operation.FieldIdx.CAT], op_line[Operation.FieldIdx.DESC],
+                float(op_line[Operation.FieldIdx.AMOUNT]))
 
             # Add operation to list
             self.op_list.append(operation)
@@ -195,7 +200,7 @@ class Statement():
 
         file.close()
 
-        return OK
+        return RetCode.OK
 
     def export_file(self) -> None:
         """
@@ -221,9 +226,9 @@ class Statement():
 
         file.close()
 
-    def insert_op(self, operation: Operation) -> None:
+    def add_op(self, operation: Operation) -> None:
         """
-        Insert operation
+        Add operation
         """
 
         # Find index
@@ -239,16 +244,24 @@ class Statement():
 
         self.is_unsaved = True
 
-    def del_op_list(self, op_list: List[Operation]) -> None:
+    def remove_op(self, operation: Operation) -> None:
         """
-        Delete operation list
+        Remove operation
         """
 
-        # For each operation
-        for operation in op_list:
-            # Remove operation from statement
-            self.op_list.remove(operation)
-            # Update operation sum
-            self.op_sum -= operation.amount
+        if operation not in self.op_list:
+            return
+
+        self.op_list.remove(operation)
+
+        self.op_sum -= operation.amount
 
         self.is_unsaved = True
+
+    def remove_op_list(self, op_list: List[Operation]) -> None:
+        """
+        Remove operation list
+        """
+
+        for operation in op_list:
+            self.remove_op(operation)

@@ -7,13 +7,14 @@ from curses import *
 from datetime import datetime
 from enum import IntEnum
 import logging
-from typing import (TYPE_CHECKING, List)
+from typing import (TYPE_CHECKING, Any, List)
 
 from ..account import Account
 from ..statement import Statement
 from ..operation import Operation
 from ..utils.clipboard import Clipboard
 from ..utils.my_date import FMT_DATE
+from ..utils.return_code import RetCode
 
 if TYPE_CHECKING:
     from _curses import _CursesWindow
@@ -64,21 +65,18 @@ class DispCurses():
 
     def __init__(self, win_main: Window) -> None:
 
+        self.logger = logging.getLogger("DispCurses")
+
         # Windows list
         self.win_list: List[Window] = [None] * (WinId.LAST + 1)
 
-        self.item_focus_idx: Statement | Operation = None
-
-        self.item_hl: Statement | Operation = None
-
-        self.item_list_sel: List[Statement | Operation] = []
-
-        # Operations clipboard
-        self.op_list_clipboard: Clipboard = Clipboard()
+        # Item list clipboard
+        self.item_list_clipboard: Clipboard = Clipboard()
 
         # Main window
         (win_main_h, win_main_w) = win_main.getmaxyx()
         self.win_list[WinId.MAIN] = win_main
+        win_main.keypad(True)
 
         # Sub main window
         win_h = win_main_h - 2 * self.BORDER_H - 2 * self.PADDING_Y
@@ -103,593 +101,948 @@ class DispCurses():
         win_y = win_main_h - self.BORDER_H - win_h - self.PADDING_Y
         win_x = win_main_w - self.BORDER_W - win_w - self.PADDING_X
         win = curses.newwin(win_h, win_w, win_y, win_x)
-        win.keypad(True)
         self.win_list[WinId.INPUT] = win
 
         curses.init_pair(ColorPairId.RED_BLACK, curses.COLOR_RED, curses.COLOR_BLACK)
         curses.init_pair(ColorPairId.GREEN_BLACK, curses.COLOR_GREEN, curses.COLOR_BLACK)
 
-    def display():
+class ContainerDispCurses():
+    """
+    Curses container (account, statement) display
+    """
 
-        pass
+    ITEM_SEPARATOR = ""
+    ITEM_HEADER = ""
+    ITEM_MISSING = ""
 
-class AccountDispCurses():
+    def __init__(self, disp: DispCurses) -> None:
+
+        # Main display
+        self.disp: DispCurses = disp
+
+        self.item_hl:Any = None
+
+        self.item_sel_list = [Any]
+
+    def get_item_list(self) -> List[Any]:
+        """
+        Get item list
+        """
+        # To overload
+        return []
+
+    def add_item(self, item: Any) -> None:
+        """
+        Add item
+        """
+        # To overload
+
+    def remove_item_list(self, item_list: List[Any]) -> RetCode:
+        """
+        Remove item list
+        """
+        # To overload
+        return RetCode.OK
+
+    def edit_item(self, item) -> None:
+        """
+        Edit item
+        """
+
+        field_focus_idx: int = 0
+
+        while True:
+
+            self.display_item_fields(item, field_focus_idx)
+
+    def browse_item(self, item) -> None:
+        """
+        Browse item
+        """
+        # To overload
+
+    def create_item(self) -> Any:
+        """
+        Create item
+        """
+        # To overload
+        a: int = 0
+        return a
+
+    def copy(self) -> None:
+        """
+        Copy selected or highlited item(s)
+        """
+
+        if len(self.item_sel_list) > 0:
+            item_list = self.item_sel_list
+        elif self.item_hl is not None:
+            item_list = [self.item_hl]
+        else:
+            return
+
+        self.disp.item_list_clipboard.set(item_list)
+
+    def cut(self) -> None:
+        """
+        Cut selected or highlited item(s)
+        """
+
+        if len(self.item_sel_list) > 0:
+            item_list = self.item_sel_list
+        elif self.item_hl is not None:
+            item_list = [self.item_hl]
+        else:
+            return
+
+        self.disp.item_list_clipboard.set(item_list)
+
+        # If highlighted item in buffer
+        if self.item_hl in item_list:
+            # Highlight closest item
+            # TODO
+            # self.item_hl = self.get_closest_item(item_list)
+            item_list: List[Any] = self.get_item_list()
+            self.item_hl = item_list[0]
+
+        # Remove items list
+        for item in item_list:
+            self.remove_item(item)
+
+    def paste(self) -> None:
+        """
+        Paste item(s)
+        """
+
+        item_list = self.disp.item_list_clipboard.get()
+        if item_list is None or len(item_list) == 0:
+            return
+
+        # Add item list
+        for item in item_list:
+            self.add_item(item)
+
+    def save(self) -> None:
+        """
+        Save
+        """
+        # To overload
+
+    def exit(self) -> RetCode:
+        """
+        Exit
+        """
+        # To overload
+        return RetCode.OK
+
+    def display_info(self) -> None:
+        """
+        Display info
+        """
+        # To overload
+
+    def display_item_fields(self, item, field_focus_idx: int) -> None:
+        """
+        Display fields
+        """
+
+        win: Window = self.disp.win_list[WinId.INPUT]
+
+        for field_idx in range(item.FieldIdx.LAST):
+
+            (name, value) = item.get_field(field_idx)
+
+            win.addstr(name)
+            win.addstr(value)
+
+        win.refresh()
+
+    def display_item_line(self, item, win: Window,
+                          win_y: int, win_x: int, flag) -> None:
+        """
+        Display item line
+        """
+        # To overload
+
+    def display_item_list(self, item_focus_idx: int,
+                          hl_changed: bool, focus_changed: bool) -> None:
+        """
+        Display list of items (statements or operations)
+
+        Args:
+            item_focus_idx (int): Focused item
+            hl_changed (bool): Is highlighted item updated
+            focus_changed (bool): Is focused item updated
+        """
+
+        item_list: List[Any] = self.get_item_list()
+
+        # Sub main window
+        win: Window = self.disp.win_list[WinId.SUB]
+        win_h: int = win.getmaxyx()[0]
+
+        # Number of displayed items
+        item_disp_nb: int = win_h - 4
+        if len(item_list) < item_disp_nb:
+            item_disp_nb = len(item_list)
+
+        # If highlighted item updated
+        if hl_changed:
+
+            # Fix focus
+
+            item_hl_idx = item_list.index(self.item_hl)
+
+            if item_hl_idx < item_focus_idx:
+
+                # Move focus up
+                item_focus_idx -= 1
+                if item_focus_idx < 0:
+                    item_focus_idx = 0
+
+            elif item_hl_idx > item_focus_idx + item_disp_nb - 1:
+
+                # Move focus down
+                item_focus_idx += 1
+                if item_focus_idx > len(item_list) - item_disp_nb:
+                    item_focus_idx = len(item_list) - item_disp_nb
+
+        # Else, if focus updated
+        elif focus_changed:
+
+            # Fix focus
+
+            if item_focus_idx < 0:
+                item_focus_idx = 0
+            elif item_focus_idx > len(item_list) - item_disp_nb:
+                item_focus_idx = len(item_list) - item_disp_nb
+
+            # Fix highlighted item
+
+            item_hl_idx = item_list.index(self.item_hl)
+
+            if item_hl_idx < item_focus_idx:
+
+                # Highlight first displayed item
+                item_hl_idx = item_focus_idx
+                self.item_hl = item_list[item_hl_idx]
+
+            elif item_hl_idx > item_focus_idx + item_disp_nb - 1:
+
+                # Highlight last displayed item
+                item_hl_idx = item_focus_idx + item_disp_nb - 1
+                self.item_hl = item_list[item_hl_idx]
+
+        item_separator = self.ITEM_SEPARATOR
+        item_header = self.ITEM_HEADER
+        item_missing = self.ITEM_MISSING
+
+        (win_y, win_x) = (0, 0)
+
+        # Item separator
+        win.addstr(win_y, win_x, item_separator)
+        win_y += 1
+
+        # Item header
+        win.addstr(win_y, win_x, item_header)
+        win_y += 1
+
+        # TODO merge to common case
+        if len(item_list) == 0:
+            win.addstr(win_y, win_x, item_separator)
+            win_y += 1
+            win.addstr(win_y, win_x, item_separator)
+            win_y += 1
+            win.refresh()
+            return
+
+        # Item separator or missing
+        if item_focus_idx == 0:
+            win.addstr(win_y, win_x, item_separator)
+        else:
+            win.addstr(win_y, win_x, item_missing)
+        win_y += 1
+
+        # Item list
+        for item_idx in range(item_focus_idx, item_focus_idx + item_disp_nb):
+
+            if item_idx >= len(item_list):
+                break
+
+            item = item_list[item_idx]
+
+            disp_flag = A_NORMAL
+            if item == self.item_hl:
+                disp_flag += A_STANDOUT
+            if item in self.item_sel_list:
+                disp_flag += A_BOLD
+
+            self.display_item_line(item, win, win_y, win_x, disp_flag)
+            win_y += 1
+
+        # Item separator or missing
+        if item_idx == len(item_list) - 1:
+            win.addstr(win_y, win_x, item_separator)
+        else:
+            win.addstr(win_y, win_x, item_missing)
+        win_y += 1
+
+        if len(item_list) != 0:
+            op_disp_ratio = item_disp_nb / len(item_list)
+
+        # Slider
+        (win_y, win_x) = (3, win.getyx()[1])
+        for _ in range(0, int(item_focus_idx * op_disp_ratio)):
+            win.addstr(win_y, win_x, " ")
+            win_y += 1
+        for _ in range(int(item_focus_idx * op_disp_ratio),
+                       int((item_focus_idx + item_disp_nb) * op_disp_ratio)):
+            win.addstr(win_y, win_x, " ", A_STANDOUT)
+            win_y += 1
+        for _ in range(int((item_focus_idx + item_disp_nb) * op_disp_ratio),
+                       int((len(item_list)) * op_disp_ratio)):
+            win.addstr(win_y, win_x, " ")
+            win_y += 1
+
+        win.refresh()
+
+    def browse(self):
+        """
+        Browse
+        """
+
+        # Init
+        item_list: List[Any] = self.get_item_list()
+        item_focus_idx: int = 0
+        if len(item_list) != 0:
+            self.item_hl = item_list[0]
+        else:
+            self.item_hl = None
+        self.item_sel_list = []
+
+        # Main window
+        win: Window = self.disp.win_list[WinId.MAIN]
+        win.clear()
+        win.border()
+        win.move(0, 2)
+        win.addstr(" STATEMENT ", A_BOLD)
+        win.refresh()
+
+        # Display info
+        self.display_info()
+
+        # Display item list
+        self.display_item_list(item_focus_idx, False, False)
+
+        while True:
+
+            item_list: List[Any] = self.get_item_list()
+
+            hl_changed = False
+            focus_changed = False
+
+            key = win.getkey()
+
+            # Highlight previous item
+            if key == "KEY_UP":
+                if self.item_hl is None:
+                    continue
+                op_hl_idx = item_list.index(self.item_hl) - 1
+                if op_hl_idx < 0:
+                    op_hl_idx = 0
+                    continue
+                self.item_hl = item_list[op_hl_idx]
+                hl_changed = True
+
+            # Highlight next item
+            elif key == "KEY_DOWN":
+                if self.item_hl is None:
+                    continue
+                op_hl_idx = item_list.index(self.item_hl) + 1
+                if op_hl_idx >= len(item_list):
+                    op_hl_idx = len(item_list) - 1
+                    continue
+                self.item_hl = item_list[op_hl_idx]
+                hl_changed = True
+
+            # Focus previous item
+            elif key == "KEY_PPAGE":
+                if self.item_hl is None:
+                    continue
+                item_focus_idx -= 3
+                focus_changed = True
+
+            # Focus next item
+            elif key == "KEY_NPAGE":
+                if self.item_hl is None:
+                    continue
+                item_focus_idx += 3
+                focus_changed = True
+
+            # Trigger item selection
+            elif key == " ":
+                if self.item_hl is None:
+                    continue
+                if self.item_hl not in self.item_sel_list:
+                    self.item_sel_list.append(self.item_hl)
+                else:
+                    self.item_sel_list.remove(self.item_hl)
+
+            # Copy item(s)
+            elif key == "c":
+                self.copy()
+
+            # Cut item(s)
+            elif key == "x":
+                self.cut()
+
+            # Paste item(s)
+            elif key == "v":
+                self.paste()
+
+            # Edit highlighted item
+            elif key == "e":
+                self.edit_item(self.item_hl)
+
+            # Open highlighted item
+            elif key == "\n":
+                self.browse_item(self.item_hl)
+
+            # Add new item
+            elif key in ("KEY_IC", "+"):
+                item = self.create_item()
+                if item is not None:
+                    self.add_item(item)
+
+            # Remove item(s)
+            elif key in ("KEY_DC", "-"):
+                ret = RetCode.CANCELED
+                if len(self.item_sel_list) != 0:
+                    ret = self.remove_item_list(self.item_sel_list)
+                elif self.item_hl is not None:
+                    ret = self.remove_item_list([self.item_hl])
+
+            # Save
+            elif key == "s":
+                self.save()
+
+            # Exit
+            elif key == '\x1b':
+                ret = self.exit()
+                if ret == RetCode.OK:
+                    break
+
+            # Display info
+            self.display_info()
+
+            # Display item list
+            self.display_item_list(item_focus_idx, hl_changed, focus_changed)
+
+class AccountDispCurses(ContainerDispCurses):
     """
     Curses account display
     """
 
-    # Statement separator
-    SEP_STAT = "|"
-    SEP_STAT += "-" + "-".ljust(LEN_NAME, "-") + "-|"
-    SEP_STAT += "-" + "-".ljust(LEN_DATE, "-") + "-|"
-    SEP_STAT += "-" + "-".ljust(LEN_AMOUNT, "-") + "-|"
-    SEP_STAT += "-" + "-".ljust(LEN_AMOUNT, "-") + "-|"
-    SEP_STAT += "-" + "-".ljust(LEN_AMOUNT, "-") + "-|"
-    SEP_STAT += "-" + "-".ljust(LEN_AMOUNT, "-") + "-|"
+    # Item separator
+    ITEM_SEPARATOR = "|"
+    ITEM_SEPARATOR += "-" + "-".ljust(LEN_NAME, "-") + "-|"
+    ITEM_SEPARATOR += "-" + "-".ljust(LEN_DATE, "-") + "-|"
+    ITEM_SEPARATOR += "-" + "-".ljust(LEN_AMOUNT, "-") + "-|"
+    ITEM_SEPARATOR += "-" + "-".ljust(LEN_AMOUNT, "-") + "-|"
+    ITEM_SEPARATOR += "-" + "-".ljust(LEN_AMOUNT, "-") + "-|"
+    ITEM_SEPARATOR += "-" + "-".ljust(LEN_AMOUNT, "-") + "-|"
 
-    # Statement missing
-    MISS_STAT = "|"
-    MISS_STAT += " " + "...".ljust(LEN_NAME, " ") + " |"
-    MISS_STAT += " " + "...".ljust(LEN_DATE, " ") + " |"
-    MISS_STAT += " " + "...".ljust(LEN_AMOUNT, " ") + " |"
-    MISS_STAT += " " + "...".ljust(LEN_AMOUNT, " ") + " |"
-    MISS_STAT += " " + "...".ljust(LEN_AMOUNT, " ") + " |"
+    # Item header
+    ITEM_HEADER = "|"
+    ITEM_HEADER += " " + "name".ljust(LEN_DATE, " ") + " |"
+    ITEM_HEADER += " " + "date".ljust(LEN_DATE, " ") + " |"
+    ITEM_HEADER += " " + "start".ljust(LEN_AMOUNT, " ") + " |"
+    ITEM_HEADER += " " + "end".ljust(LEN_AMOUNT, " ") + " |"
+    ITEM_HEADER += " " + "diff".ljust(LEN_AMOUNT, " ") + " |"
+    ITEM_HEADER += " " + "error".ljust(LEN_AMOUNT, " ") + " |"
+
+    # Item missing
+    ITEM_MISSING = "|"
+    ITEM_MISSING += " " + "...".ljust(LEN_NAME, " ") + " |"
+    ITEM_MISSING += " " + "...".ljust(LEN_DATE, " ") + " |"
+    ITEM_MISSING += " " + "...".ljust(LEN_AMOUNT, " ") + " |"
+    ITEM_MISSING += " " + "...".ljust(LEN_AMOUNT, " ") + " |"
+    ITEM_MISSING += " " + "...".ljust(LEN_AMOUNT, " ") + " |"
 
     def __init__(self, account: Account, disp: DispCurses) -> None:
 
         self.logger = logging.getLogger("AccountDispCurses")
 
+        # Init container display
+        super().__init__(disp)
+
         # Account
         self.account: Account = account
 
-        # Main display
-        self.disp: DispCurses = disp
-
-    def display(self, stat_first_idx: int, stat_hl: Statement) -> None:
+    def get_item_list(self) -> List[Statement]:
         """
-        Display
+        Get statement list
         """
+        return self.account.stat_list
 
-        # Number of statements to display
-        win_sub_h = self.disp.win_list[WinId.SUB].getmaxyx()[0]
-        stat_disp_nb: int = win_sub_h - 4
-        if len(self.account.stat_list) < stat_disp_nb:
-            stat_disp_nb = len(self.account.stat_list)
-
-        # Main window
-        win: Window = self.disp.win_list[WinId.MAIN]
-
-        # Border
-        win.clear()
-        win.border()
-        win.move(0, 2)
-        win.addstr(" STATEMENTS ", A_BOLD)
-
-        # Status
-        win_main_w = self.disp.win_list[WinId.MAIN].getmaxyx()[1]
-        if self.account.is_unsaved:
-            win.addstr(0, win_main_w - 10, "Unsaved",
-                       curses.color_pair(ColorPairId.RED_BLACK))
-        else:
-            win.addstr(0, win_main_w - 10, "Saved",
-                       curses.color_pair(ColorPairId.GREEN_BLACK))
-
-        # Refresh
-        win.refresh()
-
-        # Use sub main window
-        win: Window = self.disp.win_list[WinId.SUB]
-
-        (win_y, win_x) = (0, 0)
-        win.addstr(win_y, win_x, f"{self.SEP_STAT}")
-        win_y = win_y + 1
-
-        win.addstr(win_y, win_x, "| ")
-        win.addstr("name".ljust(LEN_NAME), A_BOLD)
-        win.addstr(" | ")
-        win.addstr("date".ljust(LEN_DATE), A_BOLD)
-        win.addstr(" | ")
-        win.addstr("start".ljust(LEN_AMOUNT), A_BOLD)
-        win.addstr(" | ")
-        win.addstr("end".ljust(LEN_AMOUNT), A_BOLD)
-        win.addstr(" | ")
-        win.addstr("diff".ljust(LEN_AMOUNT), A_BOLD)
-        win.addstr(" | ")
-        win.addstr("err".ljust(LEN_AMOUNT), A_BOLD)
-        win.addstr(" |")
-        win_y = win_y + 1
-
-        # Statement separator or missing
-        if stat_first_idx == 0:
-            win.addstr(win_y, win_x, self.SEP_STAT)
-        else:
-            win.addstr(win_y, win_x, self.MISS_STAT)
-        win_y = win_y + 1
-
-        # For each statement in display range
-        # TODO
-        # for stat_idx in range(stat_first_idx, stat_last_idx):
-        stat_idx = stat_first_idx
-        while stat_idx < len(self.account.stat_list) and stat_idx < stat_first_idx + stat_disp_nb:
-
-            stat: Statement = self.account.stat_list[stat_idx]
-
-            disp_flag = A_NORMAL
-            if stat == stat_hl:
-                disp_flag += A_STANDOUT
-
-            win.addstr(win_y, win_x, "| ")
-            win.addstr(stat.date.strftime(FMT_DATE).ljust(LEN_NAME), disp_flag)
-            win.addstr(" | ")
-            win.addstr(stat.date.strftime(FMT_DATE).ljust(LEN_DATE), disp_flag)
-            win.addstr(" | ")
-            win.addstr(str(stat.bal_start).ljust(LEN_AMOUNT), disp_flag)
-            win.addstr(" | ")
-            win.addstr(str(stat.bal_end).ljust(LEN_AMOUNT), disp_flag)
-            win.addstr(" | ")
-            bal_diff = round(stat.bal_end - stat.bal_start, 2)
-            if bal_diff >= 0.0:
-                win.addstr(str(bal_diff).ljust(LEN_AMOUNT),
-                           curses.color_pair(ColorPairId.GREEN_BLACK))
-            else:
-                win.addstr(str(bal_diff).ljust(LEN_AMOUNT),
-                           curses.color_pair(ColorPairId.RED_BLACK))
-            win.addstr(" | ")
-            bal_err = round(stat.bal_start + stat.op_sum - stat.bal_end, 2)
-            if bal_err == 0.0:
-                win.addstr(str(bal_err).ljust(LEN_AMOUNT),
-                           curses.color_pair(ColorPairId.GREEN_BLACK))
-            else:
-                win.addstr(str(bal_err).ljust(LEN_AMOUNT),
-                           curses.color_pair(ColorPairId.RED_BLACK))
-            win.addstr(" |")
-            win_y = win_y + 1
-
-            stat_idx = stat_idx + 1
-
-        # Statement separator or missing
-        if stat_idx == len(self.account.stat_list):
-            win.addstr(win_y, win_x, self.SEP_STAT)
-        else:
-            win.addstr(win_y, win_x, self.MISS_STAT)
-        win_y = win_y + 1
-
-        # Slider
-        # Move to top right of table
-        (win_y, win_x) = (3, win.getyx()[1])
-        for _ in range(int(stat_first_idx * stat_disp_nb / len(self.account.stat_list))):
-            win.addstr(win_y, win_x, " ")
-            win_y = win_y + 1
-        for _ in range(int(stat_disp_nb * stat_disp_nb / len(self.account.stat_list)) + 1):
-            win.addstr(win_y, win_x, " ", A_STANDOUT)
-            win_y = win_y + 1
-
-        win.refresh()
-
-    # TODO rework like operation.set_fields
-    def add_stat(self) -> int:
+    def add_item(self, stat: Statement) -> None:
         """
         Add statement
         """
+        self.account.add_stat(stat)
 
-        # Use input window
-        win: Window = self.disp.win_list[WinId.INPUT]
-
-        win.clear()
-        win.border()
-        win.move(0, 2)
-        win.addstr(" STATEMENT ", A_BOLD)
-
-        (win_y, win_x) = (2, 2)
-        win.addstr(win_y, win_x, "date : ")
-        win_y = win_y + 1
-        win.addstr(win_y, win_x, "start balance : ")
-        win_y = win_y + 1
-        win.addstr(win_y, win_x, "end balance   : ")
-        win_y = win_y + 1
-
-        win.keypad(False)
-        curses.echo()
-
-        (win_y, win_x) = (2, 2)
-
-        is_converted = False
-        while not is_converted:
-            win.addstr(win_y, win_x, "date :                  ")
-            win.addstr(win_y, win_x, "date : ")
-            val_str = win.getstr().decode(encoding="utf-8")
-            try:
-                date = datetime.strptime(val_str, FMT_DATE)
-                is_converted = True
-            except ValueError:
-                pass
-
-        win_y = win_y + 1
-
-        is_converted = False
-        while not is_converted:
-            win.addstr(win_y, win_x, "start balance :         ")
-            win.addstr(win_y, win_x, "start balance : ")
-            val_str = win.getstr().decode(encoding="utf-8")
-            try:
-                bal_start = float(val_str)
-                is_converted = True
-            except ValueError:
-                pass
-
-        win_y = win_y + 1
-
-        is_converted = False
-        while not is_converted:
-            win.addstr(win_y, win_x, "end balance :           ")
-            win.addstr(win_y, win_x, "end balance : ")
-            val_str = win.getstr().decode(encoding="utf-8")
-            try:
-                bal_end = float(val_str)
-                is_converted = True
-            except ValueError:
-                pass
-
-        win_y = win_y + 1
-
-        win.keypad(True)
-        curses.noecho()
-
-        # Init statement
-        stat = Statement(date.strftime(FMT_DATE), bal_start, bal_end)
-
-        # Create statement file
-        ret = stat.create_file()
-        if ret != OK:
-            self.logger.error("add_stat : Create statement file FAILED")
-            return ret
-
-        # Append statement to statements list
-        self.account.insert_stat(stat)
-
-        return OK
-
-    def delete_stat(self, stat: Statement) -> None:
+    def remove_item_list(self, stat_list: List[Statement]) -> None:
         """
-        Delete statement
+        Remove statement list
         """
 
         # Input window
-        win: Window = self.disp.win_list[WinId.INPUT]
+        win = self.disp.win_list[WinId.INPUT]
         win.clear()
         win.border()
-        win.addstr(0, 2, " DELETE STATEMENT ", A_BOLD)
-        win.addstr(2, 2, "Confirm ? (y/n) : ")
-        confirm_c = win.getch()
-        if confirm_c != ord('win_y'):
-            win.addstr(7, 2, "Canceled", curses.color_pair(ColorPairId.RED_BLACK))
-            win.refresh()
-            return
+        win.addstr(0, 2, " REMOVE STATEMENTS ", A_BOLD)
+        win.addstr(2, 2, f"Remove {len(stat_list)} statements")
 
-        # Delete highlighted statement
-        self.account.del_stat(stat)
+        # Ask for remove confirm
+        win.addstr(4, 2, "Confirm ? (y/n) : ")
+        confirm_char = win.getch()
 
-    def browse(self) -> None:
+        if confirm_char != ord('y'):
+            # Canceled
+            return RetCode.CANCELED
+
+        # Confirmed
+        self.account.remove_stat_list(stat_list)
+        return OK
+
+    def browse_item(self, stat: Statement) -> None:
         """
-        Browse
+        Browse statement
         """
 
-        win_sub_h = self.disp.win_list[WinId.SUB].getmaxyx()[0]
+        # Init statement display
+        stat_disp: StatementDispCurses = StatementDispCurses(stat, self.disp)
 
-        # Index of first displayed statement
-        stat_first_idx: int = 0
+        # Browse statement
+        stat_disp.browse()
 
-        # Highlighted statement
-        stat_hl: Statement = None
-        if len(self.account.stat_list) != 0:
-            stat_hl = self.account.stat_list[0]
+    def create(self) -> Statement:
+        """
+        Create statement
+        """
 
-        while True:
+        # Init statement
+        stat: Statement = Statement(datetime.now(), 0.0, 0.0)
 
-            self.display(stat_first_idx, stat_hl)
+        # Init statement display
+        stat_disp: StatementDispCurses = StatementDispCurses(stat, self.disp)
 
-            # # Command window
-            # win: Window = self.disp.win_list[WinId.CMD]
-            # win.clear()
-            # win.border()
-            # win.addstr(0, 2, " COMMANDS ", A_BOLD)
-            # cmd_str = "Add : INS/+, Del : DEL/-"
-            # cmd_str = cmd_str + ", Open : ENTER"
-            # cmd_str = cmd_str + ", Save : S, Ret : ESCAPE"
-            # win.addstr(1, 2, cmd_str)
-            # win.refresh()
+        # Set statement fields
+        stat_disp.set_fields()
 
-            self.disp.win_list[WinId.SUB].keypad(True)
-            key = self.disp.win_list[WinId.SUB].getkey()
+        return stat
 
-            # Highlight previous statement
-            if key == "KEY_UP":
+    def display_item_line(self, stat: Statement, win: Window,
+                          win_y: int, win_x: int, flag) -> None:
 
-                # Highlight previous statement
-                stat_hl_idx = self.account.stat_list.index(stat_hl) - 1
-                if stat_hl_idx < 0:
-                    stat_hl_idx = 0
-                stat_hl = self.account.stat_list[stat_hl_idx]
+        win.addstr(win_y, win_x, "| ")
+        win.addstr(stat.date.strftime(FMT_DATE).ljust(LEN_NAME), flag)
+        win.addstr(" | ")
+        win.addstr(stat.date.strftime(FMT_DATE).ljust(LEN_DATE), flag)
+        win.addstr(" | ")
+        win.addstr(str(stat.bal_start).ljust(LEN_AMOUNT), flag)
+        win.addstr(" | ")
+        win.addstr(str(stat.bal_end).ljust(LEN_AMOUNT), flag)
+        win.addstr(" | ")
+        bal_diff = round(stat.bal_end - stat.bal_start, 2)
+        if bal_diff >= 0.0:
+            win.addstr(str(bal_diff).ljust(LEN_AMOUNT),
+                       curses.color_pair(ColorPairId.GREEN_BLACK))
+        else:
+            win.addstr(str(bal_diff).ljust(LEN_AMOUNT),
+                       curses.color_pair(ColorPairId.RED_BLACK))
+        win.addstr(" | ")
+        bal_err = round(stat.bal_start + stat.op_sum - stat.bal_end, 2)
+        if bal_err == 0.0:
+            win.addstr(str(bal_err).ljust(LEN_AMOUNT),
+                       curses.color_pair(ColorPairId.GREEN_BLACK))
+        else:
+            win.addstr(str(bal_err).ljust(LEN_AMOUNT),
+                       curses.color_pair(ColorPairId.RED_BLACK))
+        win.addstr(" |")
 
-                # If out of display range
-                if stat_hl_idx < stat_first_idx:
-                    # Previous page
-                    stat_first_idx = stat_first_idx - 1
-                    if stat_first_idx < 0:
-                        stat_first_idx = 0
+    # # TODO rework like operation.set_fields
+    # def add_stat(self) -> int:
+    #     """
+    #     Add statement
+    #     """
 
-            # Highlight next statement
-            if key == "KEY_DOWN":
+    #     # Use input window
+    #     win: Window = self.disp.win_list[WinId.INPUT]
 
-                # Highlight next statement
-                stat_hl_idx = self.account.stat_list.index(stat_hl) + 1
-                if stat_hl_idx >= len(self.account.stat_list):
-                    stat_hl_idx = len(self.account.stat_list) - 1
-                stat_hl = self.account.stat_list[stat_hl_idx]
+    #     win.clear()
+    #     win.border()
+    #     win.move(0, 2)
+    #     win.addstr(" STATEMENT ", A_BOLD)
 
-                # If out of display range
-                if stat_hl_idx - stat_first_idx >= win_sub_h - 4:
-                    # Next page
-                    stat_first_idx = stat_first_idx + 1
-                    if stat_first_idx > len(self.account.stat_list) - (win_sub_h - 4):
-                        stat_first_idx = len(self.account.stat_list) - (win_sub_h - 4)
+    #     (win_y, win_x) = (2, 2)
+    #     win.addstr(win_y, win_x, "date : ")
+    #     win_y = win_y + 1
+    #     win.addstr(win_y, win_x, "start balance : ")
+    #     win_y = win_y + 1
+    #     win.addstr(win_y, win_x, "end balance   : ")
+    #     win_y = win_y + 1
 
-            # Previous page
-            elif key == "KEY_PPAGE":
+    #     win.keypad(False)
+    #     curses.echo()
 
-                # Previous page
-                stat_first_idx = stat_first_idx - 3
-                if stat_first_idx < 0:
-                    stat_first_idx = 0
+    #     (win_y, win_x) = (2, 2)
 
-                # If out of display range
-                stat_hl_idx = self.account.stat_list.index(stat_hl)
-                if stat_hl_idx < stat_first_idx:
-                    stat_hl = self.account.stat_list[stat_first_idx]
-                elif stat_hl_idx >= stat_first_idx + win_sub_h - 4:
-                    stat_hl = self.account.stat_list[stat_first_idx + win_sub_h - 4 - 1]
+    #     is_converted = False
+    #     while not is_converted:
+    #         win.addstr(win_y, win_x, "date :                  ")
+    #         win.addstr(win_y, win_x, "date : ")
+    #         val_str = win.getstr().decode(encoding="utf-8")
+    #         try:
+    #             date = datetime.strptime(val_str, FMT_DATE)
+    #             is_converted = True
+    #         except ValueError:
+    #             pass
 
-            # Next page
-            elif key == "KEY_NPAGE":
+    #     win_y = win_y + 1
 
-                # Next page
-                stat_first_idx = stat_first_idx + 3
-                if stat_first_idx > len(self.account.stat_list) - (win_sub_h - 4):
-                    stat_first_idx = len(self.account.stat_list) - (win_sub_h - 4)
-                    if stat_first_idx < 0:
-                        stat_first_idx = 0
+    #     is_converted = False
+    #     while not is_converted:
+    #         win.addstr(win_y, win_x, "start balance :         ")
+    #         win.addstr(win_y, win_x, "start balance : ")
+    #         val_str = win.getstr().decode(encoding="utf-8")
+    #         try:
+    #             bal_start = float(val_str)
+    #             is_converted = True
+    #         except ValueError:
+    #             pass
 
-                # If out of display range
-                stat_hl_idx = self.account.stat_list.index(stat_hl)
-                if stat_hl_idx < stat_first_idx:
-                    stat_hl = self.account.stat_list[stat_first_idx]
-                elif stat_hl_idx >= stat_first_idx + win_sub_h - 4:
-                    stat_hl = self.account.stat_list[stat_first_idx + win_sub_h - 4 - 1]
+    #     win_y = win_y + 1
 
-            # Add statement
-            elif key in ("KEY_IC", "+"):
-                self.add_stat()
+    #     is_converted = False
+    #     while not is_converted:
+    #         win.addstr(win_y, win_x, "end balance :           ")
+    #         win.addstr(win_y, win_x, "end balance : ")
+    #         val_str = win.getstr().decode(encoding="utf-8")
+    #         try:
+    #             bal_end = float(val_str)
+    #             is_converted = True
+    #         except ValueError:
+    #             pass
 
-            # Delete highlighted statement
-            elif key in ("KEY_DC", "-"):
-                self.delete_stat(stat_hl)
-                # Reset highlighted statement
-                stat_hl = self.account.stat_list[0]
+    #     win_y = win_y + 1
 
-            # Open highligthed statement
-            elif key == "\n":
-                # Init highligthed statement display
-                stat_disp: StatementDispCurses = StatementDispCurses(stat_hl, self.disp)
-                # Browse highligthed statement
-                stat_disp.browse()
+    #     win.keypad(True)
+    #     curses.noecho()
 
-            elif key == "s":
-                self.account.export_file()
+    #     # Init statement
+    #     stat = Statement(date.strftime(FMT_DATE), bal_start, bal_end)
 
-            elif key == '\x1b':
-                if self.account.is_unsaved:
-                    # Input window
-                    win: Window = self.disp.win_list[WinId.INPUT]
-                    win.clear()
-                    win.border()
-                    win.addstr(0, 2, " UNSAVED CHANGES ", A_BOLD)
-                    win.addstr(2, 2, "Save ? (y/n) : ")
-                    save_c = win.getch()
-                    if save_c != ord('n'):
-                        win.addstr(4, 2, "Saving")
-                        win.refresh()
-                        self.account.export_file()
-                    else:
-                        win.addstr(4, 2, "Discard changes",
-                                   curses.color_pair(ColorPairId.RED_BLACK))
-                        win.refresh()
-                break
+    #     # Create statement file
+    #     ret = stat.create_file()
+    #     if ret != OK:
+    #         self.logger.error("add_stat : Create statement file FAILED")
+    #         return ret
 
-class StatementDispCurses():
+    #     # Append statement to statements list
+    #     self.account.insert_stat(stat)
+
+    #     return OK
+
+    # def delete_stat(self, stat: Statement) -> None:
+    #     """
+    #     Delete statement
+    #     """
+
+    #     # Input window
+    #     win: Window = self.disp.win_list[WinId.INPUT]
+    #     win.clear()
+    #     win.border()
+    #     win.addstr(0, 2, " DELETE STATEMENT ", A_BOLD)
+    #     win.addstr(2, 2, "Confirm ? (y/n) : ")
+    #     confirm_c = win.getch()
+    #     if confirm_c != ord('win_y'):
+    #         win.addstr(7, 2, "Canceled", curses.color_pair(ColorPairId.RED_BLACK))
+    #         win.refresh()
+    #         return
+
+    #     # Delete highlighted statement
+    #     self.account.del_stat(stat)
+
+class StatementDispCurses(ContainerDispCurses):
     """
-    Curses statetement display
+    Curses statement display
     """
 
-    # Operation separator
-    OP_SEP = "|"
-    OP_SEP += "-" + "-".ljust(LEN_DATE, "-") + "-|"
-    OP_SEP += "-" + "-".ljust(LEN_MODE, "-") + "-|"
-    OP_SEP += "-" + "-".ljust(LEN_TIER, "-") + "-|"
-    OP_SEP += "-" + "-".ljust(LEN_CAT, "-") + "-|"
-    OP_SEP += "-" + "-".ljust(LEN_DESC, "-") + "-|"
-    OP_SEP += "-" + "-".ljust(LEN_AMOUNT, "-") + "-|"
+    # Item separator
+    ITEM_SEPARATOR = "|"
+    ITEM_SEPARATOR += "-" + "-".ljust(LEN_DATE, "-") + "-|"
+    ITEM_SEPARATOR += "-" + "-".ljust(LEN_MODE, "-") + "-|"
+    ITEM_SEPARATOR += "-" + "-".ljust(LEN_TIER, "-") + "-|"
+    ITEM_SEPARATOR += "-" + "-".ljust(LEN_CAT, "-") + "-|"
+    ITEM_SEPARATOR += "-" + "-".ljust(LEN_DESC, "-") + "-|"
+    ITEM_SEPARATOR += "-" + "-".ljust(LEN_AMOUNT, "-") + "-|"
 
-    # Operation header
-    OP_HEADER = "|"
-    OP_HEADER += " " + "date".ljust(LEN_DATE, " ") + " |"
-    OP_HEADER += " " + "mode".ljust(LEN_MODE, " ") + " |"
-    OP_HEADER += " " + "tier".ljust(LEN_TIER, " ") + " |"
-    OP_HEADER += " " + "cat".ljust(LEN_CAT, " ") + " |"
-    OP_HEADER += " " + "desc".ljust(LEN_DESC, " ") + " |"
-    OP_HEADER += " " + "amount".ljust(LEN_AMOUNT, " ") + " |"
+    # Item header
+    ITEM_HEADER = "|"
+    ITEM_HEADER += " " + "date".ljust(LEN_DATE, " ") + " |"
+    ITEM_HEADER += " " + "mode".ljust(LEN_MODE, " ") + " |"
+    ITEM_HEADER += " " + "tier".ljust(LEN_TIER, " ") + " |"
+    ITEM_HEADER += " " + "cat".ljust(LEN_CAT, " ") + " |"
+    ITEM_HEADER += " " + "desc".ljust(LEN_DESC, " ") + " |"
+    ITEM_HEADER += " " + "amount".ljust(LEN_AMOUNT, " ") + " |"
 
-    # Missing operation
-    OP_MISS = "|"
-    OP_MISS += " " + "...".ljust(LEN_DATE, ' ') + " |"
-    OP_MISS += " " + "...".ljust(LEN_MODE, ' ') + " |"
-    OP_MISS += " " + "...".ljust(LEN_TIER, ' ') + " |"
-    OP_MISS += " " + "...".ljust(LEN_CAT, ' ') + " |"
-    OP_MISS += " " + "...".ljust(LEN_DESC, ' ') + " |"
-    OP_MISS += " " + "...".ljust(LEN_AMOUNT, ' ') + " |"
+    # Item missing
+    ITEM_MISSING = "|"
+    ITEM_MISSING += " " + "...".ljust(LEN_DATE, ' ') + " |"
+    ITEM_MISSING += " " + "...".ljust(LEN_MODE, ' ') + " |"
+    ITEM_MISSING += " " + "...".ljust(LEN_TIER, ' ') + " |"
+    ITEM_MISSING += " " + "...".ljust(LEN_CAT, ' ') + " |"
+    ITEM_MISSING += " " + "...".ljust(LEN_DESC, ' ') + " |"
+    ITEM_MISSING += " " + "...".ljust(LEN_AMOUNT, ' ') + " |"
 
     def __init__(self, stat: Statement, disp: DispCurses) -> None:
+
+        self.logger = logging.getLogger("StatementDispCurses")
+
+        # Init container display
+        super().__init__(disp)
 
         # Statement
         self.stat: Statement = stat
 
-        # Main display
-        self.disp: DispCurses = disp
-
-        # Index of focused operation
-        # Index of first displayed operation
-        self.op_focus_idx: int = 0
-
-        # Highlighted operation
-        self.op_hl: Operation = None
-
-        # Selected operations list
-        self.op_sel_list: List[Operation] = []
-
-    def display_op_list(self, is_hl_updated: bool, is_focus_updated: bool) -> None:
+    def get_item_list(self) -> List[Operation]:
         """
-        Display operations list
+        Get operation list
+        """
+        return self.stat.op_list
+
+    def add_item(self, op: Operation) -> None:
+        """
+        Add operation
+        """
+        self.stat.add_op(op)
+
+    def remove_item_list(self, op_list: List[Operation]) -> RetCode:
+        """
+        Remove operation list
         """
 
-        # Sub main window
-        win_sub: Window = self.disp.win_list[WinId.SUB]
-        win_sub_h: int = win_sub.getmaxyx()[0]
+        # Input window
+        win = self.disp.win_list[WinId.INPUT]
+        win.clear()
+        win.border()
+        win.addstr(0, 2, " REMOVE OPERATIONS ", A_BOLD)
+        win.addstr(2, 2, f"Remove {len(op_list)} operations")
 
-        # Number of displayed operations
-        op_disp_nb: int = win_sub_h - 4
-        if len(self.stat.op_list) < op_disp_nb:
-            op_disp_nb = len(self.stat.op_list)
+        # Ask for remove confirm
+        win.addstr(4, 2, "Confirm ? (y/n) : ")
+        confirm_char = win.getch()
 
-        # If highlighted operation updated
-        if is_hl_updated:
+        if confirm_char != ord('y'):
+            # Canceled
+            return RetCode.CANCELED
 
-            # Fix focus
+        # Confirmed
+        self.stat.remove_op_list(op_list)
+        return OK
 
-            op_hl_idx = self.stat.op_list.index(self.op_hl)
+    def browse_item(self, operation: Operation) -> None:
+        """
+        Browse statement
+        """
 
-            if op_hl_idx < self.op_focus_idx:
+        # Init statement display
+        stat_disp: StatementDispCurses = StatementDispCurses(stat, self.disp)
 
-                # Move focus up
-                self.op_focus_idx -= 1
-                if self.op_focus_idx < 0:
-                    self.op_focus_idx = 0
+        # Browse statement
+        stat_disp.browse()
 
-            elif op_hl_idx > self.op_focus_idx + op_disp_nb - 1:
+    def create(self) -> Statement:
+        """
+        Create statement
+        """
 
-                # Move focus down
-                self.op_focus_idx += 1
-                if self.op_focus_idx > len(self.stat.op_list) - op_disp_nb:
-                    self.op_focus_idx = len(self.stat.op_list) - op_disp_nb
+        # Init statement
+        stat: Statement = Statement(datetime.now(), 0.0, 0.0)
 
-        # Else, if focus updated
-        elif is_focus_updated:
+        # Init statement display
+        stat_disp: StatementDispCurses = StatementDispCurses(stat, self.disp)
 
-            # Fix focus
+        # Set statement fields
+        stat_disp.set_fields()
 
-            if self.op_focus_idx < 0:
-                self.op_focus_idx = 0
-            elif self.op_focus_idx > len(self.stat.op_list) - op_disp_nb:
-                self.op_focus_idx = len(self.stat.op_list) - op_disp_nb
+        return stat
 
-            # Fix highlighted operation
+    def display_item_line(self, stat: Statement, win: Window,
+                          win_y: int, win_x: int, flag) -> None:
 
-            op_hl_idx = self.stat.op_list.index(self.op_hl)
-
-            if op_hl_idx < self.op_focus_idx:
-
-                # Highlight first displayed operation
-                op_hl_idx = self.op_focus_idx
-                self.op_hl = self.stat.op_list[op_hl_idx]
-
-            elif op_hl_idx > self.op_focus_idx + op_disp_nb - 1:
-
-                # Highlight last displayed operation
-                op_hl_idx = self.op_focus_idx + op_disp_nb - 1
-                self.op_hl = self.stat.op_list[op_hl_idx]
-
-        (win_y, win_x) = (0, 0)
-
-        # Operation separator
-        win_sub.addstr(win_y, win_x, self.OP_SEP)
-        win_y += 1
-
-        # Operations header
-        win_sub.addstr(win_y, win_x, self.OP_HEADER)
-        win_y += 1
-
-        if len(self.stat.op_list) == 0:
-            win_sub.addstr(win_y, win_x, self.OP_SEP)
-            win_y += 1
-            win_sub.addstr(win_y, win_x, self.OP_SEP)
-            win_y += 1
-            win_sub.refresh()
-            return
-
-        # Operation separator or missing
-        if self.op_focus_idx == 0:
-            win_sub.addstr(win_y, win_x, self.OP_SEP)
+        win.addstr(win_y, win_x, "| ")
+        win.addstr(stat.date.strftime(FMT_DATE).ljust(LEN_NAME), flag)
+        win.addstr(" | ")
+        win.addstr(stat.date.strftime(FMT_DATE).ljust(LEN_DATE), flag)
+        win.addstr(" | ")
+        win.addstr(str(stat.bal_start).ljust(LEN_AMOUNT), flag)
+        win.addstr(" | ")
+        win.addstr(str(stat.bal_end).ljust(LEN_AMOUNT), flag)
+        win.addstr(" | ")
+        bal_diff = round(stat.bal_end - stat.bal_start, 2)
+        if bal_diff >= 0.0:
+            win.addstr(str(bal_diff).ljust(LEN_AMOUNT),
+                       curses.color_pair(ColorPairId.GREEN_BLACK))
         else:
-            win_sub.addstr(win_y, win_x, self.OP_MISS)
-        win_y += 1
-
-        # Operations list
-        for op_idx in range(self.op_focus_idx, self.op_focus_idx + op_disp_nb):
-
-            if op_idx >= len(self.stat.op_list):
-                break
-
-            operation = self.stat.op_list[op_idx]
-
-            disp_flag = A_NORMAL
-            if operation == self.op_hl:
-                disp_flag += A_STANDOUT
-            if operation in self.op_sel_list:
-                disp_flag += A_BOLD
-
-            op_str = "|"
-            op_str += " " + operation.date.strftime(FMT_DATE)[:LEN_DATE].ljust(LEN_DATE, ' ') + " |"
-            op_str += " " + operation.mode.ljust(LEN_MODE, ' ') + " |"
-            op_str += " " + operation.tier[:LEN_TIER].ljust(LEN_TIER, ' ') + " |"
-            op_str += " " + operation.cat[:LEN_CAT].ljust(LEN_CAT, ' ') + " |"
-            op_str += " " + operation.desc[:LEN_DESC].ljust(LEN_DESC, ' ') + " |"
-            op_str += " " + str(operation.amount)[:LEN_AMOUNT].ljust(LEN_AMOUNT, ' ') + " |"
-            win_sub.addstr(win_y, win_x, op_str, disp_flag)
-            win_y += 1
-
-        # Operation separator or missing
-        if op_idx == len(self.stat.op_list) - 1:
-            win_sub.addstr(win_y, win_x, self.OP_SEP)
+            win.addstr(str(bal_diff).ljust(LEN_AMOUNT),
+                       curses.color_pair(ColorPairId.RED_BLACK))
+        win.addstr(" | ")
+        bal_err = round(stat.bal_start + stat.op_sum - stat.bal_end, 2)
+        if bal_err == 0.0:
+            win.addstr(str(bal_err).ljust(LEN_AMOUNT),
+                       curses.color_pair(ColorPairId.GREEN_BLACK))
         else:
-            win_sub.addstr(win_y, win_x, self.OP_MISS)
-        win_y += 1
+            win.addstr(str(bal_err).ljust(LEN_AMOUNT),
+                       curses.color_pair(ColorPairId.RED_BLACK))
+        win.addstr(" |")
 
-        if len(self.stat.op_list) != 0:
-            op_disp_ratio = op_disp_nb / len(self.stat.op_list)
+    # def display_op_list(self, hl_changed: bool, focus_changed: bool) -> None:
+    #     """
+    #     Display operations list
+    #     """
 
-        # Slider
-        (win_y, win_x) = (3, win_sub.getyx()[1])
-        for _ in range(0, int(self.op_focus_idx * op_disp_ratio)):
-            win_sub.addstr(win_y, win_x, " ")
-            win_y += 1
-        for _ in range(int(self.op_focus_idx * op_disp_ratio),
-                       int((self.op_focus_idx + op_disp_nb) * op_disp_ratio)):
-            win_sub.addstr(win_y, win_x, " ", A_STANDOUT)
-            win_y += 1
-        for _ in range(int((self.op_focus_idx + op_disp_nb) * op_disp_ratio),
-                       int((len(self.stat.op_list)) * op_disp_ratio)):
-            win_sub.addstr(win_y, win_x, " ")
-            win_y += 1
+    #     # Sub main window
+    #     win_sub: Window = self.disp.win_list[WinId.SUB]
+    #     win_sub_h: int = win_sub.getmaxyx()[0]
 
-        win_sub.refresh()
+    #     # Number of displayed operations
+    #     op_disp_nb: int = win_sub_h - 4
+    #     if len(self.stat.op_list) < op_disp_nb:
+    #         op_disp_nb = len(self.stat.op_list)
+
+    #     # If highlighted operation updated
+    #     if hl_changed:
+
+    #         # Fix focus
+
+    #         op_hl_idx = self.stat.op_list.index(self.op_hl)
+
+    #         if op_hl_idx < self.op_focus_idx:
+
+    #             # Move focus up
+    #             self.op_focus_idx -= 1
+    #             if self.op_focus_idx < 0:
+    #                 self.op_focus_idx = 0
+
+    #         elif op_hl_idx > self.op_focus_idx + op_disp_nb - 1:
+
+    #             # Move focus down
+    #             self.op_focus_idx += 1
+    #             if self.op_focus_idx > len(self.stat.op_list) - op_disp_nb:
+    #                 self.op_focus_idx = len(self.stat.op_list) - op_disp_nb
+
+    #     # Else, if focus updated
+    #     elif focus_changed:
+
+    #         # Fix focus
+
+    #         if self.op_focus_idx < 0:
+    #             self.op_focus_idx = 0
+    #         elif self.op_focus_idx > len(self.stat.op_list) - op_disp_nb:
+    #             self.op_focus_idx = len(self.stat.op_list) - op_disp_nb
+
+    #         # Fix highlighted operation
+
+    #         op_hl_idx = self.stat.op_list.index(self.op_hl)
+
+    #         if op_hl_idx < self.op_focus_idx:
+
+    #             # Highlight first displayed operation
+    #             op_hl_idx = self.op_focus_idx
+    #             self.op_hl = self.stat.op_list[op_hl_idx]
+
+    #         elif op_hl_idx > self.op_focus_idx + op_disp_nb - 1:
+
+    #             # Highlight last displayed operation
+    #             op_hl_idx = self.op_focus_idx + op_disp_nb - 1
+    #             self.op_hl = self.stat.op_list[op_hl_idx]
+
+    #     (win_y, win_x) = (0, 0)
+
+    #     # Operation separator
+    #     win_sub.addstr(win_y, win_x, self.SEPARATOR)
+    #     win_y += 1
+
+    #     # Operations header
+    #     win_sub.addstr(win_y, win_x, self.HEADER)
+    #     win_y += 1
+
+    #     if len(self.stat.op_list) == 0:
+    #         win_sub.addstr(win_y, win_x, self.SEPARATOR)
+    #         win_y += 1
+    #         win_sub.addstr(win_y, win_x, self.SEPARATOR)
+    #         win_y += 1
+    #         win_sub.refresh()
+    #         return
+
+    #     # Operation separator or missing
+    #     if self.op_focus_idx == 0:
+    #         win_sub.addstr(win_y, win_x, self.SEPARATOR)
+    #     else:
+    #         win_sub.addstr(win_y, win_x, self.MISSING)
+    #     win_y += 1
+
+    #     # Operations list
+    #     for op_idx in range(self.op_focus_idx, self.op_focus_idx + op_disp_nb):
+
+    #         if op_idx >= len(self.stat.op_list):
+    #             break
+
+    #         operation = self.stat.op_list[op_idx]
+
+    #         disp_flag = A_NORMAL
+    #         if operation == self.op_hl:
+    #             disp_flag += A_STANDOUT
+    #         if operation in self.op_sel_list:
+    #             disp_flag += A_BOLD
+
+    #         op_str = "|"
+    #         op_str += " " + operation.date.strftime(FMT_DATE)[:LEN_DATE].ljust(LEN_DATE, ' ') + " |"
+    #         op_str += " " + operation.mode.ljust(LEN_MODE, ' ') + " |"
+    #         op_str += " " + operation.tier[:LEN_TIER].ljust(LEN_TIER, ' ') + " |"
+    #         op_str += " " + operation.cat[:LEN_CAT].ljust(LEN_CAT, ' ') + " |"
+    #         op_str += " " + operation.desc[:LEN_DESC].ljust(LEN_DESC, ' ') + " |"
+    #         op_str += " " + str(operation.amount)[:LEN_AMOUNT].ljust(LEN_AMOUNT, ' ') + " |"
+    #         win_sub.addstr(win_y, win_x, op_str, disp_flag)
+    #         win_y += 1
+
+    #     # Operation separator or missing
+    #     if op_idx == len(self.stat.op_list) - 1:
+    #         win_sub.addstr(win_y, win_x, self.SEPARATOR)
+    #     else:
+    #         win_sub.addstr(win_y, win_x, self.MISSING)
+    #     win_y += 1
+
+    #     if len(self.stat.op_list) != 0:
+    #         op_disp_ratio = op_disp_nb / len(self.stat.op_list)
+
+    #     # Slider
+    #     (win_y, win_x) = (3, win_sub.getyx()[1])
+    #     for _ in range(0, int(self.op_focus_idx * op_disp_ratio)):
+    #         win_sub.addstr(win_y, win_x, " ")
+    #         win_y += 1
+    #     for _ in range(int(self.op_focus_idx * op_disp_ratio),
+    #                    int((self.op_focus_idx + op_disp_nb) * op_disp_ratio)):
+    #         win_sub.addstr(win_y, win_x, " ", A_STANDOUT)
+    #         win_y += 1
+    #     for _ in range(int((self.op_focus_idx + op_disp_nb) * op_disp_ratio),
+    #                    int((len(self.stat.op_list)) * op_disp_ratio)):
+    #         win_sub.addstr(win_y, win_x, " ")
+    #         win_y += 1
+
+    #     win_sub.refresh()
 
     def display_info(self) -> None:
         """
@@ -741,7 +1094,7 @@ class StatementDispCurses():
         win_y += 1
 
         win_info.addstr(win_y, win_x,
-                        f"clipboard : {self.disp.op_list_clipboard.get_len()} operations")
+                        f"clipboard : {self.disp.item_list_clipboard.get_len()} operations")
         win_y += 1
 
         win_info.refresh()
@@ -758,64 +1111,6 @@ class StatementDispCurses():
     #     cmd_str = cmd_str + ", Save : S, Ret : ESCAPE"
     #     win.addstr(1, 2, cmd_str)
     #     win.refresh()
-
-    def copy_op_list(self) -> None:
-        """
-        Copy selected operations
-
-        Set clipboard to selected operations
-        """
-
-        if len(self.op_sel_list) > 0:
-            op_list = self.op_sel_list
-        elif self.op_hl is not None:
-            op_list = [self.op_hl]
-        else:
-            return
-
-        self.disp.op_list_clipboard.set(op_list)
-
-    def cut_op_list(self) -> None:
-        """
-        Cut selected operations
-
-        Set clipboard to selected operations
-        Delete from statement
-        """
-
-        if len(self.op_sel_list) > 0:
-            op_list = self.op_sel_list
-        elif self.op_hl is not None:
-            op_list = [self.op_hl]
-        else:
-            return
-
-        self.disp.op_list_clipboard.set(op_list)
-
-        # If highlighted operation in buffer
-        if self.op_hl in op_list:
-            # Highlight closest opeartion
-            self.op_hl = self.stat.get_closest_op(op_list)
-
-        # Delete operations from statement
-        self.stat.del_op_list(op_list)
-
-    def paste_op_list(self) -> None:
-        """
-        Paste operations
-        """
-
-        op_list = self.disp.op_list_clipboard.get()
-        if op_list is None or len(op_list) == 0:
-            return
-
-        for operation in op_list:
-
-            # Deep copy
-            op_new = operation.copy()
-
-            # Insert new operation in statement
-            self.stat.insert_op(op_new)
 
     def browse_op(self) -> None:
         """
@@ -891,173 +1186,210 @@ class StatementDispCurses():
         # Clear selected operations
         self.op_sel_list.clear()
 
-    def exit(self) -> None:
+    def exit(self) -> RetCode:
         """
         Exit statement browse
         """
 
-        # Check if unsaved changes
-        if self.stat.is_unsaved:
-
-            # Unsaved changes
-
-            # Input window, ask for save
-            win: Window = self.disp.win_list[WinId.INPUT]
-            win.clear()
-            win.border()
-            win.addstr(0, 2, " UNSAVED CHANGES ", A_BOLD)
-            win.addstr(2, 2, "Save ? (y/n) : ")
-            save_c = win.getch()
-
-            # If not 'n'
-            if save_c != ord('n'):
-
-                # Save changes
-                win.addstr(4, 2, "Saving")
-                win.refresh()
-                self.stat.export_file()
-
-            # Else, 'n'
-            else:
-
-                # Discard changes
-                win.addstr(4, 2, "Discard changes",
-                           curses.color_pair(ColorPairId.RED_BLACK))
-                win.refresh()
-                self.stat.import_file()
-
-    def browse(self) -> None:
-        """
-        Browse
-        """
-
-        # Init
-        self.op_focus_idx: int = 0
-        if len(self.stat.op_list) != 0:
-            self.op_hl = self.stat.op_list[0]
-        else:
-            self.op_hl = None
-        self.op_sel_list = []
-
-        # Main window
-        win_main: Window = self.disp.win_list[WinId.MAIN]
-        win_main.clear()
-        win_main.border()
-        win_main.move(0, 2)
-        win_main.addstr(" STATEMENT ", A_BOLD)
-        win_main.refresh()
-
-        # Display statement info
-        self.display_info()
-
-        # Display commands
-        # self.display_commands()
-
-        # Display operations list
-        self.display_op_list(False, False)
-
-        while True:
-
-            info_updated = False
-            is_hl_updated = False
-            is_focus_updated = False
-
-            key = self.disp.win_list[WinId.MAIN].getkey()
-
-            # Highlight previous operation
-            if key == "KEY_UP":
-                if self.op_hl is None:
-                    continue
-                op_hl_idx = self.stat.op_list.index(self.op_hl) - 1
-                if op_hl_idx < 0:
-                    op_hl_idx = 0
-                    continue
-                self.op_hl = self.stat.op_list[op_hl_idx]
-                is_hl_updated = True
-
-            # Highlight next operation
-            elif key == "KEY_DOWN":
-                if self.op_hl is None:
-                    continue
-                op_hl_idx = self.stat.op_list.index(self.op_hl) + 1
-                if op_hl_idx >= len(self.stat.op_list):
-                    op_hl_idx = len(self.stat.op_list) - 1
-                    continue
-                self.op_hl = self.stat.op_list[op_hl_idx]
-                is_hl_updated = True
-
-            # Focus previous operations
-            elif key == "KEY_PPAGE":
-                if self.op_hl is None:
-                    continue
-                self.op_focus_idx -= 3
-                is_focus_updated = True
-
-            # Focus next operations
-            elif key == "KEY_NPAGE":
-                if self.op_hl is None:
-                    continue
-                self.op_focus_idx += 3
-                is_focus_updated = True
-
-            # Trigger operation selection
-            elif key == " ":
-                if self.op_hl is None:
-                    continue
-                if self.op_hl not in self.op_sel_list:
-                    self.op_sel_list.append(self.op_hl)
-                else:
-                    self.op_sel_list.remove(self.op_hl)
-
-            # Copy operations(s)
-            elif key == "c":
-                self.copy_op_list()
-                info_updated = True
-
-            # Cut operation(s)
-            elif key == "x":
-                self.cut_op_list()
-                info_updated = True
-
-            # Paste operation(s)
-            elif key == "v":
-                self.paste_op_list()
-                info_updated = True
-
-            # Open highlighted operation
-            elif key == "\n":
-                self.browse_op()
-                info_updated = True
-
-            # Add operation
-            elif key in ("KEY_IC", "+"):
-                self.add_op()
-                info_updated = True
-
-            # Delete operation(s)
-            elif key in ("KEY_DC", "-"):
-                self.delete_op()
-                info_updated = True
-
-            # Save
-            elif key == "s":
-                self.stat.export_file()
-                info_updated = True
-
+        # If saved
+        if not self.stat.is_unsaved:
             # Exit
-            elif key == '\x1b':
-                self.exit()
-                break
+            return RetCode.OK
 
-            if info_updated:
-                # Display statement info
-                self.display_info()
+        # Unsaved changes
 
-            # Display commands
-            # self.display_commands()
+        # Input window
+        win: Window = self.disp.win_list[WinId.INPUT]
+        win.clear()
+        win.border()
+        win.addstr(0, 2, " UNSAVED CHANGES ", A_BOLD)
 
-            # Display operations list
-            self.display_op_list(is_hl_updated, is_focus_updated)
+        # Ask for exit
+        win.addstr(2, 2, "Exit ? (y/n) : ")
+        char = win.getch()
+        # Cancel
+        if char == ord('n'):
+            return RetCode.CANCELED
+
+        # Ask for save
+        win.addstr(2, 2, "Save ? (y/n) : ")
+        char = win.getch()
+        # Discard
+        if char == ord('n'):
+            self.stat.import_file()
+        # Save
+        else:
+            self.stat.export_file()
+
+        return RetCode.OK
+
+    def set_fields(self) -> None:
+        """
+        Iterate over fields and set
+        """
+
+        # Input window
+        win: Window = self.disp.win_list[WinId.INPUT]
+        win.keypad(True)
+
+        # For each field
+        for field_idx in range(self.stat.IDX_BAL_END + 1):
+
+            # Highlight current field
+            self.op_field_hl_idx = field_idx
+
+            # Display
+            self.display()
+            (win_y, win_x) = (self.win.getyx()[0], 2)
+
+            # Get value
+            self.win.addstr(win_y, win_x, "Value : ")
+            self.win.keypad(False)
+            curses.echo()
+            val_str = self.win.getstr().decode(encoding="utf-8")
+            self.win.keypad(True)
+            curses.noecho()
+
+            # Set value
+            if val_str != "":
+                self.operation.set_field(field_idx, val_str)
+
+    # def browse(self) -> None:
+    #     """
+    #     Browse
+    #     """
+
+    #     # Init
+    #     self.op_focus_idx: int = 0
+    #     if len(self.stat.op_list) != 0:
+    #         self.op_hl = self.stat.op_list[0]
+    #     else:
+    #         self.op_hl = None
+    #     self.op_sel_list = []
+
+    #     # Main window
+    #     win_main: Window = self.disp.win_list[WinId.MAIN]
+    #     win_main.clear()
+    #     win_main.border()
+    #     win_main.move(0, 2)
+    #     win_main.addstr(" STATEMENT ", A_BOLD)
+    #     win_main.refresh()
+
+    #     # Display statement info
+    #     self.display_info()
+
+    #     # Display commands
+    #     # self.display_commands()
+
+    #     # Display operations list
+    #     self.disp.display_item_list(self.stat.op_list, self.op_focus_idx,
+    #                                 self.op_hl, self.op_sel_list,
+    #                                 False, False)
+
+    #     while True:
+
+    #         info_updated = False
+    #         hl_changed = False
+    #         focus_changed = False
+
+    #         key = self.disp.win_list[WinId.MAIN].getkey()
+
+    #         # Highlight previous operation
+    #         if key == "KEY_UP":
+    #             if self.op_hl is None:
+    #                 continue
+    #             op_hl_idx = self.stat.op_list.index(self.op_hl) - 1
+    #             if op_hl_idx < 0:
+    #                 op_hl_idx = 0
+    #                 continue
+    #             self.op_hl = self.stat.op_list[op_hl_idx]
+    #             hl_changed = True
+
+    #         # Highlight next operation
+    #         elif key == "KEY_DOWN":
+    #             if self.op_hl is None:
+    #                 continue
+    #             op_hl_idx = self.stat.op_list.index(self.op_hl) + 1
+    #             if op_hl_idx >= len(self.stat.op_list):
+    #                 op_hl_idx = len(self.stat.op_list) - 1
+    #                 continue
+    #             self.op_hl = self.stat.op_list[op_hl_idx]
+    #             hl_changed = True
+
+    #         # Focus previous operations
+    #         elif key == "KEY_PPAGE":
+    #             if self.op_hl is None:
+    #                 continue
+    #             self.op_focus_idx -= 3
+    #             focus_changed = True
+
+    #         # Focus next operations
+    #         elif key == "KEY_NPAGE":
+    #             if self.op_hl is None:
+    #                 continue
+    #             self.op_focus_idx += 3
+    #             focus_changed = True
+
+    #         # Trigger operation selection
+    #         elif key == " ":
+    #             if self.op_hl is None:
+    #                 continue
+    #             if self.op_hl not in self.op_sel_list:
+    #                 self.op_sel_list.append(self.op_hl)
+    #             else:
+    #                 self.op_sel_list.remove(self.op_hl)
+
+    #         # Copy operations(s)
+    #         elif key == "c":
+    #             self.copy_op_list()
+    #             info_updated = True
+
+    #         # Cut operation(s)
+    #         elif key == "x":
+    #             self.cut_op_list()
+    #             info_updated = True
+
+    #         # Paste operation(s)
+    #         elif key == "v":
+    #             self.paste_op_list()
+    #             info_updated = True
+
+    #         # Open highlighted operation
+    #         elif key == "\n":
+    #             self.browse_op()
+    #             info_updated = True
+
+    #         # Add operation
+    #         elif key in ("KEY_IC", "+"):
+    #             self.add_op()
+    #             info_updated = True
+
+    #         # Delete operation(s)
+    #         elif key in ("KEY_DC", "-"):
+    #             self.delete_op()
+    #             info_updated = True
+
+    #         # Save
+    #         elif key == "s":
+    #             self.stat.export_file()
+    #             info_updated = True
+
+    #         # Exit
+    #         elif key == '\x1b':
+    #             self.exit()
+    #             break
+
+    #         if info_updated:
+    #             # Display statement info
+    #             self.display_info()
+
+    #         # Display commands
+    #         # self.display_commands()
+
+    #         # Display operations list
+    #         self.disp.display_item_list(self.stat.op_list, self.op_focus_idx,
+    #                                     self.op_hl, self.op_sel_list,
+    #                                     hl_changed, focus_changed)
 
 class OperationDispCurses():
     """

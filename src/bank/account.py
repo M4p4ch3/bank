@@ -8,7 +8,7 @@ import logging
 from typing import List
 
 from .statement import Statement
-from .utils.error_code import (OK, ERROR)
+from .utils.return_code import RetCode
 from .utils.my_date import FMT_DATE
 
 class Account():
@@ -57,7 +57,7 @@ class Account():
 
         return None
 
-    def import_file(self) -> int:
+    def import_file(self) -> RetCode:
         """
         Import statements from file
         """
@@ -67,7 +67,7 @@ class Account():
             file = open(self.file_path, "r", encoding="utf8")
         except FileNotFoundError:
             self.logger.error("import_file : Open %s file FAILED", self.file_path)
-            return ERROR
+            return RetCode.ERROR
 
         file_csv = csv.reader(file)
 
@@ -75,13 +75,13 @@ class Account():
         for stat_line in file_csv:
 
             # Init statement
-            stat = Statement(stat_line[Statement.IDX_DATE],
-                             float(stat_line[Statement.IDX_BAL_START]),
-                             float(stat_line[Statement.IDX_BAL_END]))
+            stat = Statement(stat_line[Statement.FieldIdx.DATE],
+                             float(stat_line[Statement.FieldIdx.BAL_START]),
+                             float(stat_line[Statement.FieldIdx.BAL_END]))
 
             # Import statement file
             ret = stat.import_file()
-            if ret != OK:
+            if ret != RetCode.OK:
                 self.logger.error("import_file : Import statement file FAILED")
                 return ret
 
@@ -90,7 +90,7 @@ class Account():
 
         file.close()
 
-        return OK
+        return RetCode.OK
 
     def export_file(self):
         """
@@ -120,9 +120,9 @@ class Account():
 
         file.close()
 
-    def insert_stat(self, stat: Statement) -> None:
+    def add_stat(self, stat: Statement) -> None:
         """
-        Insert statement
+        Add statement
         """
 
         # Find index
@@ -135,9 +135,9 @@ class Account():
 
         self.is_unsaved = True
 
-    def del_stat(self, stat: Statement) -> None:
+    def remove_stat(self, stat: Statement) -> None:
         """
-        Delete statement
+        Remove statement
         """
 
         if stat not in self.stat_list:
