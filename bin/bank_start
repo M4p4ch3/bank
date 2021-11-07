@@ -5,21 +5,33 @@ import logging
 import sys
 
 from bank import Account
-from bank.display import DispMgrCurses
+from bank.display import (DispCurses, AccountDispCurses)
 from bank.utils import (OK, ERROR)
+
+def wrap(win):
+    """
+    Curses wrapper
+    """
+
+    # Init display
+    disp = DispCurses(win)
+
+    # Init account display
+    account_disp = AccountDispCurses(account, disp)
+
+    # Browse account
+    account_disp.browse()
 
 logger = logging.getLogger("bank_start")
 
 # Init account
 account = Account()
 
+# Import account file
 ret = account.import_file()
 if ret != OK:
     logger.error("Import account file FAILED")
     sys.exit(ERROR)
 
-# Init display
-disp_mgr = DispMgrCurses(account)
-
-# Start display
-wrapper(disp_mgr.wrap)
+# Curses wrapper
+wrapper(wrap)

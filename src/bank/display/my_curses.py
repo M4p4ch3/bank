@@ -28,7 +28,7 @@ LEN_NAME = LEN_DATE
 LEN_MODE = 8
 LEN_TIER = 18
 LEN_CAT = 10
-LEN_DESC = 35
+LEN_DESC = 34
 LEN_AMOUNT = 8
 
 class ColorPairId(IntEnum):
@@ -52,86 +52,70 @@ class WinId(IntEnum):
     # STATUS = 5
     LAST = INPUT
 
-class DispMgrCurses():
+class DispCurses():
     """
-    Curses display manager
+    Curses display
     """
 
-    def __init__(self, account: Account) -> None:
+    PADDING_Y = 0
+    PADDING_X = 1
+    BORDER_H = 1
+    BORDER_W = BORDER_H
 
-        # Account
-        self.account: Account = account
-
-        # Operations buffer
-        self.op_list_buffer: Clipboard = Clipboard()
+    def __init__(self, win_main: Window) -> None:
 
         # Windows list
         self.win_list: List[Window] = [None] * (WinId.LAST + 1)
 
-    def wrap(self, win_main: Window) -> None:
-        """
-        Curses wrapper
-        """
+        self.item_focus_idx: Statement | Operation = None
+
+        self.item_hl: Statement | Operation = None
+
+        self.item_list_sel: List[Statement | Operation] = []
+
+        # Operations clipboard
+        self.op_list_clipboard: Clipboard = Clipboard()
 
         # Main window
         (win_main_h, win_main_w) = win_main.getmaxyx()
+        self.win_list[WinId.MAIN] = win_main
 
         # Sub main window
-        win_sub_h = win_main_h - 2 - 2
-        win_sub_w = int(2 * win_main_w / 3) - 2
-        win_sub_y = 2
-        win_sub_x = 2
-
-        # win_cmd_h = 3
-        # win_cmd_w = win_sub_w
-        # win_cmd_y = win_main_h - win_cmd_h - 1
-        # win_cmd_x = win_sub_x
-
-        # win_status_h = 3
-        # win_status_w = int(win_main_w / 3) - 2
-        # win_status_y = win_main_h - win_status_h - 1
-        # win_status_x = win_info_x
+        win_h = win_main_h - 2 * self.BORDER_H - 2 * self.PADDING_Y
+        win_w = int(2 * win_main_w / 3) - 2 * self.BORDER_W
+        win_y = self.BORDER_H + self.PADDING_Y
+        win_x = self.BORDER_W + self.PADDING_X
+        win = curses.newwin(win_h, win_w, win_y, win_x)
+        self.win_list[WinId.SUB] = win
+        win_sub_h = win_h
 
         # Info window
-        win_info_h = int(win_sub_h / 2) - 1
-        win_info_w = int(win_main_w / 3) - 2
-        win_info_y = 2
-        win_info_x = win_main_w - win_info_w - 1
+        win_h = int(win_sub_h / 2) - int(self.PADDING_Y / 2)
+        win_w = int(win_main_w / 3) - 2 * self.BORDER_W - self.PADDING_X
+        win_y = self.BORDER_H + self.PADDING_Y
+        win_x = win_main_w - self.BORDER_W - win_w - self.PADDING_X
+        win = curses.newwin(win_h, win_w, win_y, win_x)
+        self.win_list[WinId.INFO] = win
 
         # Input window
-        win_input_h = win_info_h
-        win_input_w = win_info_w
-        win_input_y = win_info_y + win_info_h + 1
-        win_input_x = win_info_x
+        win_h = int(win_sub_h / 2) - int(self.PADDING_Y / 2)
+        win_w = int(win_main_w / 3) - 2 * self.BORDER_W - self.PADDING_X
+        win_y = win_main_h - self.BORDER_H - win_h - self.PADDING_Y
+        win_x = win_main_w - self.BORDER_W - win_w - self.PADDING_X
+        win = curses.newwin(win_h, win_w, win_y, win_x)
+        win.keypad(True)
+        self.win_list[WinId.INPUT] = win
 
         curses.init_pair(ColorPairId.RED_BLACK, curses.COLOR_RED, curses.COLOR_BLACK)
         curses.init_pair(ColorPairId.GREEN_BLACK, curses.COLOR_GREEN, curses.COLOR_BLACK)
 
-        self.win_list[WinId.MAIN] = win_main
+    def display():
 
-        win_sub = curses.newwin(win_sub_h, win_sub_w, win_sub_y, win_sub_x)
-        self.win_list[WinId.SUB] = win_sub
+        pass
 
-        win_info = curses.newwin(win_info_h, win_info_w, win_info_y, win_info_x)
-        self.win_list[WinId.INFO] = win_info
-
-        win_input = curses.newwin(win_input_h, win_input_w, win_input_y, win_input_x)
-        win_input.keypad(True)
-        self.win_list[WinId.INPUT] = win_input
-
-        # win_cmd = curses.newwin(win_cmd_h, win_cmd_w, win_cmd_y, win_cmd_x)
-        # self.win_list[WinId.CMD] = win_cmd
-
-        # win_status = curses.newwin(win_status_h, win_status_w, win_status_y, win_status_x)
-        # self.win_list[WinId.STATUS] = win_status
-
-        account_disp_mgr: AccountDispMgrCurses = AccountDispMgrCurses(
-            self.account, self.win_list, self.op_list_buffer)
-        account_disp_mgr.browse()
-
-class AccountDispMgrCurses():
+class AccountDispCurses():
     """
-    Curses account display manager
+    Curses account display
     """
 
     # Statement separator
@@ -151,19 +135,15 @@ class AccountDispMgrCurses():
     MISS_STAT += " " + "...".ljust(LEN_AMOUNT, " ") + " |"
     MISS_STAT += " " + "...".ljust(LEN_AMOUNT, " ") + " |"
 
-    def __init__(self, account: Account, win_list: List[Window],
-                 op_list_buffer: Clipboard) -> None:
+    def __init__(self, account: Account, disp: DispCurses) -> None:
 
-        self.logger = logging.getLogger("AccountDispMgrCurses")
+        self.logger = logging.getLogger("AccountDispCurses")
 
         # Account
         self.account: Account = account
 
-        # Windows list
-        self.win_list: List[Window] = win_list
-
-        # Operations list buffer
-        self.op_list_buffer: Clipboard = op_list_buffer
+        # Main display
+        self.disp: DispCurses = disp
 
     def display(self, stat_first_idx: int, stat_hl: Statement) -> None:
         """
@@ -171,13 +151,13 @@ class AccountDispMgrCurses():
         """
 
         # Number of statements to display
-        win_sub_h = self.win_list[WinId.SUB].getmaxyx()[0]
+        win_sub_h = self.disp.win_list[WinId.SUB].getmaxyx()[0]
         stat_disp_nb: int = win_sub_h - 4
         if len(self.account.stat_list) < stat_disp_nb:
             stat_disp_nb = len(self.account.stat_list)
 
         # Main window
-        win: Window = self.win_list[WinId.MAIN]
+        win: Window = self.disp.win_list[WinId.MAIN]
 
         # Border
         win.clear()
@@ -186,7 +166,7 @@ class AccountDispMgrCurses():
         win.addstr(" STATEMENTS ", A_BOLD)
 
         # Status
-        win_main_w = self.win_list[WinId.MAIN].getmaxyx()[1]
+        win_main_w = self.disp.win_list[WinId.MAIN].getmaxyx()[1]
         if self.account.is_unsaved:
             win.addstr(0, win_main_w - 10, "Unsaved",
                        curses.color_pair(ColorPairId.RED_BLACK))
@@ -198,7 +178,7 @@ class AccountDispMgrCurses():
         win.refresh()
 
         # Use sub main window
-        win: Window = self.win_list[WinId.SUB]
+        win: Window = self.disp.win_list[WinId.SUB]
 
         (win_y, win_x) = (0, 0)
         win.addstr(win_y, win_x, f"{self.SEP_STAT}")
@@ -293,7 +273,7 @@ class AccountDispMgrCurses():
         """
 
         # Use input window
-        win: Window = self.win_list[WinId.INPUT]
+        win: Window = self.disp.win_list[WinId.INPUT]
 
         win.clear()
         win.border()
@@ -375,7 +355,7 @@ class AccountDispMgrCurses():
         """
 
         # Input window
-        win: Window = self.win_list[WinId.INPUT]
+        win: Window = self.disp.win_list[WinId.INPUT]
         win.clear()
         win.border()
         win.addstr(0, 2, " DELETE STATEMENT ", A_BOLD)
@@ -394,7 +374,7 @@ class AccountDispMgrCurses():
         Browse
         """
 
-        win_sub_h = self.win_list[WinId.SUB].getmaxyx()[0]
+        win_sub_h = self.disp.win_list[WinId.SUB].getmaxyx()[0]
 
         # Index of first displayed statement
         stat_first_idx: int = 0
@@ -409,7 +389,7 @@ class AccountDispMgrCurses():
             self.display(stat_first_idx, stat_hl)
 
             # # Command window
-            # win: Window = self.win_list[WinId.CMD]
+            # win: Window = self.disp.win_list[WinId.CMD]
             # win.clear()
             # win.border()
             # win.addstr(0, 2, " COMMANDS ", A_BOLD)
@@ -419,8 +399,8 @@ class AccountDispMgrCurses():
             # win.addstr(1, 2, cmd_str)
             # win.refresh()
 
-            self.win_list[WinId.SUB].keypad(True)
-            key = self.win_list[WinId.SUB].getkey()
+            self.disp.win_list[WinId.SUB].keypad(True)
+            key = self.disp.win_list[WinId.SUB].getkey()
 
             # Highlight previous statement
             if key == "KEY_UP":
@@ -498,9 +478,10 @@ class AccountDispMgrCurses():
 
             # Open highligthed statement
             elif key == "\n":
-                stat_disp_mgr: StatementDispMgrCurses = StatementDispMgrCurses(
-                    stat_hl, self.win_list, self.op_list_buffer)
-                stat_disp_mgr.browse()
+                # Init highligthed statement display
+                stat_disp: StatementDispCurses = StatementDispCurses(stat_hl, self.disp)
+                # Browse highligthed statement
+                stat_disp.browse()
 
             elif key == "s":
                 self.account.export_file()
@@ -508,7 +489,7 @@ class AccountDispMgrCurses():
             elif key == '\x1b':
                 if self.account.is_unsaved:
                     # Input window
-                    win: Window = self.win_list[WinId.INPUT]
+                    win: Window = self.disp.win_list[WinId.INPUT]
                     win.clear()
                     win.border()
                     win.addstr(0, 2, " UNSAVED CHANGES ", A_BOLD)
@@ -524,9 +505,9 @@ class AccountDispMgrCurses():
                         win.refresh()
                 break
 
-class StatementDispMgrCurses():
+class StatementDispCurses():
     """
-    Curses statetement display manager
+    Curses statetement display
     """
 
     # Operation separator
@@ -556,17 +537,13 @@ class StatementDispMgrCurses():
     OP_MISS += " " + "...".ljust(LEN_DESC, ' ') + " |"
     OP_MISS += " " + "...".ljust(LEN_AMOUNT, ' ') + " |"
 
-    def __init__(self, stat: Statement, win_list: List[Window],
-                 op_list_clipboard: Clipboard) -> None:
+    def __init__(self, stat: Statement, disp: DispCurses) -> None:
 
         # Statement
         self.stat: Statement = stat
 
-        # Windows list
-        self.win_list: List[Window] = win_list
-
-        # Operations list clipboard
-        self.op_list_clipboard: Clipboard = op_list_clipboard
+        # Main display
+        self.disp: DispCurses = disp
 
         # Index of focused operation
         # Index of first displayed operation
@@ -584,7 +561,7 @@ class StatementDispMgrCurses():
         """
 
         # Sub main window
-        win_sub: Window = self.win_list[WinId.SUB]
+        win_sub: Window = self.disp.win_list[WinId.SUB]
         win_sub_h: int = win_sub.getmaxyx()[0]
 
         # Number of displayed operations
@@ -720,7 +697,7 @@ class StatementDispMgrCurses():
         """
 
         # Info window
-        win_info: Window = self.win_list[WinId.INFO]
+        win_info: Window = self.disp.win_list[WinId.INFO]
 
         win_info.clear()
         win_info.border()
@@ -763,14 +740,15 @@ class StatementDispMgrCurses():
             win_info.addstr("Saved", curses.color_pair(ColorPairId.GREEN_BLACK))
         win_y += 1
 
-        win_info.addstr(win_y, win_x, f"clipboard : {self.op_list_clipboard.get_len()} operations")
+        win_info.addstr(win_y, win_x,
+                        f"clipboard : {self.disp.op_list_clipboard.get_len()} operations")
         win_y += 1
 
         win_info.refresh()
 
     # def display_commands(self) -> None:
 
-    #     win: Window = self.win_list[WinId.CMD]
+    #     win: Window = self.disp.win_list[WinId.CMD]
     #     win.clear()
     #     win.border()
     #     win.addstr(0, 2, " COMMANDS ", A_BOLD)
@@ -795,7 +773,7 @@ class StatementDispMgrCurses():
         else:
             return
 
-        self.op_list_clipboard.set(op_list)
+        self.disp.op_list_clipboard.set(op_list)
 
     def cut_op_list(self) -> None:
         """
@@ -812,7 +790,7 @@ class StatementDispMgrCurses():
         else:
             return
 
-        self.op_list_clipboard.set(op_list)
+        self.disp.op_list_clipboard.set(op_list)
 
         # If highlighted operation in buffer
         if self.op_hl in op_list:
@@ -827,7 +805,7 @@ class StatementDispMgrCurses():
         Paste operations
         """
 
-        op_list = self.op_list_clipboard.get()
+        op_list = self.disp.op_list_clipboard.get()
         if op_list is None or len(op_list) == 0:
             return
 
@@ -845,9 +823,9 @@ class StatementDispMgrCurses():
         """
 
         # Browse highlighted operation
-        op_disp_mgr: OperationDispMgrCurses = OperationDispMgrCurses(
-            self.op_hl, self.win_list[WinId.INPUT])
-        (is_edited, is_date_edited) = op_disp_mgr.browse()
+        op_disp: OperationDispCurses = OperationDispCurses(
+            self.op_hl, self.disp.win_list[WinId.INPUT])
+        (is_edited, is_date_edited) = op_disp.browse()
 
         # If operation edited
         if is_edited:
@@ -869,10 +847,10 @@ class StatementDispMgrCurses():
         # Create empty operation
         operation = Operation(datetime.now(), "", "", "", "", 0.0)
 
-        # Set operation fields using display manager
-        op_disp_mgr: OperationDispMgrCurses = OperationDispMgrCurses(
-            operation, self.win_list[WinId.INPUT])
-        op_disp_mgr.set_fields()
+        # Set operation fields using display
+        op_disp: OperationDispCurses = OperationDispCurses(
+            operation, self.disp.win_list[WinId.INPUT])
+        op_disp.set_fields()
 
         # Insert new operation
         self.stat.insert_op(operation)
@@ -895,7 +873,7 @@ class StatementDispMgrCurses():
             self.op_hl = self.stat.get_closest_op(op_del_list)
 
         # Use input window
-        win = self.win_list[WinId.INPUT]
+        win = self.disp.win_list[WinId.INPUT]
         win.clear()
         win.border()
         win.addstr(0, 2, " DELETE OPERATIONS ", A_BOLD)
@@ -924,7 +902,7 @@ class StatementDispMgrCurses():
             # Unsaved changes
 
             # Input window, ask for save
-            win: Window = self.win_list[WinId.INPUT]
+            win: Window = self.disp.win_list[WinId.INPUT]
             win.clear()
             win.border()
             win.addstr(0, 2, " UNSAVED CHANGES ", A_BOLD)
@@ -962,7 +940,7 @@ class StatementDispMgrCurses():
         self.op_sel_list = []
 
         # Main window
-        win_main: Window = self.win_list[WinId.MAIN]
+        win_main: Window = self.disp.win_list[WinId.MAIN]
         win_main.clear()
         win_main.border()
         win_main.move(0, 2)
@@ -984,7 +962,7 @@ class StatementDispMgrCurses():
             is_hl_updated = False
             is_focus_updated = False
 
-            key = self.win_list[WinId.MAIN].getkey()
+            key = self.disp.win_list[WinId.MAIN].getkey()
 
             # Highlight previous operation
             if key == "KEY_UP":
@@ -1081,9 +1059,9 @@ class StatementDispMgrCurses():
             # Display operations list
             self.display_op_list(is_hl_updated, is_focus_updated)
 
-class OperationDispMgrCurses():
+class OperationDispCurses():
     """
-    Curses operation display manager
+    Curses operation display
     """
 
     def __init__(self, operation: Operation, win: Window) -> None:
