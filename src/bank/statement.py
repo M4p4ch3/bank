@@ -27,18 +27,13 @@ class Statement():
         BAL_END = 2
         LAST = BAL_END
 
-    def __init__(self, date_str: str, bal_start: float, bal_end: float) -> None:
+    def __init__(self, date_in: datetime, bal_start: float, bal_end: float) -> None:
 
         self.logger = logging.getLogger("Statement")
 
-        self.file_path: str = f"./data/statements/{date_str}.csv"
+        self.file_path: str = f"./data/statements/{date_in.strftime(FMT_DATE)}.csv"
 
-        try:
-            self.date: datetime = datetime.strptime(date_str, FMT_DATE)
-        except ValueError:
-            # For pending statement
-            self.date: datetime = datetime.now()
-
+        self.date: datetime = date_in
         self.bal_start: float = bal_start
         self.bal_end: float = bal_end
         self.op_sum: float = 0.0

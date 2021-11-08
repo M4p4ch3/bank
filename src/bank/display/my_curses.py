@@ -117,6 +117,8 @@ class ContainerDispCurses():
 
     def __init__(self, disp: DispCurses) -> None:
 
+        self.logger = logging.getLogger("ContainerDispCurses")
+
         # Main display
         self.disp: DispCurses = disp
 
@@ -240,6 +242,43 @@ class ContainerDispCurses():
         Display info
         """
         # To overload
+
+    def display_fields(self, container, field_hl_idx) -> None:
+        """
+        Display fields
+        """
+
+        win: Window = self.disp.win_list[WinId.INPUT]
+
+        # Window border
+        win.clear()
+        win.border()
+        win.move(0, 2)
+        win.addstr(" CONTAINER ", A_BOLD)
+
+        # Init window cursor position
+        (win_y, win_x) = (2, 2)
+
+        # For each field
+        for field_idx in range(container.FieldIdx.LAST + 1):
+
+            # Set display flag for highlighted field
+            disp_flag = A_NORMAL
+            if field_idx == field_hl_idx:
+                disp_flag = A_STANDOUT
+
+            # Display field
+            (name_str, val_str) = container.get_field(field_idx)
+            win.addstr(win_y, win_x, f"{name_str} : {val_str}", disp_flag)
+
+            # Update window cursor position
+            win_y = win_y + 1
+
+        # Move cursor away from last field
+        win_y = win_y + 1
+        win.addstr(win_y, win_x, "")
+
+        win.refresh()
 
     def display_item_fields(self, item, field_focus_idx: int) -> None:
         """
@@ -405,6 +444,34 @@ class ContainerDispCurses():
             win_y += 1
 
         win.refresh()
+
+    def set_fields(self) -> None:
+        """
+        Iterate over fields and set
+        """
+
+        # Input window
+        win: Window = self.disp.win_list[WinId.INPUT]
+        win.keypad(True)
+
+        # For each field
+        for field_idx in range(self.container.FieldIdx.LAST + 1):
+
+            # Display fields
+            self.display_fields(self.container, field_idx)
+            (win_y, win_x) = (win.getyx()[0], 2)
+
+            # Get value
+            win.addstr(win_y, win_x, "Value : ")
+            win.keypad(False)
+            curses.echo()
+            val_str = win.getstr().decode(encoding="utf-8")
+            win.keypad(True)
+            curses.noecho()
+
+            # Set value
+            if val_str != "":
+                self.container.set_field(field_idx, val_str)
 
     def browse(self):
         """
@@ -626,7 +693,7 @@ class AccountDispCurses(ContainerDispCurses):
         # Browse statement
         stat_disp.browse()
 
-    def create(self) -> Statement:
+    def create_item(self) -> Statement:
         """
         Create statement
         """
@@ -815,6 +882,7 @@ class StatementDispCurses(ContainerDispCurses):
 
         # Statement
         self.stat: Statement = stat
+        self.container = stat
 
     def get_item_list(self) -> List[Operation]:
         """
@@ -854,30 +922,30 @@ class StatementDispCurses(ContainerDispCurses):
 
     def browse_item(self, operation: Operation) -> None:
         """
-        Browse statement
+        Browse operation
         """
 
-        # Init statement display
-        stat_disp: StatementDispCurses = StatementDispCurses(stat, self.disp)
+        # Init operation display
+        op_disp: OperationDispCurses = OperationDispCurses(operation, self.disp)
 
-        # Browse statement
-        stat_disp.browse()
+        # Browse operation
+        op_disp.browse()
 
-    def create(self) -> Statement:
+    def create_item(self) -> Operation:
         """
-        Create statement
+        Create operation
         """
 
-        # Init statement
-        stat: Statement = Statement(datetime.now(), 0.0, 0.0)
+        # Init operation
+        operation: Operation = Operation(datetime.now(), "", "", "", "", 0.0)
 
-        # Init statement display
-        stat_disp: StatementDispCurses = StatementDispCurses(stat, self.disp)
+        # Init operation display
+        op_disp: OperationDispCurses = OperationDispCurses(operation, self.disp)
 
-        # Set statement fields
-        stat_disp.set_fields()
+        # Set operation fields
+        op_disp.set_fields()
 
-        return stat
+        return operation
 
     def display_item_line(self, stat: Statement, win: Window,
                           win_y: int, win_x: int, flag) -> None:
@@ -1223,36 +1291,33 @@ class StatementDispCurses(ContainerDispCurses):
 
         return RetCode.OK
 
-    def set_fields(self) -> None:
-        """
-        Iterate over fields and set
-        """
+    # def set_fields(self) -> None:
+    #     """
+    #     Iterate over fields and set
+    #     """
 
-        # Input window
-        win: Window = self.disp.win_list[WinId.INPUT]
-        win.keypad(True)
+    #     # Input window
+    #     win: Window = self.disp.win_list[WinId.INPUT]
+    #     win.keypad(True)
 
-        # For each field
-        for field_idx in range(self.stat.IDX_BAL_END + 1):
+    #     # For each field
+    #     for field_idx in range(self.stat.FieldIdx.LAST + 1):
 
-            # Highlight current field
-            self.op_field_hl_idx = field_idx
+    #         # Display fields
+    #         self.display_fields(self.stat, field_idx)
+    #         (win_y, win_x) = (win.getyx()[0], 2)
 
-            # Display
-            self.display()
-            (win_y, win_x) = (self.win.getyx()[0], 2)
+    #         # Get value
+    #         win.addstr(win_y, win_x, "Value : ")
+    #         win.keypad(False)
+    #         curses.echo()
+    #         val_str = win.getstr().decode(encoding="utf-8")
+    #         win.keypad(True)
+    #         curses.noecho()
 
-            # Get value
-            self.win.addstr(win_y, win_x, "Value : ")
-            self.win.keypad(False)
-            curses.echo()
-            val_str = self.win.getstr().decode(encoding="utf-8")
-            self.win.keypad(True)
-            curses.noecho()
-
-            # Set value
-            if val_str != "":
-                self.operation.set_field(field_idx, val_str)
+    #         # Set value
+    #         if val_str != "":
+    #             self.stat.set_field(field_idx, val_str)
 
     # def browse(self) -> None:
     #     """

@@ -26,10 +26,10 @@ class Operation():
         AMOUNT = 5
         LAST = AMOUNT
 
-    def __init__(self, op_date: datetime, mode: str,
+    def __init__(self, date_in: datetime, mode: str,
                  tier: str, cat: str, desc: str, amount: float) -> None:
 
-        self.date: datetime = op_date
+        self.date: datetime = date_in
         self.mode: str = mode
         self.tier: str = tier
         self.cat: str = cat
