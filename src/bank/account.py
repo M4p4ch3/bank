@@ -24,7 +24,7 @@ class Account():
 
         self.file_path = "./data/statements.csv"
 
-        self.is_unsaved: bool = False
+        self.is_saved: bool = True
 
     def get_str(self, indent: int = 0) -> str:
         """
@@ -115,7 +115,7 @@ class Account():
             # Write statement line to CSV file
             file_csv.writerow(stat_csv)
 
-        self.is_unsaved = False
+        self.is_saved = True
 
         file.close()
 
@@ -132,7 +132,7 @@ class Account():
         # Insert statement at dedicated index
         self.stat_list.insert(idx, stat)
 
-        self.is_unsaved = True
+        self.is_saved = False
 
     def remove_stat(self, stat: Statement) -> None:
         """
@@ -144,4 +144,4 @@ class Account():
 
         self.stat_list.remove(stat)
 
-        self.is_unsaved = True
+        self.is_saved = False

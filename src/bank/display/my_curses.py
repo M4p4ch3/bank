@@ -911,10 +911,10 @@ class AccountDispCurses(ContainerDispCurses):
         (win_y, win_x) = (2, 2)
 
         win.addstr(win_y, win_x, "status : ")
-        if self.account.is_unsaved:
-            win.addstr("Unsaved", curses.color_pair(ColorPairId.RED_BLACK))
-        else:
+        if self.account.is_saved:
             win.addstr("Saved", curses.color_pair(ColorPairId.GREEN_BLACK))
+        else:
+            win.addstr("Unsaved", curses.color_pair(ColorPairId.RED_BLACK))
         win_y += 1
 
         win.addstr(win_y, win_x,
@@ -934,7 +934,7 @@ class AccountDispCurses(ContainerDispCurses):
         stat_disp = StatementDispCurses(self.disp, stat)
         is_edited = stat_disp.edit_item()
         if is_edited:
-            self.account.is_unsaved = True
+            self.account.is_saved = False
 
     def browse_container_item(self, stat: Statement) -> None:
         """
@@ -991,7 +991,7 @@ class AccountDispCurses(ContainerDispCurses):
         Exit account browse
         """
 
-        if not self.account.is_unsaved:
+        if self.account.is_saved:
             # Saved : Exit
             return RetCode.OK
 
@@ -1105,7 +1105,7 @@ class StatementDispCurses(ItemDispCurses, ContainerDispCurses):
                 is_edited = False
 
         if is_edited:
-            self.stat.is_unsaved = True
+            self.stat.is_saved = False
 
         return is_edited
 
@@ -1147,7 +1147,7 @@ class StatementDispCurses(ItemDispCurses, ContainerDispCurses):
         op_disp = OperationDispCurses(self.disp, operation)
         is_edited = op_disp.edit_item()
         if is_edited:
-            self.stat.is_unsaved = True
+            self.stat.is_saved = False
 
     def browse_container_item(self, operation: Operation) -> None:
         """
@@ -1253,10 +1253,10 @@ class StatementDispCurses(ItemDispCurses, ContainerDispCurses):
         win_y += 1
 
         win.addstr(win_y, win_x, "status : ")
-        if self.stat.is_unsaved:
-            win.addstr("Unsaved", curses.color_pair(ColorPairId.RED_BLACK))
-        else:
+        if self.stat.is_saved:
             win.addstr("Saved", curses.color_pair(ColorPairId.GREEN_BLACK))
+        else:
+            win.addstr("Unsaved", curses.color_pair(ColorPairId.RED_BLACK))
         win_y += 1
 
         win.addstr(win_y, win_x,
@@ -1278,7 +1278,7 @@ class StatementDispCurses(ItemDispCurses, ContainerDispCurses):
         """
 
         # If saved
-        if not self.stat.is_unsaved:
+        if self.stat.is_saved:
             # Exit
             return RetCode.OK
 

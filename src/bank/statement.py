@@ -41,7 +41,7 @@ class Statement():
         date_str = date.strftime(FMT_DATE)
         self.file_path: str = f"./data/statements/{date_str}.csv"
 
-        self.is_unsaved: bool = False
+        self.is_saved: bool = True
 
     def get_str(self, indent: int = 0) -> str:
         """
@@ -139,7 +139,7 @@ class Statement():
     #             is_edited = False
 
     #     if is_edited:
-    #         self.is_unsaved = True
+    #         self.is_saved = False
 
     #     return is_edited
 
@@ -193,7 +193,7 @@ class Statement():
             # Update operations sum
             self.op_sum = self.op_sum + operation.amount
 
-        self.is_unsaved = False
+        self.is_saved = True
 
         file.close()
 
@@ -219,7 +219,7 @@ class Statement():
             # Write operation line to CSV file
             file_csv.writerow(op_csv)
 
-        self.is_unsaved = False
+        self.is_saved = True
 
         file.close()
 
@@ -239,7 +239,7 @@ class Statement():
         # Update operation sum
         self.op_sum += operation.amount
 
-        self.is_unsaved = True
+        self.is_saved = False
 
     def remove_op(self, operation: Operation) -> None:
         """
@@ -253,7 +253,7 @@ class Statement():
 
         self.op_sum -= operation.amount
 
-        self.is_unsaved = True
+        self.is_saved = False
 
     def remove_op_list(self, op_list: List[Operation]) -> None:
         """
