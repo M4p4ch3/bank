@@ -27,22 +27,19 @@ class Statement():
         BAL_END = 2
         LAST = BAL_END
 
-    def __init__(self, date_str: str, bal_start: float, bal_end: float) -> None:
+    def __init__(self, date: datetime, bal_start: float, bal_end: float) -> None:
 
         self.logger = logging.getLogger("Statement")
 
-        self.file_path: str = f"./data/statements/{date_str}.csv"
+        self.date = date
+        self.bal_start = bal_start
+        self.bal_end = bal_end
 
-        try:
-            self.date: datetime = datetime.strptime(date_str, FMT_DATE)
-        except ValueError:
-            # For pending statement
-            self.date: datetime = datetime.now()
-
-        self.bal_start: float = bal_start
-        self.bal_end: float = bal_end
         self.op_sum: float = 0.0
-        self.op_list: List[Operation] = list()
+        self.op_list: List[Operation] = []
+
+        date_str = date.strftime(FMT_DATE)
+        self.file_path: str = f"./data/statements/{date_str}.csv"
 
         self.is_unsaved: bool = False
 
@@ -69,21 +66,21 @@ class Statement():
 
         return ret
 
-    def get_field(self, field_idx: int) -> Tuple[str, str]:
-        """
-        Get field (name, value), identified by field index
-        Useful for iterating over fields
-        """
+    # def get_field(self, field_idx: int) -> Tuple[str, str]:
+    #     """
+    #     Get field (name, value), identified by field index
+    #     Useful for iterating over fields
+    #     """
 
-        ret = ("", "")
-        if field_idx == self.FieldIdx.DATE:
-            ret = ("date", self.date.strftime(FMT_DATE))
-        elif field_idx == self.FieldIdx.BAL_START:
-            ret = ("start balance", str(self.bal_start))
-        elif field_idx == self.FieldIdx.BAL_END:
-            ret = ("start balance", str(self.bal_end))
+    #     ret = ("", "")
+    #     if field_idx == self.FieldIdx.DATE:
+    #         ret = ("date", self.date.strftime(FMT_DATE))
+    #     elif field_idx == self.FieldIdx.BAL_START:
+    #         ret = ("start balance", str(self.bal_start))
+    #     elif field_idx == self.FieldIdx.BAL_END:
+    #         ret = ("start balance", str(self.bal_end))
 
-        return ret
+    #     return ret
 
     def get_closest_op(self, op_list: List[Operation]) -> Operation:
         """
@@ -117,49 +114,49 @@ class Statement():
 
         return op_ret
 
-    def set_field(self, field_idx, val_str) -> bool:
-        """
-        Set field value, identified by field index, from string
-        Useful for iterating over fields
-        """
+    # def set_field(self, field_idx, val_str) -> bool:
+    #     """
+    #     Set field value, identified by field index, from string
+    #     Useful for iterating over fields
+    #     """
 
-        is_edited = True
+    #     is_edited = True
 
-        if field_idx == self.FieldIdx.DATE:
-            try:
-                self.date = datetime.strptime(val_str, FMT_DATE)
-            except ValueError:
-                is_edited = False
-        elif field_idx == self.FieldIdx.BAL_START:
-            try:
-                self.bal_start = float(val_str)
-            except ValueError:
-                is_edited = False
-        elif field_idx == self.FieldIdx.BAL_END:
-            try:
-                self.bal_end = float(val_str)
-            except ValueError:
-                is_edited = False
+    #     if field_idx == self.FieldIdx.DATE:
+    #         try:
+    #             self.date = datetime.strptime(val_str, FMT_DATE)
+    #         except ValueError:
+    #             is_edited = False
+    #     elif field_idx == self.FieldIdx.BAL_START:
+    #         try:
+    #             self.bal_start = float(val_str)
+    #         except ValueError:
+    #             is_edited = False
+    #     elif field_idx == self.FieldIdx.BAL_END:
+    #         try:
+    #             self.bal_end = float(val_str)
+    #         except ValueError:
+    #             is_edited = False
 
-        if is_edited:
-            self.is_unsaved = True
+    #     if is_edited:
+    #         self.is_unsaved = True
 
-        return is_edited
+    #     return is_edited
 
-    def create_file(self) -> RetCode:
-        """
-        Create file
-        """
+    # def create_file(self) -> RetCode:
+    #     """
+    #     Create file
+    #     """
 
-        try:
-            file = open(self.file_path, "w+", encoding="utf8")
-        except OSError:
-            self.logger.error("create_file : Open %s file FAILED", self.file_path)
-            return RetCode.ERROR
+    #     try:
+    #         file = open(self.file_path, "w+", encoding="utf8")
+    #     except OSError:
+    #         self.logger.error("create_file : Open %s file FAILED", self.file_path)
+    #         return RetCode.ERROR
 
-        file.close()
+    #     file.close()
 
-        return RetCode.OK
+    #     return RetCode.OK
 
     def import_file(self) -> RetCode:
         """

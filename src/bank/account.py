@@ -20,10 +20,9 @@ class Account():
 
         self.logger = logging.getLogger("Account")
 
-        self.file_path = "./data/statements.csv"
+        self.stat_list: List[Statement] = []
 
-        # Statements list
-        self.stat_list: List[Statement] = list()
+        self.file_path = "./data/statements.csv"
 
         self.is_unsaved: bool = False
 
@@ -75,7 +74,7 @@ class Account():
         for stat_line in file_csv:
 
             # Init statement
-            stat = Statement(stat_line[Statement.FieldIdx.DATE],
+            stat = Statement(datetime.strptime(stat_line[Statement.FieldIdx.DATE], FMT_DATE),
                              float(stat_line[Statement.FieldIdx.BAL_START]),
                              float(stat_line[Statement.FieldIdx.BAL_END]))
 

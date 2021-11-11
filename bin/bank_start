@@ -20,7 +20,7 @@ def wrap(win):
     account_disp = AccountDispCurses(account, disp)
 
     # Browse account
-    account_disp.browse()
+    account_disp.browse_container()
 
 logger = logging.getLogger("bank_start")
 

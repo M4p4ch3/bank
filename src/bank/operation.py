@@ -29,12 +29,12 @@ class Operation():
     def __init__(self, op_date: datetime, mode: str,
                  tier: str, cat: str, desc: str, amount: float) -> None:
 
-        self.date: datetime = op_date
-        self.mode: str = mode
-        self.tier: str = tier
-        self.cat: str = cat
-        self.desc: str = desc
-        self.amount: float = amount
+        self.date = op_date
+        self.mode = mode
+        self.tier = tier
+        self.cat = cat
+        self.desc = desc
+        self.amount = amount
 
     def get_str(self, indent: int = 0) -> str:
         """
@@ -55,57 +55,57 @@ class Operation():
 
         return ret
 
-    def get_field(self, field_idx) -> Tuple[str, str]:
-        """
-        Get field (name, value), identified by field index
-        Useful for iterating over fields
-        """
+    # def get_field(self, field_idx) -> Tuple[str, str]:
+    #     """
+    #     Get field (name, value), identified by field index
+    #     Useful for iterating over fields
+    #     """
 
-        ret = ("", "")
+    #     ret = ("", "")
 
-        if field_idx == self.FieldIdx.DATE:
-            ret = ("date", self.date.strftime(FMT_DATE))
-        elif field_idx == self.FieldIdx.MODE:
-            ret = ("mode", self.mode)
-        elif field_idx == self.FieldIdx.TIER:
-            ret = ("tier", self.tier)
-        elif field_idx == self.FieldIdx.CAT:
-            ret = ("cat", self.cat)
-        elif field_idx == self.FieldIdx.DESC:
-            ret = ("desc", self.desc)
-        elif field_idx == self.FieldIdx.AMOUNT:
-            ret = ("amount", str(self.amount))
+    #     if field_idx == self.FieldIdx.DATE:
+    #         ret = ("date", self.date.strftime(FMT_DATE))
+    #     elif field_idx == self.FieldIdx.MODE:
+    #         ret = ("mode", self.mode)
+    #     elif field_idx == self.FieldIdx.TIER:
+    #         ret = ("tier", self.tier)
+    #     elif field_idx == self.FieldIdx.CAT:
+    #         ret = ("cat", self.cat)
+    #     elif field_idx == self.FieldIdx.DESC:
+    #         ret = ("desc", self.desc)
+    #     elif field_idx == self.FieldIdx.AMOUNT:
+    #         ret = ("amount", str(self.amount))
 
-        return ret
+    #     return ret
 
-    def set_field(self, field_idx, val_str) -> bool:
-        """
-        Set field value, identified by field index, from string
-        Useful for iterating over fields
-        """
+    # def set_field(self, field_idx, val_str) -> bool:
+    #     """
+    #     Set field value, identified by field index, from string
+    #     Useful for iterating over fields
+    #     """
 
-        is_edited = True
+    #     is_edited = True
 
-        if field_idx == self.FieldIdx.DATE:
-            try:
-                self.date = datetime.strptime(val_str, FMT_DATE)
-            except ValueError:
-                is_edited = False
-        elif field_idx == self.FieldIdx.MODE:
-            self.mode = val_str
-        elif field_idx == self.FieldIdx.TIER:
-            self.tier = val_str
-        elif field_idx == self.FieldIdx.CAT:
-            self.cat = val_str
-        elif field_idx == self.FieldIdx.DESC:
-            self.desc = val_str
-        elif field_idx == self.FieldIdx.AMOUNT:
-            try:
-                self.amount = float(val_str)
-            except ValueError:
-                is_edited = False
+    #     if field_idx == self.FieldIdx.DATE:
+    #         try:
+    #             self.date = datetime.strptime(val_str, FMT_DATE)
+    #         except ValueError:
+    #             is_edited = False
+    #     elif field_idx == self.FieldIdx.MODE:
+    #         self.mode = val_str
+    #     elif field_idx == self.FieldIdx.TIER:
+    #         self.tier = val_str
+    #     elif field_idx == self.FieldIdx.CAT:
+    #         self.cat = val_str
+    #     elif field_idx == self.FieldIdx.DESC:
+    #         self.desc = val_str
+    #     elif field_idx == self.FieldIdx.AMOUNT:
+    #         try:
+    #             self.amount = float(val_str)
+    #         except ValueError:
+    #             is_edited = False
 
-        return is_edited
+    #     return is_edited
 
     def copy(self):
         """
