@@ -277,6 +277,17 @@ class ItemDispCurses():
         # win.refresh()
 
     def edit_item_field(self, win: Window, field_idx: int) -> bool:
+        """
+        Edit item field
+        Print prompt to edit item field
+
+        Args:
+            win (Window): Window to use
+            field_idx (int): Index of field to edit
+
+        Returns:
+            bool: Is item field edited
+        """
 
         is_edited: bool = False
 
@@ -907,7 +918,7 @@ class AccountDispCurses(ContainerDispCurses):
         win_y += 1
 
         win.addstr(win_y, win_x,
-                        f"clipboard : {self.disp.item_list_clipboard.get_len()} operations")
+                   f"clipboard : {self.disp.item_list_clipboard.get_len()} operations")
         win_y += 1
 
         win.refresh()
@@ -1163,6 +1174,15 @@ class StatementDispCurses(ItemDispCurses, ContainerDispCurses):
 
     def display_item_line(self, win: Window,
                           win_y: int, win_x: int, flag) -> None:
+        """
+        Display item line
+
+        Args:
+            win (Window): Window
+            win_y (int): Y in window
+            win_x (int): X in window
+            flag ([type]): Display flag
+        """
 
         win.addstr(win_y, win_x, "| ")
         win.addstr(self.stat.date.strftime(FMT_DATE).ljust(LEN_NAME), flag)
@@ -1221,7 +1241,7 @@ class StatementDispCurses(ItemDispCurses, ContainerDispCurses):
         win_y += 1
 
         win.addstr(win_y, win_x,
-                        f"actual end : {(self.stat.bal_start + self.stat.op_sum):.2f}")
+                   f"actual end : {(self.stat.bal_start + self.stat.op_sum):.2f}")
         win_y += 1
 
         bal_err = round(self.stat.bal_start + self.stat.op_sum - self.stat.bal_end, 2)
@@ -1240,7 +1260,7 @@ class StatementDispCurses(ItemDispCurses, ContainerDispCurses):
         win_y += 1
 
         win.addstr(win_y, win_x,
-                        f"clipboard : {self.disp.item_list_clipboard.get_len()} operations")
+                   f"clipboard : {self.disp.item_list_clipboard.get_len()} operations")
         win_y += 1
 
         win.refresh()
@@ -1334,6 +1354,15 @@ class OperationDispCurses(ItemDispCurses):
 
     def display_item_line(self, win: Window,
                           win_y: int, win_x: int, flag) -> None:
+        """
+        Display item line
+
+        Args:
+            win (Window): Window
+            win_y (int): Y in window
+            win_x (int): X in window
+            flag ([type]): Display flag
+        """
 
         win.addstr(win_y, win_x, "| ")
         win.addstr(self.operation.date.strftime(FMT_DATE)[:LEN_DATE].ljust(LEN_DATE), flag)
