@@ -46,12 +46,10 @@ class WinId(IntEnum):
     """
 
     MAIN = 0
-    SUB = 1
-    INFO = 2
-    INPUT = 3
-    # CMD = 4
-    # STATUS = 5
-    LAST = INPUT
+    LEFT = 1
+    RIGHT_TOP = 2
+    RIGHT_BOT = 3
+    LAST = RIGHT_BOT
 
 class NoOverrideError(Exception):
     """
@@ -85,40 +83,117 @@ class DispCurses():
         self.win_list[WinId.MAIN] = win_main
         win_main.keypad(True)
 
-        # Sub main window
+        # Left main window
         win_h = win_main_h - 2 * self.BORDER_H - 2 * self.PADDING_Y
         win_w = int(2 * win_main_w / 3) - 2 * self.BORDER_W
         win_y = self.BORDER_H + self.PADDING_Y
         win_x = self.BORDER_W + self.PADDING_X
         win = curses.newwin(win_h, win_w, win_y, win_x)
-        self.win_list[WinId.SUB] = win
-        win_sub_h = win_h
+        self.win_list[WinId.LEFT] = win
+        win_left_h = win_h
 
-        # Info window
-        win_h = int(win_sub_h / 2) - int(self.PADDING_Y / 2)
+        # Top right window
+        win_h = int(win_left_h / 2) - int(self.PADDING_Y / 2)
         win_w = int(win_main_w / 3) - 2 * self.BORDER_W - self.PADDING_X
         win_y = self.BORDER_H + self.PADDING_Y
         win_x = win_main_w - self.BORDER_W - win_w - self.PADDING_X
         win = curses.newwin(win_h, win_w, win_y, win_x)
-        self.win_list[WinId.INFO] = win
+        self.win_list[WinId.RIGHT_TOP] = win
 
-        # Input window
-        win_h = int(win_sub_h / 2) - int(self.PADDING_Y / 2)
+        # Bottom right window
+        win_h = int(win_left_h / 2) - int(self.PADDING_Y / 2)
         win_w = int(win_main_w / 3) - 2 * self.BORDER_W - self.PADDING_X
         win_y = win_main_h - self.BORDER_H - win_h - self.PADDING_Y
         win_x = win_main_w - self.BORDER_W - win_w - self.PADDING_X
         win = curses.newwin(win_h, win_w, win_y, win_x)
-        self.win_list[WinId.INPUT] = win
+        self.win_list[WinId.RIGHT_BOT] = win
 
         curses.init_pair(ColorPairId.RED_BLACK, curses.COLOR_RED, curses.COLOR_BLACK)
         curses.init_pair(ColorPairId.GREEN_BLACK, curses.COLOR_GREEN, curses.COLOR_BLACK)
 
-    def debug(self, msg: str) -> None:
+    def add_log(self, msg: str) -> None:
+        """
+        Add log message
 
+        Args:
+            msg (str): Log message
+        """
+
+        win = self.win_list[WinId.RIGHT_BOT]
         msg += "\n"
-        win = self.win_list[WinId.INPUT]
         win.addstr(msg)
         win.refresh()
+
+    def clear_log(self) -> None:
+        """
+        Clear log
+        """
+
+        win = self.win_list[WinId.RIGHT_BOT]
+        win.clear()
+
+    def display_choice_menu(self, name: str, msg: str, choice_list: List[str]) -> int:
+        """
+        Display choice menu
+
+        Args:
+            choice_list (List[str]): Choice list
+
+        Returns:
+            int: Selected choice index
+        """
+
+        choice_hl_idx: int = 0
+
+        # Bottom right window
+        win = self.win_list[WinId.RIGHT_BOT]
+
+        win.clear()
+        win.border()
+        win.addstr(0, 2, f" {name} ", A_BOLD)
+        win.addstr(2, 2, msg)
+
+        while True:
+
+            (win_y, win_x) = (4, 2)
+
+            for choice in choice_list:
+
+                choice_idx = choice_list.index(choice)
+                disp_flag = A_NORMAL
+                if choice_idx == choice_hl_idx:
+                    disp_flag += A_STANDOUT
+                win.addstr(win_y, win_x, choice, disp_flag)
+                win_y += 1
+
+            # Get key
+            key = win.getkey()
+
+            # Highlight previous field
+            if key == "KEY_UP":
+                choice_hl_idx -= 1
+                if choice_hl_idx < 0:
+                    choice_hl_idx = 0
+
+            # Highlight next field
+            elif key == "KEY_DOWN":
+                choice_hl_idx += 1
+                if choice_hl_idx >= len(choice_list):
+                    choice_hl_idx = len(choice_list) - 1
+
+            # Select highlighted choice
+            elif key == "\n":
+                break
+
+            # Exit
+            elif key == '\x1b':
+                choice_hl_idx = -1
+                break
+
+        win.clear()
+        win.refresh()
+
+        return choice_hl_idx
 
 class ItemDispCurses():
     """
@@ -232,7 +307,7 @@ class ItemDispCurses():
 
         is_edited: bool = False
         field_hl_idx: int = 0
-        win = self.disp.win_list[WinId.INPUT]
+        win = self.disp.win_list[WinId.RIGHT_BOT]
 
         win.clear()
         win.keypad(True)
@@ -283,6 +358,9 @@ class ItemDispCurses():
                 # Exit
                 elif key == '\x1b':
                     break
+
+        win.clear()
+        win.refresh()
 
         return is_edited
 
@@ -373,24 +451,25 @@ class ContainerDispCurses():
         """
 
         if len(item_list) == 0:
+            # No item to remove
             return RetCode.OK
 
-        # Input window
-        win = self.disp.win_list[WinId.INPUT]
-        win.clear()
-        win.border()
-        win.addstr(0, 2, " REMOVE ITEMS ", A_BOLD)
-        win.addstr(2, 2, f"Remove {len(item_list)} items")
+        msg = f"Remove {len(item_list)} items"
 
-        # Ask for remove confirm
-        win.addstr(4, 2, "Confirm ? (y/n) : ")
-        confirm_char = win.getch()
+        choice_list = [
+            "Cancel",
+            "Remove"
+        ]
 
-        if confirm_char != ord('y'):
-            # Canceled
-            return RetCode.CANCELED
+        choice_idx = self.disp.display_choice_menu("REMOVE ITEMS", msg, choice_list)
 
-        return RetCode.OK
+        # Default : Cancel
+        ret = RetCode.CANCEL
+        if choice_idx == 1:
+            # Remove items
+            ret = RetCode.OK
+
+        return ret
 
     def remove_container_item(self, item: Union[Statement, Operation]) -> None:
         """
@@ -468,8 +547,22 @@ class ContainerDispCurses():
         Exit
         """
 
-        self.raise_no_override("exit")
-        return RetCode.ERROR
+        choice_list = [
+            "Cancel",
+            "Save and exit",
+            "Exit discarding changes"
+        ]
+
+        choice_idx = self.disp.display_choice_menu("EXIT", "Unsaved changes", choice_list)
+
+        # Default : Cancel
+        ret = RetCode.CANCEL
+        if choice_idx == 1:
+            ret = RetCode.EXIT_SAVE
+        elif choice_idx == 2:
+            ret = RetCode.EXIT_NO_SAVE
+
+        return ret
 
     def display_container_info(self) -> None:
         """
@@ -489,8 +582,8 @@ class ContainerDispCurses():
 
         item_list: List[Union[Statement, Operation]] = self.get_container_item_list()
 
-        # Sub main window
-        win: Window = self.disp.win_list[WinId.SUB]
+        # Left window
+        win = self.disp.win_list[WinId.LEFT]
         win_h: int = win.getmaxyx()[0]
 
         # Number of displayed items
@@ -630,7 +723,7 @@ class ContainerDispCurses():
         self.item_sel_list = []
 
         # Main window
-        win: Window = self.disp.win_list[WinId.MAIN]
+        win = self.disp.win_list[WinId.MAIN]
         win.clear()
         win.border()
         win.move(0, 2)
@@ -707,30 +800,24 @@ class ContainerDispCurses():
             # Edit highlighted item
             elif key == "e":
                 self.edit_container_item(self.item_hl)
-                self.disp.win_list[WinId.SUB].clear()
-                self.disp.win_list[WinId.INPUT].clear()
-                self.disp.win_list[WinId.INPUT].refresh()
+                self.disp.win_list[WinId.LEFT].clear()
 
             # Open highlighted item
             elif key == "\n":
                 self.browse_container_item(self.item_hl)
-                self.disp.win_list[WinId.SUB].clear()
-                self.disp.win_list[WinId.INPUT].clear()
-                self.disp.win_list[WinId.INPUT].refresh()
+                self.disp.win_list[WinId.LEFT].clear()
 
             # Add new item
             elif key in ("KEY_IC", "+"):
                 item = self.create_container_item()
                 if item is not None:
                     self.add_container_item(item)
-                self.disp.win_list[WinId.SUB].clear()
-                self.disp.win_list[WinId.INPUT].clear()
-                self.disp.win_list[WinId.INPUT].refresh()
+                self.disp.win_list[WinId.LEFT].clear()
 
             # Remove item(s)
             elif key in ("KEY_DC", "-"):
 
-                ret = RetCode.CANCELED
+                ret = RetCode.CANCEL
 
                 item_list = []
                 if len(self.item_sel_list) != 0:
@@ -745,9 +832,7 @@ class ContainerDispCurses():
                         self.item_sel_list.clear()
                         self.item_hl = None
 
-                    self.disp.win_list[WinId.SUB].clear()
-                    self.disp.win_list[WinId.INPUT].clear()
-                    self.disp.win_list[WinId.INPUT].refresh()
+                    self.disp.win_list[WinId.LEFT].clear()
 
             # Save
             elif key == "s":
@@ -805,27 +890,27 @@ class AccountDispCurses(ContainerDispCurses):
         Display account info
         """
 
-        # Info window
-        win_info: Window = self.disp.win_list[WinId.INFO]
+        # Top right window
+        win = self.disp.win_list[WinId.RIGHT_TOP]
 
-        win_info.clear()
-        win_info.border()
-        win_info.addstr(0, 2, " INFO ", A_BOLD)
+        win.clear()
+        win.border()
+        win.addstr(0, 2, " INFO ", A_BOLD)
 
         (win_y, win_x) = (2, 2)
 
-        win_info.addstr(win_y, win_x, "status : ")
+        win.addstr(win_y, win_x, "status : ")
         if self.account.is_unsaved:
-            win_info.addstr("Unsaved", curses.color_pair(ColorPairId.RED_BLACK))
+            win.addstr("Unsaved", curses.color_pair(ColorPairId.RED_BLACK))
         else:
-            win_info.addstr("Saved", curses.color_pair(ColorPairId.GREEN_BLACK))
+            win.addstr("Saved", curses.color_pair(ColorPairId.GREEN_BLACK))
         win_y += 1
 
-        win_info.addstr(win_y, win_x,
+        win.addstr(win_y, win_x,
                         f"clipboard : {self.disp.item_list_clipboard.get_len()} operations")
         win_y += 1
 
-        win_info.refresh()
+        win.refresh()
 
     def edit_container_item(self, stat: Statement) -> None:
         """
@@ -857,7 +942,7 @@ class AccountDispCurses(ContainerDispCurses):
         """
 
         ret = super().remove_container_item_list(stat_list)
-        if ret == RetCode.CANCELED:
+        if ret == RetCode.CANCEL:
             return ret
 
         # Confirmed
@@ -895,37 +980,22 @@ class AccountDispCurses(ContainerDispCurses):
         Exit account browse
         """
 
-        # If saved
         if not self.account.is_unsaved:
-            # Exit
+            # Saved : Exit
             return RetCode.OK
 
         # Unsaved changes
 
-        # Input window
-        win: Window = self.disp.win_list[WinId.INPUT]
-        win.clear()
-        win.border()
-        win.addstr(0, 2, " UNSAVED CHANGES ", A_BOLD)
+        ret_super = super().exit()
 
-        # Ask for exit
-        win.addstr(2, 2, "Exit ? (y/n) : ")
-        char = win.getch()
-        # Cancel
-        if char == ord('n'):
-            return RetCode.CANCELED
-
-        # Ask for save
-        win.addstr(2, 2, "Save ? (y/n) : ")
-        char = win.getch()
-        # Discard
-        if char == ord('n'):
-            self.account.import_file()
-        # Save
-        else:
+        ret = RetCode.CANCEL
+        if ret_super == RetCode.EXIT_SAVE:
             self.account.export_file()
+            ret = RetCode.OK
+        elif ret_super == RetCode.EXIT_NO_SAVE:
+            ret = RetCode.OK
 
-        return RetCode.OK
+        return ret
 
 class StatementDispCurses(ItemDispCurses, ContainerDispCurses):
     """
@@ -1048,7 +1118,7 @@ class StatementDispCurses(ItemDispCurses, ContainerDispCurses):
         """
 
         ret = super().remove_container_item_list(op_list)
-        if ret == RetCode.CANCELED:
+        if ret == RetCode.CANCEL:
             return ret
 
         # Confirmed
@@ -1125,55 +1195,55 @@ class StatementDispCurses(ItemDispCurses, ContainerDispCurses):
         Display statement info
         """
 
-        # Info window
-        win_info: Window = self.disp.win_list[WinId.INFO]
+        # Top right window
+        win = self.disp.win_list[WinId.RIGHT_TOP]
 
-        win_info.clear()
-        win_info.border()
-        win_info.addstr(0, 2, " INFO ", A_BOLD)
+        win.clear()
+        win.border()
+        win.addstr(0, 2, " INFO ", A_BOLD)
 
         (win_y, win_x) = (2, 2)
-        win_info.addstr(win_y, win_x, f"date : {self.stat.date.strftime(FMT_DATE)}")
+        win.addstr(win_y, win_x, f"date : {self.stat.date.strftime(FMT_DATE)}")
         win_y += 1
 
-        win_info.addstr(win_y, win_x, f"balance start : {self.stat.bal_start}")
+        win.addstr(win_y, win_x, f"balance start : {self.stat.bal_start}")
         win_y += 1
 
-        win_info.addstr(win_y, win_x, f"balance end : {self.stat.bal_end}")
+        win.addstr(win_y, win_x, f"balance end : {self.stat.bal_end}")
         win_y += 1
 
         bal_diff = round(self.stat.bal_end - self.stat.bal_start, 2)
-        win_info.addstr(win_y, win_x, "balance diff : ")
+        win.addstr(win_y, win_x, "balance diff : ")
         if bal_diff >= 0.0:
-            win_info.addstr(str(bal_diff), curses.color_pair(ColorPairId.GREEN_BLACK))
+            win.addstr(str(bal_diff), curses.color_pair(ColorPairId.GREEN_BLACK))
         else:
-            win_info.addstr(str(bal_diff), curses.color_pair(ColorPairId.RED_BLACK))
+            win.addstr(str(bal_diff), curses.color_pair(ColorPairId.RED_BLACK))
         win_y += 1
 
-        win_info.addstr(win_y, win_x,
+        win.addstr(win_y, win_x,
                         f"actual end : {(self.stat.bal_start + self.stat.op_sum):.2f}")
         win_y += 1
 
         bal_err = round(self.stat.bal_start + self.stat.op_sum - self.stat.bal_end, 2)
-        win_info.addstr(win_y, win_x, "balance error : ")
+        win.addstr(win_y, win_x, "balance error : ")
         if bal_err == 0.0:
-            win_info.addstr(str(bal_err), curses.color_pair(ColorPairId.GREEN_BLACK))
+            win.addstr(str(bal_err), curses.color_pair(ColorPairId.GREEN_BLACK))
         else:
-            win_info.addstr(str(bal_err), curses.color_pair(ColorPairId.RED_BLACK))
+            win.addstr(str(bal_err), curses.color_pair(ColorPairId.RED_BLACK))
         win_y += 1
 
-        win_info.addstr(win_y, win_x, "status : ")
+        win.addstr(win_y, win_x, "status : ")
         if self.stat.is_unsaved:
-            win_info.addstr("Unsaved", curses.color_pair(ColorPairId.RED_BLACK))
+            win.addstr("Unsaved", curses.color_pair(ColorPairId.RED_BLACK))
         else:
-            win_info.addstr("Saved", curses.color_pair(ColorPairId.GREEN_BLACK))
+            win.addstr("Saved", curses.color_pair(ColorPairId.GREEN_BLACK))
         win_y += 1
 
-        win_info.addstr(win_y, win_x,
+        win.addstr(win_y, win_x,
                         f"clipboard : {self.disp.item_list_clipboard.get_len()} operations")
         win_y += 1
 
-        win_info.refresh()
+        win.refresh()
 
     def save(self) -> None:
         """
@@ -1194,30 +1264,16 @@ class StatementDispCurses(ItemDispCurses, ContainerDispCurses):
 
         # Unsaved changes
 
-        # Input window
-        win: Window = self.disp.win_list[WinId.INPUT]
-        win.clear()
-        win.border()
-        win.addstr(0, 2, " UNSAVED CHANGES ", A_BOLD)
+        ret_super = super().exit()
 
-        # Ask for exit
-        win.addstr(2, 2, "Exit ? (y/n) : ")
-        char = win.getch()
-        # Cancel
-        if char == ord('n'):
-            return RetCode.CANCELED
-
-        # Ask for save
-        win.addstr(2, 2, "Save ? (y/n) : ")
-        char = win.getch()
-        # Discard
-        if char == ord('n'):
-            self.stat.import_file()
-        # Save
-        else:
+        ret = RetCode.CANCEL
+        if ret_super == RetCode.EXIT_SAVE:
             self.stat.export_file()
+            ret = RetCode.OK
+        elif ret_super == RetCode.EXIT_NO_SAVE:
+            ret = RetCode.OK
 
-        return RetCode.OK
+        return ret
 
 class OperationDispCurses(ItemDispCurses):
     """
@@ -1260,7 +1316,7 @@ class OperationDispCurses(ItemDispCurses):
         self.operation: Operation = operation
 
         # Window
-        self.win: Window = disp.win_list[WinId.INPUT]
+        self.win = disp.win_list[WinId.RIGHT_BOT]
 
         # Index of operation highlighted field
         self.op_field_hl_idx = 0
@@ -1345,37 +1401,37 @@ class OperationDispCurses(ItemDispCurses):
 
         return is_edited
 
-    def display(self):
-        """
-        Display
-        """
+    # def display(self):
+    #     """
+    #     Display
+    #     """
 
-        # Window border
-        self.win.clear()
-        self.win.border()
-        self.win.move(0, 2)
-        self.win.addstr(" OPERATION ", A_BOLD)
+    #     # Window border
+    #     self.win.clear()
+    #     self.win.border()
+    #     self.win.move(0, 2)
+    #     self.win.addstr(" OPERATION ", A_BOLD)
 
-        # Init window cursor position
-        (win_y, win_x) = (2, 2)
+    #     # Init window cursor position
+    #     (win_y, win_x) = (2, 2)
 
-        # For each field
-        for field_idx in range(self.operation.IDX_AMOUNT + 1):
+    #     # For each field
+    #     for field_idx in range(self.operation.IDX_AMOUNT + 1):
 
-            # Set display flag for highlighted field
-            disp_flag = A_NORMAL
-            if field_idx == self.op_field_hl_idx:
-                disp_flag = A_STANDOUT
+    #         # Set display flag for highlighted field
+    #         disp_flag = A_NORMAL
+    #         if field_idx == self.op_field_hl_idx:
+    #             disp_flag = A_STANDOUT
 
-            # Display field
-            (name_str, val_str) = self.operation.get_field(field_idx)
-            self.win.addstr(win_y, win_x, f"{name_str} : {val_str}", disp_flag)
+    #         # Display field
+    #         (name_str, val_str) = self.operation.get_field(field_idx)
+    #         self.win.addstr(win_y, win_x, f"{name_str} : {val_str}", disp_flag)
 
-            # Update window cursor position
-            win_y = win_y + 1
+    #         # Update window cursor position
+    #         win_y = win_y + 1
 
-        # Move cursor away from last field
-        win_y = win_y + 1
-        self.win.addstr(win_y, win_x, "")
+    #     # Move cursor away from last field
+    #     win_y = win_y + 1
+    #     self.win.addstr(win_y, win_x, "")
 
-        self.win.refresh()
+    #     self.win.refresh()

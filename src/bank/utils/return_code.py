@@ -11,4 +11,6 @@ class RetCode(IntEnum):
 
     OK = 0
     ERROR = 1
-    CANCELED = 2
+    CANCEL = 2
+    EXIT_SAVE = 3
+    EXIT_NO_SAVE = 4
