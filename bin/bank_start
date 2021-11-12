@@ -5,7 +5,7 @@ import logging
 import sys
 
 from bank import Account
-from bank.display.my_curses import (DispCurses, AccountDispCurses)
+from bank.display.my_curses import (DisplayerMain, DisplayerAccount)
 from bank.utils import RetCode
 
 def wrap(win):
@@ -14,10 +14,10 @@ def wrap(win):
     """
 
     # Init display
-    disp = DispCurses(win)
+    disp = DisplayerMain(win)
 
     # Init account display
-    account_disp = AccountDispCurses(account, disp)
+    account_disp = DisplayerAccount(account, disp)
 
     # Browse account
     account_disp.browse_container()

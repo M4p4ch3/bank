@@ -6,10 +6,10 @@ from enum import IntEnum
 import logging
 from typing import (TYPE_CHECKING, Any, List, Union, Tuple)
 
-from bank.display.my_curses.main import (NoOverrideError, ColorPairId, WinId, DispCurses)
-from bank.display.my_curses.item_display import ItemDispCurses
-from bank.display.my_curses.container_display import ContainerDispCurses
-from bank.display.my_curses.implem.statement_display import StatementDispCurses
+from bank.display.my_curses.main import (NoOverrideError, ColorPairId, WinId, DisplayerMain)
+from bank.display.my_curses.item_display import DisplayerItem
+from bank.display.my_curses.container_display import DisplayerContainer
+from bank.display.my_curses.implem.statement_display import DisplayerStatement
 
 from bank.account import Account
 from bank.statement import Statement
@@ -25,18 +25,18 @@ else:
     from typing import Any
     Window = Any
 
-class AccountDispCurses(ContainerDispCurses):
+class DisplayerAccount(DisplayerContainer):
     """
     Curses account display
     """
 
-    def __init__(self, account: Account, disp: DispCurses) -> None:
+    def __init__(self, account: Account, disp: DisplayerMain) -> None:
 
         # Init container item display
-        stat_disp = StatementDispCurses(disp)
+        stat_disp = DisplayerStatement(disp)
 
         # Init container display
-        ContainerDispCurses.__init__(self, disp, stat_disp)
+        DisplayerContainer.__init__(self, disp, stat_disp)
 
         # Account
         self.account: Account = account
@@ -92,7 +92,7 @@ class AccountDispCurses(ContainerDispCurses):
             stat (Statement): Statement
         """
 
-        stat_disp = StatementDispCurses(self.disp, stat)
+        stat_disp = DisplayerStatement(self.disp, stat)
         is_edited = stat_disp.edit_item()
         if is_edited:
             self.account.is_saved = False
@@ -105,7 +105,7 @@ class AccountDispCurses(ContainerDispCurses):
             stat (Statement): Statement
         """
 
-        stat_disp = StatementDispCurses(self.disp, stat)
+        stat_disp = DisplayerStatement(self.disp, stat)
         stat_disp.browse_container()
 
     def remove_container_item_list(self, stat_list: List[Statement]) -> RetCode:
@@ -130,7 +130,7 @@ class AccountDispCurses(ContainerDispCurses):
         stat: Statement = Statement(datetime.now(), 0.0, 0.0)
 
         # Init statement display
-        stat_disp = StatementDispCurses(self.disp, stat)
+        stat_disp = DisplayerStatement(self.disp, stat)
 
         # Set statement fields
         stat_disp.edit_item(force_iterate=True)

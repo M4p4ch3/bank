@@ -9,7 +9,7 @@ from enum import IntEnum
 import logging
 from typing import (TYPE_CHECKING, Any, List, Union, Tuple)
 
-from .main import (NoOverrideError, WinId, DispCurses)
+from .main import (NoOverrideError, WinId, DisplayerMain)
 
 from ...statement import Statement
 from ...operation import Operation
@@ -21,7 +21,7 @@ else:
     from typing import Any
     Window = Any
 
-class ItemDispCurses():
+class DisplayerItem():
     """
     Curses item display
     """
@@ -30,7 +30,7 @@ class ItemDispCurses():
     HEADER = ""
     MISSING = ""
 
-    def __init__(self, disp: DispCurses) -> None:
+    def __init__(self, disp: DisplayerMain) -> None:
 
         # Main display
         self.disp = disp
@@ -48,7 +48,7 @@ class ItemDispCurses():
         """
 
         raise NoOverrideError(
-            base_class="ItemDispCurses",
+            base_class="DisplayerItem",
             derived_class=type(self).__name__,
             method=method)
 

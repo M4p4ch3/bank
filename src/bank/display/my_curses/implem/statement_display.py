@@ -6,11 +6,11 @@ from enum import IntEnum
 import logging
 from typing import (TYPE_CHECKING, Any, List, Union, Tuple)
 
-from bank.display.my_curses.main import (NoOverrideError, ColorPairId, WinId, DispCurses)
-from bank.display.my_curses.item_display import ItemDispCurses
-from bank.display.my_curses.container_display import ContainerDispCurses
+from bank.display.my_curses.main import (NoOverrideError, ColorPairId, WinId, DisplayerMain)
+from bank.display.my_curses.item_display import DisplayerItem
+from bank.display.my_curses.container_display import DisplayerContainer
 from bank.display.my_curses.implem.main import FieldLen
-from bank.display.my_curses.implem.operation_display import OperationDispCurses
+from bank.display.my_curses.implem.operation_display import DisplayerOperation
 
 from bank.account import Account
 from bank.statement import Statement
@@ -27,7 +27,7 @@ else:
     from typing import Any
     Window = Any
 
-class StatementDispCurses(ItemDispCurses, ContainerDispCurses):
+class DisplayerStatement(DisplayerItem, DisplayerContainer):
     """
     Curses statement display
     """
@@ -58,18 +58,18 @@ class StatementDispCurses(ItemDispCurses, ContainerDispCurses):
     MISSING += " " + "...".ljust(FieldLen.LEN_AMOUNT, " ") + " |"
     MISSING += " " + "...".ljust(FieldLen.LEN_AMOUNT, " ") + " |"
 
-    def __init__(self, disp: DispCurses, stat: Statement = None) -> None:
+    def __init__(self, disp: DisplayerMain, stat: Statement = None) -> None:
 
         # Init self item display
-        ItemDispCurses.__init__(self, disp)
+        DisplayerItem.__init__(self, disp)
 
         # Init container item display
-        op_disp = OperationDispCurses(disp)
+        op_disp = DisplayerOperation(disp)
 
         # Init container display
-        ContainerDispCurses.__init__(self, disp, op_disp)
+        DisplayerContainer.__init__(self, disp, op_disp)
 
-        # self.item_disp: OperationDispCurses = OperationDispCurses(None, disp)
+        # self.item_disp: DisplayerOperation = DisplayerOperation(None, disp)
 
         # Statement
         self.stat: Statement = stat
@@ -163,7 +163,7 @@ class StatementDispCurses(ItemDispCurses, ContainerDispCurses):
             stat (Operation): Operation
         """
 
-        op_disp = OperationDispCurses(self.disp, operation)
+        op_disp = DisplayerOperation(self.disp, operation)
         is_edited = op_disp.edit_item()
         if is_edited:
             self.stat.is_saved = False
@@ -184,7 +184,7 @@ class StatementDispCurses(ItemDispCurses, ContainerDispCurses):
         operation: Operation = Operation(datetime.now(), "", "", "", "", 0.0)
 
         # Init operation display
-        op_disp = OperationDispCurses(self.disp, operation)
+        op_disp = DisplayerOperation(self.disp, operation)
 
         # Set operation fields
         op_disp.edit_item(force_iterate=True)

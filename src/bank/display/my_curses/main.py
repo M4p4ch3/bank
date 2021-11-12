@@ -52,9 +52,9 @@ class NoOverrideError(Exception):
         msg = f"{base_class}.{method} not overriden in {derived_class}"
         super().__init__(msg)
 
-class DispCurses():
+class DisplayerMain():
     """
-    Curses display
+    Cruses main display
     """
 
     PADDING_Y = 0

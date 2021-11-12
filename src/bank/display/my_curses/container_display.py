@@ -9,8 +9,8 @@ from enum import IntEnum
 import logging
 from typing import (TYPE_CHECKING, Any, List, Union, Tuple)
 
-from .main import (NoOverrideError, WinId, DispCurses)
-from .item_display import ItemDispCurses
+from .main import (NoOverrideError, WinId, DisplayerMain)
+from .item_display import DisplayerItem
 
 from ...account import Account
 from ...statement import Statement
@@ -27,12 +27,12 @@ else:
     from typing import Any
     Window = Any
 
-class ContainerDispCurses():
+class DisplayerContainer():
     """
     Curses container (account, statement) display
     """
 
-    def __init__(self, disp: DispCurses, item_disp: ItemDispCurses) -> None:
+    def __init__(self, disp: DisplayerMain, item_disp: DisplayerItem) -> None:
 
         # Main display
         self.disp = disp
@@ -60,7 +60,7 @@ class ContainerDispCurses():
         """
 
         raise NoOverrideError(
-            base_class="ContainerDispCurses",
+            base_class="DisplayerContainer",
             derived_class=type(self).__name__,
             method=method)
 

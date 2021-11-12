@@ -9,9 +9,9 @@ from enum import IntEnum
 import logging
 from typing import (TYPE_CHECKING, Any, List, Union, Tuple)
 
-from bank.display.my_curses.main import (NoOverrideError, ColorPairId, WinId, DispCurses)
-from bank.display.my_curses.item_display import ItemDispCurses
-from bank.display.my_curses.container_display import ContainerDispCurses
+from bank.display.my_curses.main import (NoOverrideError, ColorPairId, WinId, DisplayerMain)
+from bank.display.my_curses.item_display import DisplayerItem
+from bank.display.my_curses.container_display import DisplayerContainer
 
 from bank.account import Account
 from bank.statement import Statement

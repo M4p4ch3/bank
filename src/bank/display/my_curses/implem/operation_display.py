@@ -6,9 +6,9 @@ from enum import IntEnum
 import logging
 from typing import (TYPE_CHECKING, Any, List, Union, Tuple)
 
-from bank.display.my_curses.main import (NoOverrideError, ColorPairId, WinId, DispCurses)
-from bank.display.my_curses.item_display import ItemDispCurses
-from bank.display.my_curses.container_display import ContainerDispCurses
+from bank.display.my_curses.main import (NoOverrideError, ColorPairId, WinId, DisplayerMain)
+from bank.display.my_curses.item_display import DisplayerItem
+from bank.display.my_curses.container_display import DisplayerContainer
 from bank.display.my_curses.implem.main import FieldLen
 
 from bank.account import Account
@@ -26,7 +26,7 @@ else:
     from typing import Any
     Window = Any
 
-class OperationDispCurses(ItemDispCurses):
+class DisplayerOperation(DisplayerItem):
     """
     Curses operation display
     """
@@ -58,10 +58,10 @@ class OperationDispCurses(ItemDispCurses):
     MISSING += " " + "...".ljust(FieldLen.LEN_DESC, ' ') + " |"
     MISSING += " " + "...".ljust(FieldLen.LEN_AMOUNT, ' ') + " |"
 
-    def __init__(self, disp: DispCurses, operation: Operation = None) -> None:
+    def __init__(self, disp: DisplayerMain, operation: Operation = None) -> None:
 
         # Init item display
-        ItemDispCurses.__init__(self, disp)
+        DisplayerItem.__init__(self, disp)
 
         # Operation
         self.operation: Operation = operation
