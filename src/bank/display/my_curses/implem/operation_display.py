@@ -9,7 +9,7 @@ from typing import (TYPE_CHECKING, Any, List, Union, Tuple)
 from bank.display.my_curses.main import (NoOverrideError, ColorPairId, WinId, DisplayerMain)
 from bank.display.my_curses.item_display import DisplayerItem
 from bank.display.my_curses.container_display import DisplayerContainer
-from bank.display.my_curses.implem.main import FieldLen
+from bank.display.my_curses.implem.main import (FieldLen, formart_trunc_padd)
 
 from bank.account import Account
 from bank.statement import Statement
@@ -95,19 +95,21 @@ class DisplayerOperation(DisplayerItem):
             flag ([type]): Display flag
         """
 
-        win.addstr(win_y, win_x, "| ")
-        win.addstr(self.operation.date.strftime(FMT_DATE)[:FieldLen.LEN_DATE].ljust(FieldLen.LEN_DATE), flag)
-        win.addstr(" | ")
-        win.addstr(self.operation.mode[:FieldLen.LEN_MODE].ljust(FieldLen.LEN_MODE), flag)
-        win.addstr(" | ")
-        win.addstr(self.operation.tier[:FieldLen.LEN_TIER].ljust(FieldLen.LEN_TIER), flag)
-        win.addstr(" | ")
-        win.addstr(self.operation.cat[:FieldLen.LEN_CAT].ljust(FieldLen.LEN_CAT), flag)
-        win.addstr(" | ")
-        win.addstr(self.operation.desc[:FieldLen.LEN_DESC].ljust(FieldLen.LEN_DESC), flag)
-        win.addstr(" | ")
-        win.addstr(str(self.operation.amount)[:FieldLen.LEN_AMOUNT].ljust(FieldLen.LEN_AMOUNT), flag)
-        win.addstr(" |")
+        op_line = "| "
+        op_line += formart_trunc_padd(self.operation.date.strftime(FMT_DATE), FieldLen.LEN_DATE)
+        op_line += " | "
+        op_line += formart_trunc_padd(self.operation.mode, FieldLen.LEN_MODE)
+        op_line += " | "
+        op_line += formart_trunc_padd(self.operation.tier, FieldLen.LEN_TIER)
+        op_line += " | "
+        op_line += formart_trunc_padd(self.operation.cat, FieldLen.LEN_CAT)
+        op_line += " | "
+        op_line += formart_trunc_padd(self.operation.desc, FieldLen.LEN_DESC)
+        op_line += " | "
+        op_line += formart_trunc_padd(str(self.operation.amount), FieldLen.LEN_AMOUNT)
+        op_line += " |"
+
+        win.addstr(win_y, win_x, op_line, flag)
 
     def get_item_field(self, field_idx) -> Tuple[str, str]:
         """

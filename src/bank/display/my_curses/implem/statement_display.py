@@ -9,7 +9,7 @@ from typing import (TYPE_CHECKING, Any, List, Union, Tuple)
 from bank.display.my_curses.main import (NoOverrideError, ColorPairId, WinId, DisplayerMain)
 from bank.display.my_curses.item_display import DisplayerItem
 from bank.display.my_curses.container_display import DisplayerContainer
-from bank.display.my_curses.implem.main import FieldLen
+from bank.display.my_curses.implem.main import (FieldLen, formart_trunc_padd)
 from bank.display.my_curses.implem.operation_display import DisplayerOperation
 
 from bank.account import Account
@@ -203,31 +203,37 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
             flag ([type]): Display flag
         """
 
-        win.addstr(win_y, win_x, "| ")
-        win.addstr(self.stat.date.strftime(FMT_DATE).ljust(FieldLen.LEN_NAME), flag)
-        win.addstr(" | ")
-        win.addstr(self.stat.date.strftime(FMT_DATE).ljust(FieldLen.LEN_DATE), flag)
-        win.addstr(" | ")
-        win.addstr(str(self.stat.bal_start).ljust(FieldLen.LEN_AMOUNT), flag)
-        win.addstr(" | ")
-        win.addstr(str(self.stat.bal_end).ljust(FieldLen.LEN_AMOUNT), flag)
-        win.addstr(" | ")
+        stat_line = "| "
+        stat_line += formart_trunc_padd(self.stat.date.strftime(FMT_DATE), FieldLen.LEN_NAME)
+        stat_line += " | "
+        stat_line += formart_trunc_padd(self.stat.date.strftime(FMT_DATE), FieldLen.LEN_NAME)
+        stat_line += " | "
+        stat_line += formart_trunc_padd(str(self.stat.bal_start), FieldLen.LEN_AMOUNT)
+        stat_line += " | "
+        stat_line += formart_trunc_padd(str(self.stat.bal_end), FieldLen.LEN_AMOUNT)
+        stat_line += " | "
+
+        win.addstr(win_y, win_x, stat_line, flag)
+
         bal_diff = round(self.stat.bal_end - self.stat.bal_start, 2)
         if bal_diff >= 0.0:
             win.addstr(str(bal_diff).ljust(FieldLen.LEN_AMOUNT),
-                       curses.color_pair(ColorPairId.GREEN_BLACK))
+                       curses.color_pair(ColorPairId.GREEN_BLACK) + flag)
         else:
             win.addstr(str(bal_diff).ljust(FieldLen.LEN_AMOUNT),
-                       curses.color_pair(ColorPairId.RED_BLACK))
-        win.addstr(" | ")
+                       curses.color_pair(ColorPairId.RED_BLACK) + flag)
+
+        win.addstr(" | ", flag)
+
         bal_err = round(self.stat.bal_start + self.stat.op_sum - self.stat.bal_end, 2)
         if bal_err == 0.0:
             win.addstr(str(bal_err).ljust(FieldLen.LEN_AMOUNT),
-                       curses.color_pair(ColorPairId.GREEN_BLACK))
+                       curses.color_pair(ColorPairId.GREEN_BLACK) + flag)
         else:
             win.addstr(str(bal_err).ljust(FieldLen.LEN_AMOUNT),
-                       curses.color_pair(ColorPairId.RED_BLACK))
-        win.addstr(" |")
+                       curses.color_pair(ColorPairId.RED_BLACK) + flag)
+
+        win.addstr(" |", flag)
 
     def display_container_info(self) -> None:
         """

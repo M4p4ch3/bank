@@ -38,3 +38,22 @@ class FieldLen():
     LEN_CAT = 10
     LEN_DESC = 34
     LEN_AMOUNT = 8
+
+def formart_trunc_padd(str: str, len: int) -> str:
+    """
+    Format string : trunc and padd to length
+
+    Args:
+        str (str): String
+        len (int): Length
+
+    Returns:
+        str: Formatted string
+    """
+
+    # Trunc to length
+    str = str[:len]
+    # Right padding w/ spaces
+    str = str.ljust(len)
+
+    return str
