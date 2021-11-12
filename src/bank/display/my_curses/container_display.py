@@ -1,24 +1,15 @@
-
-
-
+"""
+display/curses/container
+"""
 
 import curses
 from curses import *
-from datetime import datetime
-from enum import IntEnum
-import logging
-from typing import (TYPE_CHECKING, Any, List, Union, Tuple)
+from typing import (TYPE_CHECKING, Any, List)
 
-from .main import (NoOverrideError, WinId, DisplayerMain)
-from .item_display import DisplayerItem
+from bank.display.my_curses.main import (NoOverrideError, WinId, DisplayerMain)
+from bank.display.my_curses.item_display import DisplayerItem
 
-from ...account import Account
-from ...statement import Statement
-from ...operation import Operation
-
-from ...utils.clipboard import Clipboard
-from ...utils.my_date import FMT_DATE
-from ...utils.return_code import RetCode
+from bank.utils.return_code import RetCode
 
 if TYPE_CHECKING:
     from _curses import _CursesWindow
@@ -43,10 +34,10 @@ class DisplayerContainer():
         self.name = ""
 
         # Highlighted item
-        self.item_hl: Union[Statement, Operation] = None
+        self.item_hl: Any = None
 
         # Selected item list
-        self.item_sel_list: List[Union[Statement, Operation]] = []
+        self.item_sel_list: List[Any] = []
 
         # Focused item index
         self.item_focus_idx: int = 0
@@ -64,7 +55,7 @@ class DisplayerContainer():
             derived_class=type(self).__name__,
             method=method)
 
-    def get_container_item_list(self) -> List[Union[Statement, Operation]]:
+    def get_container_item_list(self) -> List[Any]:
         """
         Get container item list
         """
@@ -72,7 +63,7 @@ class DisplayerContainer():
         self.raise_no_override("get_container_item_list")
         return []
 
-    def edit_container_item(self, item: Union[Statement, Operation]) -> bool:
+    def edit_container_item(self, item: Any) -> bool:
         """
         Edit container item
         """
@@ -89,7 +80,7 @@ class DisplayerContainer():
         self.raise_no_override("browse_container_item")
         _ = item
 
-    def create_container_item(self) -> Union[Statement, Operation]:
+    def create_container_item(self) -> Any:
         """
         Create container item
         """
@@ -97,18 +88,18 @@ class DisplayerContainer():
         self.raise_no_override("create_container_item")
         return Any
 
-    def add_container_item(self, item: Union[Statement, Operation]) -> None:
+    def add_container_item(self, item: Any) -> None:
         """
         Add container item
 
         Args:
-            item (Union[Statement, Operation]): Item
+            item (Any): Item
         """
 
         self.raise_no_override("add_container_item")
         _ = item
 
-    def remove_container_item_list(self, item_list: List[Union[Statement, Operation]]) -> RetCode:
+    def remove_container_item_list(self, item_list: List[Any]) -> RetCode:
         """
         Remove item list
         """
@@ -134,12 +125,12 @@ class DisplayerContainer():
 
         return ret
 
-    def remove_container_item(self, item: Union[Statement, Operation]) -> None:
+    def remove_container_item(self, item: Any) -> None:
         """
         Remove cotnainer item
 
         Args:
-            item (Union[Statement, Operation]): Item
+            item (Any): Item
         """
 
         self.raise_no_override("remove_container_item")
@@ -178,7 +169,7 @@ class DisplayerContainer():
             # Highlight closest item
             # TODO
             # self.item_hl = self.get_closest_item(item_list)
-            item_list: List[Union[Statement, Operation]] = self.get_container_item_list()
+            item_list: List[Any] = self.get_container_item_list()
             self.item_hl = item_list[0]
 
         # Remove items list
@@ -243,7 +234,7 @@ class DisplayerContainer():
             focus_changed (bool): Is focused item updated
         """
 
-        item_list: List[Union[Statement, Operation]] = self.get_container_item_list()
+        item_list: List[Any] = self.get_container_item_list()
 
         # Left window
         win = self.disp.win_list[WinId.LEFT]
@@ -378,7 +369,7 @@ class DisplayerContainer():
         """
 
         # Init
-        item_list: List[Union[Statement, Operation]] = self.get_container_item_list()
+        item_list: List[Any] = self.get_container_item_list()
         self.item_focus_idx: int = 0
         self.item_hl = None
         if len(item_list) != 0:

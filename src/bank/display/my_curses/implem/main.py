@@ -1,35 +1,11 @@
-
-
-
-
-import curses
-from curses import *
-from datetime import datetime
-from enum import IntEnum
-import logging
-from typing import (TYPE_CHECKING, Any, List, Union, Tuple)
-
-from bank.display.my_curses.main import (NoOverrideError, ColorPairId, WinId, DisplayerMain)
-from bank.display.my_curses.item_display import DisplayerItem
-from bank.display.my_curses.container_display import DisplayerContainer
-
-from bank.account import Account
-from bank.statement import Statement
-from bank.operation import Operation
-
-from bank.utils.clipboard import Clipboard
-from bank.utils.my_date import FMT_DATE
-from bank.utils.return_code import RetCode
-
-if TYPE_CHECKING:
-    from _curses import _CursesWindow
-    Window = _CursesWindow
-else:
-    from typing import Any
-    Window = Any
+"""
+display/curses/implem/main
+"""
 
 class FieldLen():
-    # Length for display padding
+    """
+    Length for display padding
+    """
 
     LEN_DATE = 10
     LEN_NAME = LEN_DATE
@@ -39,7 +15,7 @@ class FieldLen():
     LEN_DESC = 34
     LEN_AMOUNT = 8
 
-def formart_trunc_padd(str: str, len: int) -> str:
+def formart_trunc_padd(str_in: str, len_in: int) -> str:
     """
     Format string : trunc and padd to length
 
@@ -52,8 +28,8 @@ def formart_trunc_padd(str: str, len: int) -> str:
     """
 
     # Trunc to length
-    str = str[:len]
+    str_out = str_in[:len_in]
     # Right padding w/ spaces
-    str = str.ljust(len)
+    str_out = str_out.ljust(len_in)
 
-    return str
+    return str_out

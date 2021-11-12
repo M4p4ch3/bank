@@ -1,21 +1,13 @@
 """
-Display
+display/curses/main
 """
 
 import curses
 from curses import *
-from datetime import datetime
 from enum import IntEnum
-import logging
-from typing import (TYPE_CHECKING, Any, List, Union, Tuple)
+from typing import (TYPE_CHECKING, Any, List)
 
-from ...account import Account
-from ...statement import Statement
-from ...operation import Operation
-
-from ...utils.clipboard import Clipboard
-from ...utils.my_date import FMT_DATE
-from ...utils.return_code import RetCode
+from bank.utils.clipboard import Clipboard
 
 if TYPE_CHECKING:
     from _curses import _CursesWindow

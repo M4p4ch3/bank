@@ -1,22 +1,21 @@
+"""
+display/curses/implem/statement
+"""
 
 import curses
 from curses import *
 from datetime import datetime
-from enum import IntEnum
-import logging
-from typing import (TYPE_CHECKING, Any, List, Union, Tuple)
+from typing import (TYPE_CHECKING, Any, List, Tuple)
 
-from bank.display.my_curses.main import (NoOverrideError, ColorPairId, WinId, DisplayerMain)
+from bank.display.my_curses.main import (ColorPairId, WinId, DisplayerMain)
 from bank.display.my_curses.item_display import DisplayerItem
 from bank.display.my_curses.container_display import DisplayerContainer
 from bank.display.my_curses.implem.main import (FieldLen, formart_trunc_padd)
 from bank.display.my_curses.implem.operation_display import DisplayerOperation
 
-from bank.account import Account
 from bank.statement import Statement
 from bank.operation import Operation
 
-from bank.utils.clipboard import Clipboard
 from bank.utils.my_date import FMT_DATE
 from bank.utils.return_code import RetCode
 

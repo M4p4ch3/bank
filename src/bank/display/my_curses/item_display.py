@@ -1,18 +1,12 @@
 """
-Item display
+display/curses/item
 """
 
 import curses
 from curses import *
-from datetime import datetime
-from enum import IntEnum
-import logging
-from typing import (TYPE_CHECKING, Any, List, Union, Tuple)
+from typing import (TYPE_CHECKING, Any, Tuple)
 
-from .main import (NoOverrideError, WinId, DisplayerMain)
-
-from ...statement import Statement
-from ...operation import Operation
+from bank.display.my_curses.main import (NoOverrideError, WinId, DisplayerMain)
 
 if TYPE_CHECKING:
     from _curses import _CursesWindow
@@ -52,7 +46,7 @@ class DisplayerItem():
             derived_class=type(self).__name__,
             method=method)
 
-    def set_item(self, item: Union[Statement, Operation]):
+    def set_item(self, item: Any):
         """
         Set item
         """
