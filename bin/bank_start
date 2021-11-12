@@ -5,7 +5,7 @@ import logging
 import sys
 
 from bank import Account
-from bank.display import (DispCurses, AccountDispCurses)
+from bank.display.my_curses import (DispCurses, AccountDispCurses)
 from bank.utils import RetCode
 
 def wrap(win):
