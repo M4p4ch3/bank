@@ -31,7 +31,8 @@ class DisplayerContainer():
         # Item display
         self.item_disp = item_disp
 
-        self.name = ""
+        self.title = ""
+        self.subtitle = ""
 
         # Highlighted item
         self.item_hl: Any = None
@@ -378,10 +379,11 @@ class DisplayerContainer():
 
         # Main window
         win = self.disp.win_list[WinId.MAIN]
+        win_w = win.getmaxyx()[1]
         win.clear()
         win.border()
-        win.move(0, 2)
-        win.addstr(f" {self.name} ", A_BOLD)
+        win.addstr(0, int((win_w - len(self.title))/2), f" {self.title} ", A_STANDOUT)
+        win.addstr(0, 2, f" {self.subtitle} ", A_BOLD)
         win.refresh()
 
         self.display_container_info()

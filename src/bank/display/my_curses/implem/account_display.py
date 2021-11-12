@@ -39,7 +39,8 @@ class DisplayerAccount(DisplayerContainer):
         # Account
         self.account: Account = account
 
-        self.name = "ACCOUNT"
+        self.title = "ACCOUNT"
+        self.subtitle = "STATEMENTS LIST"
 
     def get_container_item_list(self) -> List[Statement]:
         """

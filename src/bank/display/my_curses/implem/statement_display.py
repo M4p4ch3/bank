@@ -75,7 +75,8 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
 
         self.field_nb = Statement.FieldIdx.LAST + 1
 
-        self.name = "STATEMENT"
+        self.title = "STATEMENT"
+        self.subtitle = "OPERATIONS LIST"
 
     def set_item(self, stat: Statement) -> None:
         """
