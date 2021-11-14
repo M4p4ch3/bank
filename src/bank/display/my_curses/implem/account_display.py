@@ -47,7 +47,7 @@ class DisplayerAccount(DisplayerContainer):
         Get account statement list
         """
 
-        return self.account.stat_list
+        return self.account.item_list
 
     def add_container_item(self, stat: Statement) -> None:
         """

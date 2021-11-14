@@ -1,5 +1,5 @@
 """
-Account
+bank/internal/account
 """
 
 import csv
@@ -8,140 +8,118 @@ import logging
 from typing import List
 
 from bank.internal.statement import Statement
+from bank.internal.container import Container
+from bank.internal.item import Item
 from bank.utils.return_code import RetCode
 from bank.utils.my_date import FMT_DATE
 
-class Account():
+class Account(Container):
     """
     Account
     """
 
-    def __init__(self) -> None:
+    def __init__(self, name: str, dir_path: str) -> None:
+
+        Container.__init__(self, name, dir_path, "statements")
+        # Item.__init__()
 
         self.logger = logging.getLogger("Account")
 
-        self.stat_list: List[Statement] = []
-
-        self.file_path = "./data/statements.csv"
-
-        self.is_saved: bool = True
-
-    def get_str(self, indent: int = 0) -> str:
+    def to_string(self, indent: int = 0) -> str:
         """
-        Get string representation
+        To string
+
+        Args:
+            indent (int): Indentation level
+
+        Returns:
+            str: String
         """
 
-        indent_str = ""
-        for _ in range(indent):
-            indent_str += "    "
+        # indent_str = ""
+        # for _ in range(indent):
+        #     indent_str += "    "
 
         ret = ""
-        ret += f"{indent_str}statements : [\n"
-        for stat in self.stat_list:
-            ret += f"{indent_str}    {{\n"
-            ret += stat.get_str(indent + 2) + "\n"
-            ret += f"{indent_str}    }}\n"
-        ret += f"{indent_str}]"
+        # ret += f"{indent_str}custom"
+        ret += Container.to_string(self, indent=indent)
 
         return ret
 
-    def get_stat(self, date: datetime) -> Statement:
+    def init_item(self) -> Item:
         """
-        Get statement by date
-        """
+        Init item
 
-        for stat in self.stat_list:
-            if stat.date == date:
-                return stat
-
-        return None
-
-    def import_file(self) -> RetCode:
-        """
-        Import statements from file
+        Returns:
+            Item: Item
         """
 
-        try:
-            # Open statements CSV file
-            file = open(self.file_path, "r", encoding="utf8")
-        except FileNotFoundError:
-            self.logger.error("import_file : Open %s file FAILED", self.file_path)
-            return RetCode.ERROR
+        dir_path = self.dir_path + "/statements/"
+        stat = Statement("", dir_path)
+        return stat
 
-        file_csv = csv.reader(file)
+    # def get_stat(self, date: datetime) -> Statement:
+    #     """
+    #     Get statement by date
+    #     """
 
-        # For each statement line
-        for stat_line in file_csv:
+    #     for stat in self.item_list:
+    #         if stat.date == date:
+    #             return stat
 
-            # Init statement
-            stat = Statement(datetime.strptime(stat_line[Statement.FieldIdx.DATE], FMT_DATE),
-                             float(stat_line[Statement.FieldIdx.BAL_START]),
-                             float(stat_line[Statement.FieldIdx.BAL_END]))
+    #     return None
 
-            # Import statement file
-            ret = stat.import_file()
-            if ret != RetCode.OK:
-                self.logger.error("import_file : Import statement file FAILED")
-                return ret
+    # def export_file(self):
+    #     """
+    #     Export statements to file
+    #     """
 
-            # Add statement to statements list
-            self.stat_list.append(stat)
+    #     try:
+    #         # Open statements CSV file
+    #         file = open(self.file_path, "w", encoding="utf8")
+    #     except FileNotFoundError:
+    #         self.logger.error("export_file : Open %s file FAILED", self.file_path)
+    #         return
 
-        file.close()
+    #     file_csv = csv.writer(file, delimiter=',', quotechar='"')
 
-        return RetCode.OK
+    #     # For each statement
+    #     for stat in self.item_list:
 
-    def export_file(self):
-        """
-        Export statements to file
-        """
+    #         # Create statement line
+    #         stat_csv = [stat.date.strftime(FMT_DATE),
+    #                     str(stat.bal_start), str(stat.bal_end)]
 
-        try:
-            # Open statements CSV file
-            file = open(self.file_path, "w", encoding="utf8")
-        except FileNotFoundError:
-            self.logger.error("export_file : Open %s file FAILED", self.file_path)
-            return
+    #         # Write statement line to CSV file
+    #         file_csv.writerow(stat_csv)
 
-        file_csv = csv.writer(file, delimiter=',', quotechar='"')
+    #     self.is_saved = True
 
-        # For each statement
-        for stat in self.stat_list:
+    #     file.close()
 
-            # Create statement line
-            stat_csv = [stat.date.strftime(FMT_DATE),
-                        str(stat.bal_start), str(stat.bal_end)]
+    # def add_stat(self, stat: Statement) -> None:
+    #     """
+    #     Add statement
+    #     """
 
-            # Write statement line to CSV file
-            file_csv.writerow(stat_csv)
+    #     # Find index
+    #     idx = 0
+    #     while idx < len(self.item_list) and stat.date > self.item_list[idx].date:
+    #         idx = idx + 1
 
-        self.is_saved = True
+    #     # Insert statement at dedicated index
+    #     self.item_list.insert(idx, stat)
 
-        file.close()
+    #     self.is_saved = False
 
-    def add_stat(self, stat: Statement) -> None:
-        """
-        Add statement
-        """
+    # def remove_stat(self, stat: Statement) -> None:
+    #     """
+    #     Remove statement
+    #     """
 
-        # Find index
-        idx = 0
-        while idx < len(self.stat_list) and stat.date > self.stat_list[idx].date:
-            idx = idx + 1
+    #     if stat not in self.item_list:
+    #         return
 
-        # Insert statement at dedicated index
-        self.stat_list.insert(idx, stat)
+    #     self.item_list.remove(stat)
 
-        self.is_saved = False
-
-    def remove_stat(self, stat: Statement) -> None:
-        """
-        Remove statement
-        """
-
-        if stat not in self.stat_list:
-            return
-
-        self.stat_list.remove(stat)
-
-        self.is_saved = False
+    #     self.is_saved = False

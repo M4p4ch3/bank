@@ -107,57 +107,57 @@ class DisplayerOperation(DisplayerItem):
 
         win.addstr(win_y, win_x, op_line, flag)
 
-    def get_item_field(self, field_idx) -> Tuple[str, str]:
-        """
-        Get field (name, value), identified by field index
-        Useful for iterating over fields
-        """
+    # def get_item_field(self, field_idx) -> Tuple[str, str]:
+    #     """
+    #     Get field (name, value), identified by field index
+    #     Useful for iterating over fields
+    #     """
 
-        ret = ("", "")
+    #     ret = ("", "")
 
-        if field_idx == Operation.FieldIdx.DATE:
-            ret = ("date", self.operation.date.strftime(FMT_DATE))
-        elif field_idx == Operation.FieldIdx.MODE:
-            ret = ("mode", self.operation.mode)
-        elif field_idx == Operation.FieldIdx.TIER:
-            ret = ("tier", self.operation.tier)
-        elif field_idx == Operation.FieldIdx.CAT:
-            ret = ("cat", self.operation.cat)
-        elif field_idx == Operation.FieldIdx.DESC:
-            ret = ("desc", self.operation.desc)
-        elif field_idx == Operation.FieldIdx.AMOUNT:
-            ret = ("amount", str(self.operation.amount))
+    #     if field_idx == Operation.FieldIdx.DATE:
+    #         ret = ("date", self.operation.date.strftime(FMT_DATE))
+    #     elif field_idx == Operation.FieldIdx.MODE:
+    #         ret = ("mode", self.operation.mode)
+    #     elif field_idx == Operation.FieldIdx.TIER:
+    #         ret = ("tier", self.operation.tier)
+    #     elif field_idx == Operation.FieldIdx.CAT:
+    #         ret = ("cat", self.operation.cat)
+    #     elif field_idx == Operation.FieldIdx.DESC:
+    #         ret = ("desc", self.operation.desc)
+    #     elif field_idx == Operation.FieldIdx.AMOUNT:
+    #         ret = ("amount", str(self.operation.amount))
 
-        return ret
+    #     return ret
 
-    def set_item_field(self, field_idx, val_str) -> bool:
-        """
-        Set field value, identified by field index, from string
-        Useful for iterating over fields
-        """
+    # def set_item_field(self, field_idx, val_str) -> bool:
+    #     """
+    #     Set field value, identified by field index, from string
+    #     Useful for iterating over fields
+    #     """
 
-        is_edited = True
+    #     is_edited = True
 
-        if field_idx == Operation.FieldIdx.DATE:
-            try:
-                self.operation.date = datetime.strptime(val_str, FMT_DATE)
-            except ValueError:
-                is_edited = False
-        elif field_idx == Operation.FieldIdx.MODE:
-            self.operation.mode = val_str
-        elif field_idx == Operation.FieldIdx.TIER:
-            self.operation.tier = val_str
-        elif field_idx == Operation.FieldIdx.CAT:
-            self.operation.cat = val_str
-        elif field_idx == Operation.FieldIdx.DESC:
-            self.operation.desc = val_str
-        elif field_idx == Operation.FieldIdx.AMOUNT:
-            try:
-                self.operation.amount = float(val_str)
-            except ValueError:
-                is_edited = False
+    #     if field_idx == Operation.FieldIdx.DATE:
+    #         try:
+    #             self.operation.date = datetime.strptime(val_str, FMT_DATE)
+    #         except ValueError:
+    #             is_edited = False
+    #     elif field_idx == Operation.FieldIdx.MODE:
+    #         self.operation.mode = val_str
+    #     elif field_idx == Operation.FieldIdx.TIER:
+    #         self.operation.tier = val_str
+    #     elif field_idx == Operation.FieldIdx.CAT:
+    #         self.operation.cat = val_str
+    #     elif field_idx == Operation.FieldIdx.DESC:
+    #         self.operation.desc = val_str
+    #     elif field_idx == Operation.FieldIdx.AMOUNT:
+    #         try:
+    #             self.operation.amount = float(val_str)
+    #         except ValueError:
+    #             is_edited = False
 
-        return is_edited
+    #     return is_edited
 
     # def display(self):
     #     """

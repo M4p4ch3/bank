@@ -1,0 +1,10 @@
+[ERROR] (/media/pache/BE10F31710F2D57D/Home/tech/dev/bank/src/bank/internal/operation.py:77) update_from_csv : CSV row wrong format
+[ERROR] (/media/pache/BE10F31710F2D57D/Home/tech/dev/bank/src/bank/internal/container.py:114) import_file : Create item from CSV
+[ERROR] (/media/pache/BE10F31710F2D57D/Home/tech/dev/bank/src/bank/internal/statement.py:108) update_from_csv : Import file FAILED
+[ERROR] (/media/pache/BE10F31710F2D57D/Home/tech/dev/bank/src/bank/internal/container.py:114) import_file : Create item from CSV
+[ERROR] (./bin/bank_start:39) Import account file FAILED
+[ERROR] (/media/pache/BE10F31710F2D57D/Home/tech/dev/bank/src/bank/internal/operation.py:77) update_from_csv : CSV row wrong format
+[ERROR] (/media/pache/BE10F31710F2D57D/Home/tech/dev/bank/src/bank/internal/container.py:114) import_file : Create item from CSV
+[ERROR] (/media/pache/BE10F31710F2D57D/Home/tech/dev/bank/src/bank/internal/statement.py:108) update_from_csv : Import file FAILED
+[ERROR] (/media/pache/BE10F31710F2D57D/Home/tech/dev/bank/src/bank/internal/container.py:114) import_file : Create item from CSV
+[ERROR] (./bin/bank_start:39) Import account file FAILED

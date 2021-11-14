@@ -6,7 +6,8 @@ import curses
 from curses import *
 from typing import (TYPE_CHECKING, Any, List)
 
-from bank.display.my_curses.main import (NoOverrideError, WinId, DisplayerMain)
+from bank.display.my_curses.main import (WinId, DisplayerMain)
+from bank.utils.error import NoOverrideError
 from bank.display.my_curses.item_display import DisplayerItem
 
 from bank.utils.return_code import RetCode

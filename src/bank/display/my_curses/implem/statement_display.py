@@ -133,7 +133,7 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
         Get statement operation list
         """
 
-        return self.stat.op_list
+        return self.stat.item_list
 
     def add_container_item(self, op: Operation) -> None:
         """
@@ -142,17 +142,17 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
 
         self.stat.add_op(op)
 
-    def remove_container_item_list(self, op_list: List[Operation]) -> RetCode:
+    def remove_container_item_list(self, item_list: List[Operation]) -> RetCode:
         """
         Remove statement operation list
         """
 
-        ret = super().remove_container_item_list(op_list)
+        ret = super().remove_container_item_list(item_list)
         if ret == RetCode.CANCEL:
             return ret
 
         # Confirmed
-        self.stat.remove_op_list(op_list)
+        self.stat.remove_item_list(item_list)
         return RetCode.OK
 
     def edit_container_item(self, operation: Operation) -> None:
@@ -181,7 +181,7 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
         """
 
         # Init operation
-        operation: Operation = Operation(datetime.now(), "", "", "", "", 0.0)
+        operation: Operation = Operation()
 
         # Init operation display
         op_disp = DisplayerOperation(self.disp, operation)
