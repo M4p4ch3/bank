@@ -11,8 +11,8 @@ from bank.display.my_curses.main import (ColorPairId, WinId, DisplayerMain)
 from bank.display.my_curses.container_display import DisplayerContainer
 from bank.display.my_curses.implem.statement_display import DisplayerStatement
 
-from bank.account import Account
-from bank.statement import Statement
+from bank.internal.account import Account
+from bank.internal.statement import Statement
 
 from bank.utils.return_code import RetCode
 

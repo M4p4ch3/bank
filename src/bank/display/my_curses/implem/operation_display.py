@@ -11,7 +11,7 @@ from bank.display.my_curses.main import (WinId, DisplayerMain)
 from bank.display.my_curses.item_display import DisplayerItem
 from bank.display.my_curses.implem.main import (FieldLen, formart_trunc_padd)
 
-from bank.operation import Operation
+from bank.internal.operation import Operation
 
 from bank.utils.my_date import FMT_DATE
 

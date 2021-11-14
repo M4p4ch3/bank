@@ -8,9 +8,9 @@ from enum import IntEnum
 import logging
 from typing import (List, Tuple)
 
-from .operation import Operation
-from .utils.return_code import RetCode
-from .utils.my_date import FMT_DATE
+from bank.internal.operation import Operation
+from bank.utils.return_code import RetCode
+from bank.utils.my_date import FMT_DATE
 
 class Statement():
     """

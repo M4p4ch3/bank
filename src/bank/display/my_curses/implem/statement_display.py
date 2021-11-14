@@ -13,8 +13,8 @@ from bank.display.my_curses.container_display import DisplayerContainer
 from bank.display.my_curses.implem.main import (FieldLen, formart_trunc_padd)
 from bank.display.my_curses.implem.operation_display import DisplayerOperation
 
-from bank.statement import Statement
-from bank.operation import Operation
+from bank.internal.statement import Statement
+from bank.internal.operation import Operation
 
 from bank.utils.my_date import FMT_DATE
 from bank.utils.return_code import RetCode

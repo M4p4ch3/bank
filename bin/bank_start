@@ -4,7 +4,7 @@ from curses import wrapper
 import logging
 import sys
 
-from bank import Account
+from bank.internal import Account
 from bank.display.my_curses import (DisplayerMain, DisplayerAccount)
 from bank.utils import RetCode
 

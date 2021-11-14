@@ -6,7 +6,7 @@ from datetime import datetime
 from enum import IntEnum
 from typing import Tuple
 
-from .utils import FMT_DATE
+from bank.utils import FMT_DATE
 
 class Operation():
     """

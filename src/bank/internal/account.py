@@ -7,9 +7,9 @@ from datetime import datetime
 import logging
 from typing import List
 
-from .statement import Statement
-from .utils.return_code import RetCode
-from .utils.my_date import FMT_DATE
+from bank.internal.statement import Statement
+from bank.utils.return_code import RetCode
+from bank.utils.my_date import FMT_DATE
 
 class Account():
     """
