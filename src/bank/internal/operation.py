@@ -13,6 +13,8 @@ class Operation():
     Operation
     """
 
+    CSV_KEY_LIST = ["date", "mode", "tier", "cat", "desc", "amount"]
+
     class FieldIdx(IntEnum):
         """
         Field index

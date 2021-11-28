@@ -17,6 +17,8 @@ class Statement():
     Statement
     """
 
+    CSV_KEY_LIST = ["id", "name", "date", "bal_start", "bal_end"]
+
     class FieldIdx(IntEnum):
         """
         Field index
@@ -27,19 +29,23 @@ class Statement():
         BAL_END = 2
         LAST = BAL_END
 
-    def __init__(self, date: datetime, bal_start: float, bal_end: float) -> None:
+    def __init__(self, parent_dir: str, identifier: int, name: str,
+                 date: datetime, bal_start: float, bal_end: float) -> None:
 
         self.logger = logging.getLogger("Statement")
+
+        self.identifier = identifier
+        self.name = name
 
         self.date = date
         self.bal_start = bal_start
         self.bal_end = bal_end
 
+        self.dir = f"{parent_dir}/statement_{self.identifier:03}"
+        self.op_list_file_name = f"{self.dir}/operation_list.csv"
+
         self.op_sum: float = 0.0
         self.op_list: List[Operation] = []
-
-        date_str = date.strftime(FMT_DATE)
-        self.file_path: str = f"./data/statements/{date_str}.csv"
 
         self.is_saved: bool = True
 
@@ -160,32 +166,35 @@ class Statement():
 
     def import_file(self) -> RetCode:
         """
-        Import operations from file
+        Import operation list from file
         """
 
         try:
             # Open CSV file
-            file = open(self.file_path, "r", encoding="utf8")
+            file = open(self.op_list_file_name, "r", encoding="utf8")
         except FileNotFoundError:
-            self.logger.error("import_file : Open %s file FAILED", self.file_path)
+            self.logger.error("open %s FAILED", self.op_list_file_name)
             return RetCode.ERROR
 
-        file_csv = csv.reader(file)
+        file_csv = csv.DictReader(file)
+
+        if file_csv.fieldnames != Operation.CSV_KEY_LIST:
+            self.logger.error("%s wrong CSV format", self.op_list_file_name)
 
         # Clear operations list
         self.op_list.clear()
         # Reset operations sum
         self.op_sum = 0.0
 
-        # For each operation line in statement CSV file
-        for op_line in file_csv:
+        # For each operation CSV item
+        for csv_item in file_csv:
 
             # Create operation
-            op_date = datetime.strptime(op_line[Operation.FieldIdx.DATE], FMT_DATE)
+            op_date = datetime.strptime(csv_item["date"], FMT_DATE)
             operation = Operation(
-                op_date, op_line[Operation.FieldIdx.MODE], op_line[Operation.FieldIdx.TIER],
-                op_line[Operation.FieldIdx.CAT], op_line[Operation.FieldIdx.DESC],
-                float(op_line[Operation.FieldIdx.AMOUNT]))
+                op_date, csv_item["mode"], csv_item["tier"],
+                csv_item["cat"], csv_item["desc"],
+                float(csv_item["amount"]))
 
             # Add operation to list
             self.op_list.append(operation)
@@ -201,23 +210,30 @@ class Statement():
 
     def export_file(self) -> None:
         """
-        Export operations to file
+        Export operation list to file
         """
 
-        # Open CSV file
-        file = open(self.file_path, "w", encoding="utf8")
+        file = open(self.op_list_file_name, "w", encoding="utf8")
 
-        file_csv = csv.writer(file, delimiter=',', quotechar='"')
+        file_csv = csv.DictWriter(file, Operation.CSV_KEY_LIST, delimiter=',', quotechar='"')
+
+        file_csv.writeheader()
 
         # For each operation
         for operation in self.op_list:
 
-            # Create operation line
-            op_csv = [operation.date.strftime(FMT_DATE), operation.mode, operation.tier,
-                      operation.cat, operation.desc, str(operation.amount)]
+            # Create operation CSV item
+            csv_item = {
+                "date": operation.date.strftime(FMT_DATE),
+                "mode": operation.mode,
+                "tier": operation.tier,
+                "cat": operation.cat,
+                "desc": operation.desc,
+                "amount": str(operation.amount),
+            }
 
-            # Write operation line to CSV file
-            file_csv.writerow(op_csv)
+            # Write operation CSV item to file
+            file_csv.writerow(csv_item)
 
         self.is_saved = True
 

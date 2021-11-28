@@ -22,15 +22,18 @@ def wrap(win):
     # Browse account
     account_disp.browse_container()
 
+LOG_FMT = "[%(levelname)s][%(name)s] %(filename)s:%(funcName)s:%(lineno)d %(message)s"
+logging.basicConfig(format=LOG_FMT)
+
 logger = logging.getLogger("bank_start")
 
 # Init account
-account = Account()
+account = Account("data", 1, "current")
 
 # Import account file
 ret = account.import_file()
 if ret != RetCode.OK:
-    logger.error("Import account file FAILED")
+    logger.error("account.import_file FAILED")
     sys.exit(RetCode.ERROR)
 
 # Curses wrapper
