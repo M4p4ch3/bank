@@ -33,8 +33,8 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
 
     # Item separator
     SEPARATOR = "|"
-    SEPARATOR += "-" + "-".ljust(FieldLen.LEN_NAME, "-") + "-|"
     SEPARATOR += "-" + "-".ljust(FieldLen.LEN_DATE, "-") + "-|"
+    SEPARATOR += "-" + "-".ljust(FieldLen.LEN_NAME, "-") + "-|"
     SEPARATOR += "-" + "-".ljust(FieldLen.LEN_AMOUNT, "-") + "-|"
     SEPARATOR += "-" + "-".ljust(FieldLen.LEN_AMOUNT, "-") + "-|"
     SEPARATOR += "-" + "-".ljust(FieldLen.LEN_AMOUNT, "-") + "-|"
@@ -42,8 +42,8 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
 
     # Item header
     HEADER = "|"
-    HEADER += " " + "name".ljust(FieldLen.LEN_DATE, " ") + " |"
     HEADER += " " + "date".ljust(FieldLen.LEN_DATE, " ") + " |"
+    HEADER += " " + "name".ljust(FieldLen.LEN_NAME, " ") + " |"
     HEADER += " " + "start".ljust(FieldLen.LEN_AMOUNT, " ") + " |"
     HEADER += " " + "end".ljust(FieldLen.LEN_AMOUNT, " ") + " |"
     HEADER += " " + "diff".ljust(FieldLen.LEN_AMOUNT, " ") + " |"
@@ -51,8 +51,8 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
 
     # Item missing
     MISSING = "|"
-    MISSING += " " + "...".ljust(FieldLen.LEN_NAME, " ") + " |"
     MISSING += " " + "...".ljust(FieldLen.LEN_DATE, " ") + " |"
+    MISSING += " " + "...".ljust(FieldLen.LEN_NAME, " ") + " |"
     MISSING += " " + "...".ljust(FieldLen.LEN_AMOUNT, " ") + " |"
     MISSING += " " + "...".ljust(FieldLen.LEN_AMOUNT, " ") + " |"
     MISSING += " " + "...".ljust(FieldLen.LEN_AMOUNT, " ") + " |"
@@ -155,6 +155,16 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
         self.stat.remove_op_list(op_list)
         return RetCode.OK
 
+    def remove_container_item(self, operation: Operation) -> None:
+        """
+        Remove statement operation
+
+        Args:
+            operation (Operation): operation
+        """
+
+        self.stat.remove_op(operation)
+
     def edit_container_item(self, operation: Operation) -> None:
         """
         Edit operation
@@ -163,10 +173,14 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
             stat (Operation): Operation
         """
 
+        # (Remove, edit, add) to update statment lsit and fields
+
+        self.stat.remove_op(operation)
+
         op_disp = DisplayerOperation(self.disp, operation)
-        is_edited = op_disp.edit_item()
-        if is_edited:
-            self.stat.is_saved = False
+        op_disp.edit_item()
+
+        self.stat.add_op(operation)
 
     def browse_container_item(self, operation: Operation) -> None:
         """
@@ -204,9 +218,9 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
         """
 
         stat_line = "| "
-        stat_line += formart_trunc_padd(self.stat.date.strftime(FMT_DATE), FieldLen.LEN_NAME)
+        stat_line += formart_trunc_padd(self.stat.date.strftime(FMT_DATE), FieldLen.LEN_DATE)
         stat_line += " | "
-        stat_line += formart_trunc_padd(self.stat.date.strftime(FMT_DATE), FieldLen.LEN_NAME)
+        stat_line += formart_trunc_padd(self.stat.name, FieldLen.LEN_NAME)
         stat_line += " | "
         stat_line += formart_trunc_padd(str(self.stat.bal_start), FieldLen.LEN_AMOUNT)
         stat_line += " | "

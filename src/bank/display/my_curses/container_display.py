@@ -165,6 +165,10 @@ class DisplayerContainer():
 
         self.disp.item_list_clipboard.set(item_list)
 
+        # Remove items list
+        for item in item_list:
+            self.remove_container_item(item)
+
         # If highlighted item in buffer
         if self.item_hl in item_list:
             # Highlight closest item
@@ -172,10 +176,6 @@ class DisplayerContainer():
             # self.item_hl = self.get_closest_item(item_list)
             item_list: List[Any] = self.get_container_item_list()
             self.item_hl = item_list[0]
-
-        # Remove items list
-        for item in item_list:
-            self.remove_container_item(item)
 
     def paste(self) -> None:
         """
