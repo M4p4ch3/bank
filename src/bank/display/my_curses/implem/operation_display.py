@@ -2,10 +2,9 @@
 display/curses/implem/operation
 """
 
-import curses
-from curses import *
+# import curses
 from datetime import datetime
-from typing import (TYPE_CHECKING, Any, Tuple)
+from typing import (Any, Tuple)
 
 from bank.display.my_curses.main import (WinId, DisplayerMain)
 from bank.display.my_curses.item_display import DisplayerItem
@@ -14,13 +13,6 @@ from bank.display.my_curses.implem.main import (FieldLen, formart_trunc_padd)
 from bank.internal.operation import Operation
 
 from bank.utils.my_date import FMT_DATE
-
-if TYPE_CHECKING:
-    from _curses import _CursesWindow
-    Window = _CursesWindow
-else:
-    from typing import Any
-    Window = Any
 
 class DisplayerOperation(DisplayerItem):
     """
@@ -79,13 +71,13 @@ class DisplayerOperation(DisplayerItem):
 
         self.operation = operation
 
-    def display_item_line(self, win: Window,
+    def display_item_line(self, win: Any,
                           win_y: int, win_x: int, flag) -> None:
         """
         Display item line
 
         Args:
-            win (Window): Window
+            win (Any): Window
             win_y (int): Y in window
             win_x (int): X in window
             flag ([type]): Display flag

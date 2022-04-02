@@ -3,17 +3,10 @@ display/curses/item
 """
 
 import curses
-from curses import *
-from typing import (TYPE_CHECKING, Any, Tuple)
+from curses import (A_NORMAL, A_BOLD, A_STANDOUT)
+from typing import (Any, Tuple)
 
-from bank.display.my_curses.main import (NoOverrideError, WinId, DisplayerMain)
-
-if TYPE_CHECKING:
-    from _curses import _CursesWindow
-    Window = _CursesWindow
-else:
-    from typing import Any
-    Window = Any
+from bank.display.my_curses.main import (NoOverrideError, WinId, DisplayerMain, Item)
 
 class DisplayerItem():
     """
@@ -73,7 +66,7 @@ class DisplayerItem():
         _ = val_str
         return False
 
-    def display_item_win(self, win: Window, field_hl_idx: int = 0) -> None:
+    def display_item_win(self, win: Any, field_hl_idx: int = 0) -> None:
         """
         Display item in window
         """
@@ -96,7 +89,7 @@ class DisplayerItem():
 
         # win.refresh()
 
-    def edit_item_field(self, win: Window, field_idx: int) -> bool:
+    def edit_item_field(self, win: Any, field_idx: int) -> bool:
         """
         Edit item field
         Print prompt to edit item field
