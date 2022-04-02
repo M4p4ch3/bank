@@ -65,7 +65,7 @@ class DisplayerAccount(DisplayerContainer):
         (win_y, win_x) = (2, 2)
 
         win.addstr(win_y, win_x, "status : ")
-        if self.account.is_saved:
+        if self.account.file_sync:
             win.addstr("Saved", curses.color_pair(ColorPairId.GREEN_BLACK))
         else:
             win.addstr("Unsaved", curses.color_pair(ColorPairId.RED_BLACK))
@@ -88,7 +88,7 @@ class DisplayerAccount(DisplayerContainer):
         stat_disp = DisplayerStatement(self.disp, stat)
         is_edited = stat_disp.edit_item()
         if is_edited:
-            self.account.is_saved = False
+            self.account.file_sync = False
 
     def browse_container_item(self, stat: Statement) -> None:
         """
@@ -120,13 +120,7 @@ class DisplayerAccount(DisplayerContainer):
         """
 
         # Init statement
-        parent_dir = self.account.dir
-        identifier = self.account.stat_list[len(self.account.stat_list) - 1].identifier + 1
-        name = datetime.now().strftime(FMT_DATE)
-        date = datetime.now()
-        bal_start = 0.0
-        bal_end = 0.0
-        stat: Statement = Statement(parent_dir, identifier, name, date, bal_start, bal_end)
+        stat: Statement = Statement(self.account.dir)
 
         # Init statement display
         stat_disp = DisplayerStatement(self.disp, stat)
@@ -135,7 +129,7 @@ class DisplayerAccount(DisplayerContainer):
         stat_disp.edit_item(force_iterate=True)
 
         # Export statement file
-        stat.export_file()
+        stat.write_dir()
 
         return stat
 
@@ -144,14 +138,14 @@ class DisplayerAccount(DisplayerContainer):
         Save account
         """
 
-        self.account.export_file()
+        self.account.write_dir()
 
     def exit(self) -> RetCode:
         """
         Exit account browse
         """
 
-        if self.account.is_saved:
+        if self.account.file_sync:
             # Saved : Exit
             return RetCode.OK
 
@@ -161,7 +155,7 @@ class DisplayerAccount(DisplayerContainer):
 
         ret = RetCode.CANCEL
         if ret_super == RetCode.EXIT_SAVE:
-            self.account.export_file()
+            self.account.write_dir()
             ret = RetCode.OK
         elif ret_super == RetCode.EXIT_NO_SAVE:
             ret = RetCode.OK

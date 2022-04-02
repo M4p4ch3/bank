@@ -6,7 +6,7 @@ import curses
 from curses import (A_NORMAL, A_BOLD, A_STANDOUT)
 from typing import (Any, Tuple)
 
-from bank.display.my_curses.main import (NoOverrideError, WinId, DisplayerMain, Item)
+from bank.display.my_curses.main import (NoOverrideError, WinId, DisplayerMain)
 
 class DisplayerItem():
     """

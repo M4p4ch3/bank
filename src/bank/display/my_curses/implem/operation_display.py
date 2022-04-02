@@ -58,7 +58,7 @@ class DisplayerOperation(DisplayerItem):
         self.win = disp.win_list[WinId.RIGHT_BOT]
 
         # Index of operation highlighted field
-        self.op_field_hl_idx = 0
+        self.ope_field_hl_idx = 0
 
         self.field_nb = Operation.FieldIdx.LAST + 1
 
@@ -83,21 +83,21 @@ class DisplayerOperation(DisplayerItem):
             flag ([type]): Display flag
         """
 
-        op_line = "| "
-        op_line += formart_trunc_padd(self.operation.date.strftime(FMT_DATE), FieldLen.LEN_DATE)
-        op_line += " | "
-        op_line += formart_trunc_padd(self.operation.mode, FieldLen.LEN_MODE)
-        op_line += " | "
-        op_line += formart_trunc_padd(self.operation.tier, FieldLen.LEN_TIER)
-        op_line += " | "
-        op_line += formart_trunc_padd(self.operation.cat, FieldLen.LEN_CAT)
-        op_line += " | "
-        op_line += formart_trunc_padd(self.operation.desc, FieldLen.LEN_DESC)
-        op_line += " | "
-        op_line += formart_trunc_padd(str(self.operation.amount), FieldLen.LEN_AMOUNT)
-        op_line += " |"
+        ope_line = "| "
+        ope_line += formart_trunc_padd(self.operation.date.strftime(FMT_DATE), FieldLen.LEN_DATE)
+        ope_line += " | "
+        ope_line += formart_trunc_padd(self.operation.mode, FieldLen.LEN_MODE)
+        ope_line += " | "
+        ope_line += formart_trunc_padd(self.operation.tier, FieldLen.LEN_TIER)
+        ope_line += " | "
+        ope_line += formart_trunc_padd(self.operation.cat, FieldLen.LEN_CAT)
+        ope_line += " | "
+        ope_line += formart_trunc_padd(self.operation.desc, FieldLen.LEN_DESC)
+        ope_line += " | "
+        ope_line += formart_trunc_padd(str(self.operation.amount), FieldLen.LEN_AMOUNT)
+        ope_line += " |"
 
-        win.addstr(win_y, win_x, op_line, flag)
+        win.addstr(win_y, win_x, ope_line, flag)
 
     def get_item_field(self, field_idx) -> Tuple[str, str]:
         """
@@ -170,7 +170,7 @@ class DisplayerOperation(DisplayerItem):
 
     #         # Set display flag for highlighted field
     #         disp_flag = A_NORMAL
-    #         if field_idx == self.op_field_hl_idx:
+    #         if field_idx == self.ope_field_hl_idx:
     #             disp_flag = A_STANDOUT
 
     #         # Display field

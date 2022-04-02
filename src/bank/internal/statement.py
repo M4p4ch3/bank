@@ -27,25 +27,28 @@ class Statement():
         """
 
         DATE = 0
-        BAL_START = 1
-        BAL_END = 2
+        NAME = 1
+        BAL_START = 2
+        BAL_END = 3
         LAST = BAL_END
 
-    def __init__(self, _dir: str) -> None:
+    def __init__(self, parent_dir: str, name: str = "") -> None:
 
         self.logger = logging.getLogger("Statement")
 
-        self.dir: str = _dir
-        self.name: str = ""
-        self.date: datetime = datetime.strptime("2000-01-01", FMT_DATE)
+        self.parent_dir: str = parent_dir
+        self.name: str = name
+
+        self.dir: str = parent_dir + "/stat_" + self.name
+        self.date: datetime = datetime.now()
         self.bal_start: int = 0
         self.bal_end: int = 0
-
         self.ope_list: List[Operation] = []
         self.ope_sum: float = 0.0
-
         self.file_sync: bool = True
 
+        self.logger.debug("parent_dir = %s", self.parent_dir)
+        self.logger.debug("name = %s", self.name)
         self.logger.debug("dir = %s", self.dir)
 
         self.logger.debug("Read dir")
@@ -79,7 +82,7 @@ class Statement():
 
         return ret
 
-    def get_closest_op(self, ope_list: List[Operation]) -> Operation:
+    def get_closest_ope(self, ope_list: List[Operation]) -> Operation:
         """
         Get closest operation from list
         None if not found
@@ -110,6 +113,18 @@ class Statement():
                 ope_ret = self.ope_list[ope_ret_idx]
 
         return ope_ret
+
+    def set_name(self, name: str) -> None:
+        """
+        Set name
+        Update dir accordingly
+
+        Args:
+            name (str): Name
+        """
+
+        self.name = name
+        self.dir: str = self.parent_dir + "/stat_" + self.name
 
     def _read_info(self) -> None:
 
@@ -155,10 +170,10 @@ class Statement():
 
             for row in reader:
 
-                self.logger.debug("Create operation")
+                self.logger.debug("Init operation")
                 ope = Operation(datetime.strptime(row["date"], FMT_DATE), row["mode"],
                                 row["tier"], row["cat"], row["desc"], float(row["amount"]))
-                self.logger.debug("Operation created : %s", ope)
+                self.logger.debug("Operation inited : %s", ope)
 
                 self.ope_list.append(ope)
                 self.ope_sum += + ope.amount
@@ -171,8 +186,8 @@ class Statement():
         """
 
         if not os.path.isdir(self.dir):
-            self.logger.debug("Create folder %s", self.dir)
-            os.mkdir(self.dir)
+            self.logger.debug("Folder %s does not exist", self.dir)
+            return
 
         self.logger.debug("Read info")
         self._read_info()
@@ -228,6 +243,10 @@ class Statement():
         """
         Write to folder
         """
+
+        if not os.path.isdir(self.dir):
+            self.logger.debug("Create folder %s", self.dir)
+            os.mkdir(self.dir)
 
         self.logger.debug("Write info")
         self._write_info()

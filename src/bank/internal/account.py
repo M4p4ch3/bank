@@ -16,19 +16,23 @@ class Account():
     Account
     """
 
+    # TODO update dir to parent_dir
+
     CSV_KEY_LIST = ["id", "name"]
 
-    def __init__(self, _dir: str) -> None:
+    def __init__(self, parent_dir: str, name: str = "") -> None:
 
         self.logger = logging.getLogger("Account")
 
-        self.dir: str = _dir
-        self.name: str = ""
+        self.parent_dir: str = parent_dir
+        self.name: str = name
 
+        self.dir: str = self.parent_dir + "/account_" + self.name
         self.stat_list: List[Statement] = []
-
         self.file_sync: bool = True
 
+        self.logger.debug("parent_dir = %s", self.parent_dir)
+        self.logger.debug("name = %s", self.name)
         self.logger.debug("dir = %s", self.dir)
 
         self.logger.debug("Read dir")
@@ -64,6 +68,18 @@ class Account():
 
         return None
 
+    def set_name(self, name: str) -> None:
+        """
+        Set name
+        Update dir accordingly
+
+        Args:
+            name (str): Name
+        """
+
+        self.name = name
+        self.dir: str = self.parent_dir + "/account_" + self.name
+
     def _read_info(self) -> None:
 
         file_name: str = self.dir + "/info.json"
@@ -85,11 +101,14 @@ class Account():
 
         self.logger.debug("List dir %s", self.dir)
         for item in os.listdir(self.dir):
-            if os.path.isdir(self.dir + "/" + item) and "stat_" in item:
 
-                self.logger.debug("Create statement %s", item)
-                stat = Statement(self.dir + "/" + item)
-                self.logger.debug("Statement created : %s", stat)
+            if os.path.isdir(self.dir + "/" + item) and "stat_" in item:
+                stat_name = item[len("stat_"):]
+                self.logger.debug("Found statement %s", stat_name)
+
+                self.logger.debug("Init statement %s", stat_name)
+                stat = Statement(self.dir, stat_name)
+                self.logger.debug("Statement inited : %s", stat)
 
                 self.stat_list.append(stat)
 
@@ -99,8 +118,8 @@ class Account():
         """
 
         if not os.path.isdir(self.dir):
-            self.logger.debug("Create folder %s", self.dir)
-            os.mkdir(self.dir)
+            self.logger.debug("Folder %s does not exist", self.dir)
+            return
 
         self.logger.debug("Read info")
         self._read_info()
@@ -128,23 +147,37 @@ class Account():
 
         self.logger.debug("List dir %s", self.dir)
         for item in os.listdir(self.dir):
-            if os.path.isdir(self.dir + "/" + item) and "stat_" in item:
 
-                self.logger.debug("Remove dir %s", item)
-                shutil.rmtree(self.dir + "/" + item)
+            if os.path.isdir(self.dir + "/" + item) and "stat_" in item:
+                stat_name = item[len("stat_"):]
+                self.logger.debug("Found statement %s", stat_name)
+
+                # Should stat dir be removed ?
+                remove_stat_dir: bool = True
+
+                for stat in self.stat_list:
+                    if stat.name == stat_name:
+                        # Stat still in list, dont remove
+                        remove_stat_dir = False
+                        break
+
+                if remove_stat_dir:
+                    # Stat dir not in list anymore, remove
+                    self.logger.debug("Remove dir %s", item)
+                    shutil.rmtree(self.dir + "/" + item)
 
         for stat in self.stat_list:
-
-            self.logger.debug("Create dir %s", self.dir + "/stat_" + stat.name)
-            os.mkdir(self.dir + "/stat_" + stat.name)
-
-            self.logger.debug("Write stat %s", stat.name)
+            self.logger.debug("Write statement %s to folder", stat.name)
             stat.write_dir()
 
     def write_dir(self) -> None:
         """
         Write to folder
         """
+
+        if not os.path.isdir(self.dir):
+            self.logger.debug("Create folder %s", self.dir)
+            os.mkdir(self.dir)
 
         self.logger.debug("Write info")
         self._write_info()
