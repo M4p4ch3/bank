@@ -56,6 +56,9 @@ class DisplayerMain():
         # Item list clipboard
         self.item_list_clipboard: Clipboard = Clipboard()
 
+        # Last browsed container displayer
+        self.cont_disp_last: Any = None
+
         # Main window
         (win_main_h, win_main_w) = win_main.getmaxyx()
         self.win_list[WinId.MAIN] = win_main

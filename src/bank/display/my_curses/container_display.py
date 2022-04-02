@@ -49,6 +49,14 @@ class DisplayerContainer():
             derived_class=type(self).__name__,
             method=method)
 
+    def get_container_name(self) -> str:
+        """
+        Get container name
+        """
+
+        self.raise_no_override("get_container_name")
+        return ""
+
     def get_container_item_list(self) -> List[Any]:
         """
         Get container item list
@@ -93,13 +101,28 @@ class DisplayerContainer():
         self.raise_no_override("add_container_item")
         _ = item
 
-    def remove_container_item_list(self, item_list: List[Any]) -> RetCode:
+    def add_container_item_list(self, item_list: List[Any]) -> None:
+        """
+        Add container item list
+
+        Args:
+            item_list (List[Any]): Item list
+        """
+
+        self.raise_no_override("add_container_item_list")
+        _ = item_list
+
+    def remove_container_item_list(self, item_list: List[Any], force: bool = False) -> RetCode:
         """
         Remove item list
         """
 
         if len(item_list) == 0:
             # No item to remove
+            return RetCode.OK
+
+        if force:
+            # Dont ask confirm
             return RetCode.OK
 
         msg = f"Remove {len(item_list)} items"
@@ -182,6 +205,23 @@ class DisplayerContainer():
         # Add item list
         for item in item_list:
             self.add_container_item(item)
+
+    def rappr(self) -> None:
+        """
+        Rappr selected or highlited item(s)
+        """
+
+        if len(self.item_sel_list) > 0:
+            item_list = self.item_sel_list
+        elif self.item_hl is not None:
+            item_list = [self.item_hl]
+        else:
+            return
+
+        if self.disp.cont_disp_last is not None:
+            self.disp.cont_disp_last.add_container_item_list(item_list)
+            self.disp.cont_disp_last.save()
+            self.remove_container_item_list(item_list, force=True)
 
     def save(self) -> None:
         """
@@ -446,6 +486,10 @@ class DisplayerContainer():
             elif key == "v":
                 self.paste()
 
+            # Rappr ope
+            elif key == "r":
+                self.rappr()
+
             # Edit highlighted item
             elif key == "e":
                 self.edit_container_item(self.item_hl)
@@ -491,6 +535,7 @@ class DisplayerContainer():
             elif key == '\x1b':
                 ret = self.exit()
                 if ret == RetCode.OK:
+                    self.disp.cont_disp_last = self
                     break
 
             item_list = self.get_container_item_list()

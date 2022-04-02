@@ -71,6 +71,13 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
         self.title = "STATEMENT"
         self.subtitle = "OPERATIONS LIST"
 
+    def get_container_name(self) -> str:
+        """
+        Get statement name
+        """
+
+        return self.stat.name
+
     def set_item(self, stat: Statement) -> None:
         """
         Set statement
@@ -139,12 +146,19 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
 
         self.stat.add_ope(op)
 
-    def remove_container_item_list(self, ope_list: List[Operation]) -> RetCode:
+    def add_container_item_list(self, op_list: List[Operation]) -> None:
+        """
+        Add statement operation list
+        """
+
+        self.stat.add_ope_list(op_list)
+
+    def remove_container_item_list(self, ope_list: List[Operation], force: bool = False) -> RetCode:
         """
         Remove statement operation list
         """
 
-        ret = super().remove_container_item_list(ope_list)
+        ret = super().remove_container_item_list(ope_list, force)
         if ret == RetCode.CANCEL:
             return ret
 
@@ -300,6 +314,13 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
 
         win.addstr(win_y, win_x,
                    f"clipboard : {self.disp.item_list_clipboard.get_len()} operations")
+        win_y += 1
+
+        if self.disp.cont_disp_last is not None:
+            win.addstr(win_y, win_x,
+                       f"last stat : {self.disp.cont_disp_last.get_container_name()}")
+        else:
+            win.addstr(win_y, win_x, f"last stat : None")
         win_y += 1
 
         win.refresh()

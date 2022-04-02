@@ -271,6 +271,14 @@ class Statement():
 
         self.file_sync = False
 
+    def add_ope_list(self, ope_list: List[Operation]) -> None:
+        """
+        Add operation list
+        """
+
+        for ope in ope_list:
+            self.add_ope(ope)
+
     def remove_ope(self, ope: Operation) -> None:
         """
         Remove operation
