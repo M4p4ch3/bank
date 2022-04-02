@@ -5,12 +5,12 @@ Statement
 import csv
 from datetime import datetime
 from enum import IntEnum
+import json
 import logging
 import os
-from typing import (List, Tuple)
+from typing import List
 
 from bank.internal.operation import Operation
-from bank.utils.return_code import RetCode
 from bank.utils.my_date import FMT_DATE
 
 class Statement():
@@ -30,25 +30,30 @@ class Statement():
         BAL_END = 2
         LAST = BAL_END
 
-    def __init__(self, parent_dir: str, identifier: int, name: str,
-                 date: datetime, bal_start: float, bal_end: float) -> None:
+    def __init__(self, _dir: str) -> None:
 
         self.logger = logging.getLogger("Statement")
 
-        self.identifier = identifier
-        self.name = name
+        self.dir: str = _dir
+        self.name: str = ""
+        self.date: datetime = datetime.strptime("2000-01-01", FMT_DATE)
+        self.bal_start: int = 0
+        self.bal_end: int = 0
 
-        self.date = date
-        self.bal_start = bal_start
-        self.bal_end = bal_end
+        self.ope_list: List[Operation] = []
+        self.ope_sum: float = 0.0
 
-        self.dir = f"{parent_dir}/statement_{self.identifier:03}"
-        self.op_list_file_name = f"{self.dir}/operation_list.csv"
+        self.file_sync: bool = True
 
-        self.op_sum: float = 0.0
-        self.op_list: List[Operation] = []
+        self.logger.debug("dir = %s", self.dir)
 
-        self.is_saved: bool = True
+        self.logger.debug("Read dir")
+        self.read_dir()
+
+    def __str__(self) -> str:
+
+        return (f"{self.name}, {self.date.strftime(FMT_DATE)}, {self.bal_start}, {self.bal_end},"
+                f"{self.ope_sum}")
 
     def get_str(self, indent: int = 0) -> str:
         """
@@ -62,10 +67,10 @@ class Statement():
         ret = ""
         ret += f"{indent_str}date : {self.date.strftime(FMT_DATE)}\n"
         ret += f"{indent_str}balance : [{str(self.bal_start)}, {str(self.bal_end)}]\n"
-        ret += f"{indent_str}operations sum : {str(self.op_sum)}\n"
-        ret += f"{indent_str}balance diff : {str(self.op_sum - self.bal_end)}\n"
+        ret += f"{indent_str}operations sum : {str(self.ope_sum)}\n"
+        ret += f"{indent_str}balance diff : {str(self.ope_sum - self.bal_end)}\n"
         ret += f"{indent_str}operations : [\n"
-        for operation in self.op_list:
+        for operation in self.ope_list:
             ret += f"{indent_str}    {{\n"
             ret += operation.get_str(indent + 2) + "\n"
             ret += f"{indent_str}    }}\n"
@@ -73,219 +78,196 @@ class Statement():
 
         return ret
 
-    # def get_field(self, field_idx: int) -> Tuple[str, str]:
-    #     """
-    #     Get field (name, value), identified by field index
-    #     Useful for iterating over fields
-    #     """
-
-    #     ret = ("", "")
-    #     if field_idx == self.FieldIdx.DATE:
-    #         ret = ("date", self.date.strftime(FMT_DATE))
-    #     elif field_idx == self.FieldIdx.BAL_START:
-    #         ret = ("start balance", str(self.bal_start))
-    #     elif field_idx == self.FieldIdx.BAL_END:
-    #         ret = ("start balance", str(self.bal_end))
-
-    #     return ret
-
-    def get_closest_op(self, op_list: List[Operation]) -> Operation:
+    def get_closest_op(self, ope_list: List[Operation]) -> Operation:
         """
         Get closest operation from list
         None if not found
         """
 
         # Operation to return
-        op_ret: Operation = op_list[0]
+        ope_ret: Operation = ope_list[0]
 
         # While operation in list
-        while (op_ret in op_list) and (op_ret is not None):
+        while (ope_ret in ope_list) and (ope_ret is not None):
 
             # Get operation index in statement
-            op_ret_idx = self.op_list.index(op_ret)
+            ope_ret_idx = self.ope_list.index(ope_ret)
 
             # If first operation in list is first operation in statement
-            if self.op_list.index(op_list[0]) == 0:
+            if self.ope_list.index(ope_list[0]) == 0:
                 # Search forward
-                op_ret_idx = op_ret_idx + 1
+                ope_ret_idx = ope_ret_idx + 1
             # Else, first operation in list is not first one
             else:
                 # Search backward
-                op_ret_idx = op_ret_idx - 1
+                ope_ret_idx = ope_ret_idx - 1
 
             # If operation out of statement
-            if op_ret_idx < 0 or op_ret_idx >= len(self.op_list):
-                op_ret = None
+            if ope_ret_idx < 0 or ope_ret_idx >= len(self.ope_list):
+                ope_ret = None
             else:
-                op_ret = self.op_list[op_ret_idx]
+                ope_ret = self.ope_list[ope_ret_idx]
 
-        return op_ret
+        return ope_ret
 
-    # def set_field(self, field_idx, val_str) -> bool:
-    #     """
-    #     Set field value, identified by field index, from string
-    #     Useful for iterating over fields
-    #     """
+    def _read_info(self) -> None:
 
-    #     is_edited = True
+        file_name: str = self.dir + "/info.json"
 
-    #     if field_idx == self.FieldIdx.DATE:
-    #         try:
-    #             self.date = datetime.strptime(val_str, FMT_DATE)
-    #         except ValueError:
-    #             is_edited = False
-    #     elif field_idx == self.FieldIdx.BAL_START:
-    #         try:
-    #             self.bal_start = float(val_str)
-    #         except ValueError:
-    #             is_edited = False
-    #     elif field_idx == self.FieldIdx.BAL_END:
-    #         try:
-    #             self.bal_end = float(val_str)
-    #         except ValueError:
-    #             is_edited = False
+        if not os.path.exists(file_name):
+            self.logger.debug("File %s does not exist", file_name)
+            return
 
-    #     if is_edited:
-    #         self.is_saved = False
+        self.logger.debug("Open %s for reading", file_name)
+        with open(file_name, "r") as file:
 
-    #     return is_edited
+            data = json.load(file)
 
-    # def create_file(self) -> RetCode:
-    #     """
-    #     Create file
-    #     """
+            if "name" in data:
+                self.name = data["name"]
+                self.logger.info("name = %s", self.name)
+            if "date" in data:
+                self.date = datetime.strptime(data["date"], FMT_DATE)
+                self.logger.info("date = %s", self.date.strftime(FMT_DATE))
+            if "bal_start" in data:
+                self.bal_start = data["bal_start"]
+                self.logger.info("bal_start = %s", self.bal_start)
+            if "bal_end" in data:
+                self.bal_end = data["bal_end"]
+                self.logger.info("bal_end = %s", self.bal_end)
 
-    #     try:
-    #         file = open(self.file_path, "w+", encoding="utf8")
-    #     except OSError:
-    #         self.logger.error("create_file : Open %s file FAILED", self.file_path)
-    #         return RetCode.ERROR
+    def _read_ope_list(self) -> None:
 
-    #     file.close()
+        file_name: str = self.dir + "/ope_list.csv"
 
-    #     return RetCode.OK
+        if not os.path.exists(file_name):
+            self.logger.debug("File %s does not exist", file_name)
+            return
 
-    def import_file(self) -> RetCode:
+        self.logger.debug("Open %s for reading", file_name)
+        with open(file_name, "r") as file:
+
+            reader = csv.DictReader(file)
+
+            self.ope_list.clear()
+            self.ope_sum = 0.0
+
+            for row in reader:
+
+                self.logger.debug("Create operation")
+                ope = Operation(datetime.strptime(row["date"], FMT_DATE), row["mode"],
+                                row["tier"], row["cat"], row["desc"], float(row["amount"]))
+                self.logger.debug("Operation created : %s", ope)
+
+                self.ope_list.append(ope)
+                self.ope_sum += + ope.amount
+
+            self.file_sync = True
+
+    def read_dir(self) -> None:
         """
-        Import operation list from file
-        """
-
-        try:
-            # Open CSV file
-            file = open(self.op_list_file_name, "r", encoding="utf8")
-        except FileNotFoundError:
-            self.logger.error("open %s FAILED", self.op_list_file_name)
-            return RetCode.ERROR
-
-        file_csv = csv.DictReader(file)
-
-        # Strip last CSV field if empty
-        if file_csv.fieldnames[len(file_csv.fieldnames) - 1] == "":
-            file_csv.fieldnames = file_csv.fieldnames[:-1]
-
-        # Check CSV fields match operation ones
-        if file_csv.fieldnames != Operation.CSV_KEY_LIST:
-            self.logger.error("%s wrong CSV format", self.op_list_file_name)
-
-        # Clear operations list
-        self.op_list.clear()
-        # Reset operations sum
-        self.op_sum = 0.0
-
-        # For each operation CSV item
-        for csv_item in file_csv:
-
-            # Create operation
-            op_date = datetime.strptime(csv_item["date"], FMT_DATE)
-            operation = Operation(
-                op_date, csv_item["mode"], csv_item["tier"],
-                csv_item["cat"], csv_item["desc"],
-                float(csv_item["amount"]))
-
-            # Add operation to list
-            self.op_list.append(operation)
-
-            # Update operations sum
-            self.op_sum = self.op_sum + operation.amount
-
-        self.is_saved = True
-
-        file.close()
-
-        return RetCode.OK
-
-    def export_file(self) -> None:
-        """
-        Export operation list to file
+        Read from folder
         """
 
-        # If file directory does not exist
-        if not os.path.exists(os.path.dirname(self.op_list_file_name)):
-            # Create file directory
-            os.makedirs(os.path.dirname(self.op_list_file_name))
+        if not os.path.isdir(self.dir):
+            self.logger.debug("Create folder %s", self.dir)
+            os.mkdir(self.dir)
 
-        file = open(self.op_list_file_name, "w", encoding="utf8")
+        self.logger.debug("Read info")
+        self._read_info()
 
-        file_csv = csv.DictWriter(file, Operation.CSV_KEY_LIST, delimiter=',', quotechar='"')
+        self.logger.debug("Read operations list")
+        self._read_ope_list()
 
-        file_csv.writeheader()
+        self.logger.debug("File sync")
+        self.file_sync = True
 
-        # For each operation
-        for operation in self.op_list:
+    def _write_info(self) -> None:
 
-            # Create operation CSV item
-            csv_item = {
-                "date": operation.date.strftime(FMT_DATE),
-                "mode": operation.mode,
-                "tier": operation.tier,
-                "cat": operation.cat,
-                "desc": operation.desc,
-                "amount": str(operation.amount),
+        file_name: str = self.dir + "/info.json"
+        self.logger.debug("Open %s for writing", file_name)
+        with open(file_name, "w") as file:
+
+            data = {
+                "name" : self.name,
+                "date" : self.date.strftime(FMT_DATE),
+                "bal_start" : self.bal_start,
+                "bal_end" : self.bal_end,
             }
 
-            # Write operation CSV item to file
-            file_csv.writerow(csv_item)
+            self.logger.debug("Dump JSON to %s", file_name)
+            json.dump(data, file)
 
-        self.is_saved = True
+    def _write_ope_list(self) -> None:
 
-        file.close()
+        file_name: str = self.dir + "/ope_list.csv"
+        self.logger.debug("Open %s for writing", file_name)
+        with open(file_name, "w") as file:
 
-    def add_op(self, operation: Operation) -> None:
+            writer = csv.DictWriter(file, Operation.CSV_KEY_LIST, delimiter=',', quotechar='"')
+
+            self.logger.debug("Write header to %s", file_name)
+            writer.writeheader()
+
+            for ope in self.ope_list:
+
+                row = {
+                    "date": ope.date.strftime(FMT_DATE),
+                    "mode": ope.mode,
+                    "tier": ope.tier,
+                    "cat": ope.cat,
+                    "desc": ope.desc,
+                    "amount": ope.amount,
+                }
+
+                self.logger.debug("Write row to %s", file_name)
+                writer.writerow(row)
+
+    def write_dir(self) -> None:
+        """
+        Write to folder
+        """
+
+        self.logger.debug("Write info")
+        self._write_info()
+
+        self.logger.debug("Write operations list")
+        self._write_ope_list()
+
+        self.logger.debug("File sync")
+        self.file_sync = True
+
+    def add_ope(self, ope: Operation) -> None:
         """
         Add operation
         """
 
-        # Find index
         idx = 0
-        while idx < len(self.op_list) and operation.date > self.op_list[idx].date:
+        while idx < len(self.ope_list) and ope.date > self.ope_list[idx].date:
             idx = idx + 1
 
-        # Insert operation at dedicated index
-        self.op_list.insert(idx, operation)
+        self.ope_list.insert(idx, ope)
+        self.ope_sum += ope.amount
 
-        # Update operation sum
-        self.op_sum += operation.amount
+        self.file_sync = False
 
-        self.is_saved = False
-
-    def remove_op(self, operation: Operation) -> None:
+    def remove_ope(self, ope: Operation) -> None:
         """
         Remove operation
         """
 
-        if operation not in self.op_list:
+        if ope not in self.ope_list:
             return
 
-        self.op_list.remove(operation)
+        self.ope_list.remove(ope)
+        self.ope_sum -= ope.amount
 
-        self.op_sum -= operation.amount
+        self.file_sync = False
 
-        self.is_saved = False
-
-    def remove_op_list(self, op_list: List[Operation]) -> None:
+    def remove_ope_list(self, ope_list: List[Operation]) -> None:
         """
         Remove operation list
         """
 
-        for operation in op_list:
-            self.remove_op(operation)
+        for ope in ope_list:
+            self.remove_ope(ope)

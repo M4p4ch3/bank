@@ -2,14 +2,14 @@
 Account
 """
 
-import csv
 from datetime import datetime
+import json
 import logging
+import os
+import shutil
 from typing import List
 
 from bank.internal.statement import Statement
-from bank.utils.return_code import RetCode
-from bank.utils.my_date import FMT_DATE
 
 class Account():
     """
@@ -18,19 +18,21 @@ class Account():
 
     CSV_KEY_LIST = ["id", "name"]
 
-    def __init__(self, parent_dir: str, identifier: int, name: str) -> None:
+    def __init__(self, _dir: str) -> None:
 
         self.logger = logging.getLogger("Account")
 
-        self.identifier = identifier
-        self.name = name
-
-        self.dir = f"{parent_dir}/account_{self.identifier:03}"
-        self.stat_list_file_name = f"{self.dir}/statement_list.csv"
+        self.dir: str = _dir
+        self.name: str = ""
 
         self.stat_list: List[Statement] = []
 
-        self.is_saved: bool = True
+        self.file_sync: bool = True
+
+        self.logger.debug("dir = %s", self.dir)
+
+        self.logger.debug("Read dir")
+        self.read_dir()
 
     def get_str(self, indent: int = 0) -> str:
         """
@@ -62,93 +64,109 @@ class Account():
 
         return None
 
-    def import_file(self) -> RetCode:
+    def _read_info(self) -> None:
+
+        file_name: str = self.dir + "/info.json"
+
+        if not os.path.exists(file_name):
+            self.logger.debug("File %s does not exist", file_name)
+            return
+
+        self.logger.debug("Open %s for reading", file_name)
+        with open(file_name, "r") as file:
+
+            data = json.load(file)
+
+            if "name" in data:
+                self.name = data["name"]
+                self.logger.info("name = %s", self.name)
+
+    def _read_stat_list(self) -> None:
+
+        self.logger.debug("List dir %s", self.dir)
+        for item in os.listdir(self.dir):
+            if os.path.isdir(self.dir + "/" + item) and "stat_" in item:
+
+                self.logger.debug("Create statement %s", item)
+                stat = Statement(self.dir + "/" + item)
+                self.logger.debug("Statement created : %s", stat)
+
+                self.stat_list.append(stat)
+
+    def read_dir(self) -> None:
         """
-        Import statement list from file
-        """
-
-        try:
-            # Open statement list CSV file
-            file = open(self.stat_list_file_name, "r", encoding="utf8")
-        except FileNotFoundError:
-            self.logger.error("open %s FAILED", self.stat_list_file_name)
-            return RetCode.ERROR
-
-        file_csv = csv.DictReader(file)
-
-        if file_csv.fieldnames != Statement.CSV_KEY_LIST:
-            self.logger.error("%s wrong CSV format", self.stat_list_file_name)
-
-        # For each statement CSV item
-        for csv_item in file_csv:
-
-            stat_parent_dir = self.dir
-            stat_id = int(csv_item["id"])
-            stat_date = datetime.strptime(csv_item["date"], FMT_DATE)
-            stat_bal_start = float(csv_item["bal_start"])
-            stat_bal_end = float(csv_item["bal_end"])
-
-            # Init statement
-            stat = Statement(stat_parent_dir, stat_id, csv_item["name"],
-                             stat_date, stat_bal_start, stat_bal_end)
-
-            # Import statement file
-            ret = stat.import_file()
-            if ret != RetCode.OK:
-                self.logger.error("import_file FAILED")
-                return ret
-
-            # Add statement to statements list
-            self.stat_list.append(stat)
-
-        file.close()
-
-        return RetCode.OK
-
-    def export_file(self) -> None:
-        """
-        Export statement list to file
+        Read from folder
         """
 
-        file = open(self.stat_list_file_name, "w", encoding="utf8")
+        if not os.path.isdir(self.dir):
+            self.logger.debug("Create folder %s", self.dir)
+            os.mkdir(self.dir)
 
-        file_csv = csv.DictWriter(file, Statement.CSV_KEY_LIST, delimiter=',', quotechar='"')
+        self.logger.debug("Read info")
+        self._read_info()
 
-        file_csv.writeheader()
+        self.logger.debug("Read statements list")
+        self._read_stat_list()
 
-        # For each statement
-        for stat in self.stat_list:
+        self.logger.debug("File sync")
+        self.file_sync = True
 
-            # Create statement CSV item
-            csv_item = {
-                "id": str(stat.identifier),
-                "date": stat.date.strftime(FMT_DATE),
-                "name": stat.name,
-                "bal_start": str(stat.bal_start),
-                "bal_end": str(stat.bal_end)
+    def _write_info(self) -> None:
+
+        file_name: str = self.dir + "/info.json"
+        self.logger.debug("Open %s for writing", file_name)
+        with open(file_name, "w") as file:
+
+            data = {
+                "name" : self.name,
             }
 
-            # Write statement CSV item to file
-            file_csv.writerow(csv_item)
+            self.logger.debug("Dump JSON to %s", file_name)
+            json.dump(data, file)
 
-        self.is_saved = True
+    def _write_stat_list(self) -> None:
 
-        file.close()
+        self.logger.debug("List dir %s", self.dir)
+        for item in os.listdir(self.dir):
+            if os.path.isdir(self.dir + "/" + item) and "stat_" in item:
+
+                self.logger.debug("Remove dir %s", item)
+                shutil.rmtree(self.dir + "/" + item)
+
+        for stat in self.stat_list:
+
+            self.logger.debug("Create dir %s", self.dir + "/stat_" + stat.name)
+            os.mkdir(self.dir + "/stat_" + stat.name)
+
+            self.logger.debug("Write stat %s", stat.name)
+            stat.write_dir()
+
+    def write_dir(self) -> None:
+        """
+        Write to folder
+        """
+
+        self.logger.debug("Write info")
+        self._write_info()
+
+        self.logger.debug("Write statements list")
+        self._write_stat_list()
+
+        self.logger.debug("File sync")
+        self.file_sync = True
 
     def add_stat(self, stat: Statement) -> None:
         """
         Add statement
         """
 
-        # Find index
         idx = 0
         while idx < len(self.stat_list) and stat.date > self.stat_list[idx].date:
             idx = idx + 1
 
-        # Insert statement at dedicated index
         self.stat_list.insert(idx, stat)
 
-        self.is_saved = False
+        self.file_sync = False
 
     def remove_stat(self, stat: Statement) -> None:
         """
@@ -160,4 +178,4 @@ class Account():
 
         self.stat_list.remove(stat)
 
-        self.is_saved = False
+        self.file_sync = False
