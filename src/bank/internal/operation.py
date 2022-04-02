@@ -27,6 +27,7 @@ class Operation():
         AMOUNT = 5
         LAST = AMOUNT
 
+    # pylint: disable=too-many-arguments
     def __init__(self, _date: datetime, mode: str,
                  tier: str, cat: str, desc: str, amount: float) -> None:
 

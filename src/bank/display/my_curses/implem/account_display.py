@@ -3,9 +3,9 @@ display/curses/implem/account
 """
 
 import curses
-from curses import *
+from curses import A_BOLD
 from datetime import datetime
-from typing import (TYPE_CHECKING, Any, List)
+from typing import (List)
 
 from bank.display.my_curses.main import (ColorPairId, WinId, DisplayerMain)
 from bank.display.my_curses.container_display import DisplayerContainer
@@ -16,13 +16,6 @@ from bank.internal.statement import Statement
 from bank.utils.my_date import FMT_DATE
 
 from bank.utils.return_code import RetCode
-
-if TYPE_CHECKING:
-    from _curses import _CursesWindow
-    Window = _CursesWindow
-else:
-    from typing import Any
-    Window = Any
 
 class DisplayerAccount(DisplayerContainer):
     """

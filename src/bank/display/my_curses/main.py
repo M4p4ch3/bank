@@ -3,18 +3,12 @@ display/curses/main
 """
 
 import curses
-from curses import *
+from curses import (A_NORMAL, A_BOLD, A_STANDOUT)
 from enum import IntEnum
-from typing import (TYPE_CHECKING, Any, List)
+from typing import (Any, List)
 
 from bank.utils.clipboard import Clipboard
 
-if TYPE_CHECKING:
-    from _curses import _CursesWindow
-    Window = _CursesWindow
-else:
-    from typing import Any
-    Window = Any
 
 class ColorPairId(IntEnum):
     """
@@ -54,10 +48,10 @@ class DisplayerMain():
     BORDER_H = 1
     BORDER_W = BORDER_H
 
-    def __init__(self, win_main: Window) -> None:
+    def __init__(self, win_main: Any) -> None:
 
         # Windows list
-        self.win_list: List[Window] = [None] * (WinId.LAST + 1)
+        self.win_list: List[Any] = [None] * (WinId.LAST + 1)
 
         # Item list clipboard
         self.item_list_clipboard: Clipboard = Clipboard()

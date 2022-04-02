@@ -13,6 +13,7 @@ from typing import List
 from bank.internal.operation import Operation
 from bank.utils.my_date import FMT_DATE
 
+# pylint: disable=too-many-instance-attributes
 class Statement():
     """
     Statement

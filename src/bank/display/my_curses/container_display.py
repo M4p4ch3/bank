@@ -2,21 +2,14 @@
 display/curses/container
 """
 
-import curses
-from curses import *
-from typing import (TYPE_CHECKING, Any, List)
+# import curses
+from curses import (A_NORMAL, A_BOLD, A_STANDOUT)
+from typing import (Any, List)
 
 from bank.display.my_curses.main import (NoOverrideError, WinId, DisplayerMain)
 from bank.display.my_curses.item_display import DisplayerItem
 
 from bank.utils.return_code import RetCode
-
-if TYPE_CHECKING:
-    from _curses import _CursesWindow
-    Window = _CursesWindow
-else:
-    from typing import Any
-    Window = Any
 
 class DisplayerContainer():
     """
@@ -73,7 +66,7 @@ class DisplayerContainer():
         _ = item
         return False
 
-    def browse_container_item(self, item) -> None:
+    def browse_container_item(self, item: Any) -> None:
         """
         Browse container item
         """
