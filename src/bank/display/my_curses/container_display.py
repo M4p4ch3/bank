@@ -339,19 +339,19 @@ class DisplayerContainer():
         win_y += 1
 
         if len(item_list) != 0:
-            op_disp_ratio = item_disp_nb / len(item_list)
+            ope_disp_ratio = item_disp_nb / len(item_list)
 
         # Slider
         (win_y, win_x) = (3, win.getyx()[1])
-        for _ in range(0, int(self.item_focus_idx * op_disp_ratio)):
+        for _ in range(0, int(self.item_focus_idx * ope_disp_ratio)):
             win.addstr(win_y, win_x, " ")
             win_y += 1
-        for _ in range(int(self.item_focus_idx * op_disp_ratio),
-                       int((self.item_focus_idx + item_disp_nb) * op_disp_ratio)):
+        for _ in range(int(self.item_focus_idx * ope_disp_ratio),
+                       int((self.item_focus_idx + item_disp_nb) * ope_disp_ratio)):
             win.addstr(win_y, win_x, " ", A_STANDOUT)
             win_y += 1
-        for _ in range(int((self.item_focus_idx + item_disp_nb) * op_disp_ratio),
-                       int((len(item_list)) * op_disp_ratio)):
+        for _ in range(int((self.item_focus_idx + item_disp_nb) * ope_disp_ratio),
+                       int((len(item_list)) * ope_disp_ratio)):
             win.addstr(win_y, win_x, " ")
             win_y += 1
 
@@ -393,22 +393,22 @@ class DisplayerContainer():
             if key == "KEY_UP":
                 if self.item_hl is None:
                     continue
-                op_hl_idx = item_list.index(self.item_hl) - 1
-                if op_hl_idx < 0:
-                    op_hl_idx = 0
+                ope_hl_idx = item_list.index(self.item_hl) - 1
+                if ope_hl_idx < 0:
+                    ope_hl_idx = 0
                     continue
-                self.item_hl = item_list[op_hl_idx]
+                self.item_hl = item_list[ope_hl_idx]
                 hl_changed = True
 
             # Highlight next item
             elif key == "KEY_DOWN":
                 if self.item_hl is None:
                     continue
-                op_hl_idx = item_list.index(self.item_hl) + 1
-                if op_hl_idx >= len(item_list):
-                    op_hl_idx = len(item_list) - 1
+                ope_hl_idx = item_list.index(self.item_hl) + 1
+                if ope_hl_idx >= len(item_list):
+                    ope_hl_idx = len(item_list) - 1
                     continue
-                self.item_hl = item_list[op_hl_idx]
+                self.item_hl = item_list[ope_hl_idx]
                 hl_changed = True
 
             # Focus previous item
