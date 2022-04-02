@@ -123,8 +123,8 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
             except ValueError:
                 is_edited = False
 
-        if is_edited:
-            self.stat.is_saved = False
+        # if is_edited:
+        #     self.stat.is_saved = False
 
         return is_edited
 

@@ -6,6 +6,7 @@ import csv
 from datetime import datetime
 from enum import IntEnum
 import logging
+import os
 from typing import (List, Tuple)
 
 from bank.internal.operation import Operation
@@ -178,6 +179,11 @@ class Statement():
 
         file_csv = csv.DictReader(file)
 
+        # Strip last CSV field if empty
+        if file_csv.fieldnames[len(file_csv.fieldnames) - 1] == "":
+            file_csv.fieldnames = file_csv.fieldnames[:-1]
+
+        # Check CSV fields match operation ones
         if file_csv.fieldnames != Operation.CSV_KEY_LIST:
             self.logger.error("%s wrong CSV format", self.op_list_file_name)
 
@@ -212,6 +218,11 @@ class Statement():
         """
         Export operation list to file
         """
+
+        # If file directory does not exist
+        if not os.path.exists(os.path.dirname(self.op_list_file_name)):
+            # Create file directory
+            os.makedirs(os.path.dirname(self.op_list_file_name))
 
         file = open(self.op_list_file_name, "w", encoding="utf8")
 

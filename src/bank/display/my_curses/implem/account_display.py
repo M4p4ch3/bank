@@ -13,6 +13,7 @@ from bank.display.my_curses.implem.statement_display import DisplayerStatement
 
 from bank.internal.account import Account
 from bank.internal.statement import Statement
+from bank.utils.my_date import FMT_DATE
 
 from bank.utils.return_code import RetCode
 
@@ -126,7 +127,13 @@ class DisplayerAccount(DisplayerContainer):
         """
 
         # Init statement
-        stat: Statement = Statement(datetime.now(), 0.0, 0.0)
+        parent_dir = self.account.dir
+        identifier = self.account.stat_list[len(self.account.stat_list) - 1].identifier + 1
+        name = datetime.now().strftime(FMT_DATE)
+        date = datetime.now()
+        bal_start = 0.0
+        bal_end = 0.0
+        stat: Statement = Statement(parent_dir, identifier, name, date, bal_start, bal_end)
 
         # Init statement display
         stat_disp = DisplayerStatement(self.disp, stat)
