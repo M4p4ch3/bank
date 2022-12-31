@@ -1,12 +1,26 @@
 #!/usr/bin/env python
 
+"""
+Bank start script
+"""
+
 from curses import wrapper
+from datetime import datetime
 import logging
+import os
+import signal
 import sys
 
 from bank.internal import Account
 from bank.display.my_curses import (DisplayerMain, DisplayerAccount)
+from bank.internal.operation import Operation
+from bank.internal.statement import Statement
 from bank.utils import RetCode
+
+def sig_handler_void(signum, frame):
+    """void sig handler to remove ctrl c interrupt"""
+    _ = signum
+    _ = frame
 
 def wrap(win):
     """
@@ -22,19 +36,42 @@ def wrap(win):
     # Browse account
     account_disp.browse_container()
 
+# Remove exit signals on ctrl (c, z)
+signal.signal(signal.SIGINT, sig_handler_void)
+signal.signal(signal.SIGTSTP, sig_handler_void)
+
+# Set escape key press delay to 25 ms
+os.environ.setdefault('ESCDELAY', '25')
+
 LOG_FMT = "[%(levelname)s][%(name)s] %(filename)s:%(funcName)s:%(lineno)d %(message)s"
-logging.basicConfig(format=LOG_FMT)
+logging.basicConfig(format=LOG_FMT, level=logging.INFO)
 
 logger = logging.getLogger("bank_start")
 
 # Init account
-account = Account("data", 1, "current")
+account = Account("data_2", "main")
+
+# TODO remove as duplicated
+# datetime date format
+FMT_DATE = "%Y-%m-%d"
+
+# ope = Operation(datetime.strptime("2022-03-03", FMT_DATE), "cb", "biocoop", "bio", "", -10)
+# account.stat_list[0].add_ope(ope)
+# ope = account.stat_list[0].ope_list[-1]
+# account.stat_list[0].bal_end += 1
+# account.stat_list[0].write_dir()
+
+# stat = Statement("data_2/account_main/stat_2022-08")
+# stat.date = datetime.strptime("2022-08-19", FMT_DATE)
+# stat.name = "2022-08"
+# stat.bal_start = 2000
+# account.add_stat(stat)
+# account.write_dir()
+
+# sys.exit(RetCode.OK)
 
 # Import account file
-ret = account.import_file()
-if ret != RetCode.OK:
-    logger.error("account.import_file FAILED")
-    sys.exit(RetCode.ERROR)
+# account.read_dir()
 
 # Curses wrapper
 wrapper(wrap)
