@@ -219,9 +219,18 @@ class DisplayerContainer():
             return
 
         if self.disp.cont_disp_last is not None:
+
             self.disp.cont_disp_last.add_container_item_list(item_list)
             self.disp.cont_disp_last.save()
             self.remove_container_item_list(item_list, force=True)
+
+            # TODO to improve
+            self.item_sel_list.clear()
+            # if self.item_hl in item_list:
+            #     self.item_hl = None
+            #     if len(self.disp.get_container_item_list()) > 0:
+            #         self.item_hl = self.get_container_item_list()[0]
+            self.item_hl = self.get_container_item_list()[0]
 
     def save(self) -> None:
         """
@@ -279,26 +288,26 @@ class DisplayerContainer():
         if len(item_list) < item_disp_nb:
             item_disp_nb = len(item_list)
 
-        # If highlighted item updated
         if hl_changed:
+            # Highlighted item updated
 
             # Fix focus
 
             item_hl_idx = item_list.index(self.item_hl)
 
-            if item_hl_idx < self.item_focus_idx:
+            # While highlited item above focus
+            while (item_hl_idx < self.item_focus_idx and
+                self.item_focus_idx >= 0):
 
                 # Move focus up
                 self.item_focus_idx -= 1
-                if self.item_focus_idx < 0:
-                    self.item_focus_idx = 0
 
-            elif item_hl_idx > self.item_focus_idx + item_disp_nb - 1:
+            # While highlited item below focus
+            while (item_hl_idx > self.item_focus_idx + item_disp_nb - 1 and
+                self.item_focus_idx < len(item_list) - item_disp_nb):
 
                 # Move focus down
                 self.item_focus_idx += 1
-                if self.item_focus_idx > len(item_list) - item_disp_nb:
-                    self.item_focus_idx = len(item_list) - item_disp_nb
 
         # Else, if focus updated
         elif focus_changed:
@@ -417,6 +426,7 @@ class DisplayerContainer():
         win.border()
         win.addstr(0, int((win_w - len(self.title))/2), f" {self.title} ", A_STANDOUT)
         win.addstr(0, 2, f" {self.subtitle} ", A_BOLD)
+        win.keypad(1)
         win.refresh()
 
         self.display_container_info()
@@ -427,11 +437,14 @@ class DisplayerContainer():
             hl_changed = False
             focus_changed = False
 
-            key = win.getkey()
+            # key = win.getkey()
+            key = win.getch()
+            # win.addstr(0, 0, f"\"{key}\"")
+            # win.refresh()
 
             # Highlight previous item
-            if key == "KEY_UP":
-                if self.item_hl is None:
+            if key in ["KEY_UP", 259]:
+                if self.item_hl is None or self.item_hl not in item_list:
                     continue
                 ope_hl_idx = item_list.index(self.item_hl) - 1
                 if ope_hl_idx < 0:
@@ -441,8 +454,8 @@ class DisplayerContainer():
                 hl_changed = True
 
             # Highlight next item
-            elif key == "KEY_DOWN":
-                if self.item_hl is None:
+            elif key in ["KEY_DOWN", 258]:
+                if self.item_hl is None or self.item_hl not in item_list:
                     continue
                 ope_hl_idx = item_list.index(self.item_hl) + 1
                 if ope_hl_idx >= len(item_list):
@@ -452,21 +465,21 @@ class DisplayerContainer():
                 hl_changed = True
 
             # Focus previous item
-            elif key == "KEY_PPAGE":
+            elif key in ["KEY_PPAGE", 339]:
                 if self.item_hl is None:
                     continue
                 self.item_focus_idx -= 3
                 focus_changed = True
 
             # Focus next item
-            elif key == "KEY_NPAGE":
+            elif key in ["KEY_NPAGE", 338]:
                 if self.item_hl is None:
                     continue
                 self.item_focus_idx += 3
                 focus_changed = True
 
             # Trigger item selection
-            elif key == " ":
+            elif key in [" ", 32]:
                 if self.item_hl is None:
                     continue
                 if self.item_hl not in self.item_sel_list:
@@ -475,40 +488,50 @@ class DisplayerContainer():
                     self.item_sel_list.remove(self.item_hl)
 
             # Copy item(s)
-            elif key == "c":
+            # ctrl c
+            elif key in [-1]:
                 self.copy()
 
             # Cut item(s)
-            elif key == "x":
+            # ctrl x
+            elif key == 24:
                 self.cut()
 
             # Paste item(s)
-            elif key == "v":
+            # ctrl v
+            elif key in [22]:
                 self.paste()
 
             # Rappr ope
-            elif key == "r":
+            # ctrl r
+            elif key == 18:
                 self.rappr()
 
             # Edit highlighted item
-            elif key == "e":
+            # ctrl e
+            elif key == 5:
                 self.edit_container_item(self.item_hl)
                 self.disp.win_list[WinId.LEFT].clear()
+                hl_changed = True
 
             # Open highlighted item
-            elif key == "\n":
+            # enter
+            elif key in ["\n", 10]:
                 self.browse_container_item(self.item_hl)
                 self.disp.win_list[WinId.LEFT].clear()
+                hl_changed = True
 
             # Add new item
-            elif key in ("KEY_IC", "+"):
+            # insert, +
+            elif key in ["KEY_IC", "+", 331, 43]:
                 item = self.create_container_item()
                 if item is not None:
                     self.add_container_item(item)
                 self.disp.win_list[WinId.LEFT].clear()
 
             # Remove item(s)
-            elif key in ("KEY_DC", "-"):
+            # del, -
+            elif key in ["KEY_DC", "-", 330, 45]:
 
                 ret = RetCode.CANCEL
 
@@ -528,15 +551,22 @@ class DisplayerContainer():
                     self.disp.win_list[WinId.LEFT].clear()
 
             # Save
-            elif key == "s":
+            # ctrl s
+            elif key == 19:
                 self.save()
 
             # Exit
-            elif key == '\x1b':
+            # esc, backspace
+            elif key in ['\x1b', 27, 8]:
                 ret = self.exit()
                 if ret == RetCode.OK:
                     self.disp.cont_disp_last = self
                     break
+
+            # signal exit
+            # ctrl p
+            elif key == 16:
+                raise KeyboardInterrupt
 
             item_list = self.get_container_item_list()
 

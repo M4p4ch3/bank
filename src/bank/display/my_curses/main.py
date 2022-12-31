@@ -133,6 +133,7 @@ class DisplayerMain():
         win.border()
         win.addstr(0, 2, f" {name} ", A_BOLD)
         win.addstr(2, 2, msg)
+        win.keypad(1)
 
         while True:
 
@@ -147,27 +148,30 @@ class DisplayerMain():
                 win.addstr(win_y, win_x, choice, disp_flag)
                 win_y += 1
 
-            # Get key
-            key = win.getkey()
+            # key = win.getkey()
+            key = win.getch()
+            win.addstr(0, 0, f"\"{key}\"")
+            win.refresh()
 
             # Highlight previous field
-            if key == "KEY_UP":
+            if key in ["KEY_UP", 259]:
                 choice_hl_idx -= 1
                 if choice_hl_idx < 0:
                     choice_hl_idx = 0
 
             # Highlight next field
-            elif key == "KEY_DOWN":
+            elif key in ["KEY_DOWN", 258]:
                 choice_hl_idx += 1
                 if choice_hl_idx >= len(choice_list):
                     choice_hl_idx = len(choice_list) - 1
 
             # Select highlighted choice
-            elif key == "\n":
+            elif key in [10]:
                 break
 
             # Exit
-            elif key == '\x1b':
+            # esc, backspace
+            elif key in [27, 8]:
                 choice_hl_idx = -1
                 break
 
