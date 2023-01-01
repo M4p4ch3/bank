@@ -178,12 +178,14 @@ class DisplayerContainer():
         while item_hl_idx >= 0 and self.item_hl in item_list:
             # Highligh previous item
             item_hl_idx -= 1
-            self.item_hl = container_item_list[item_hl_idx]
+            if item_hl_idx >= 0:
+                self.item_hl = container_item_list[item_hl_idx]
 
         while item_hl_idx < len(container_item_list) and self.item_hl in item_list:
             # Highligh next item
             item_hl_idx += 1
-            self.item_hl = container_item_list[item_hl_idx]
+            if item_hl_idx < len(container_item_list):
+                self.item_hl = container_item_list[item_hl_idx]
 
         if self.item_hl in item_list:
             self.item_hl = None
