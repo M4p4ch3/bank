@@ -167,6 +167,27 @@ class DisplayerContainer():
 
         self.disp.item_list_clipboard.set(item_list)
 
+    def highlight_closest_item(self, item_list: List) -> None:
+        """
+        Highlist closes item
+        """
+
+        container_item_list = self.get_container_item_list()
+        item_hl_idx = container_item_list.index(self.item_hl)
+
+        while item_hl_idx >= 0 and self.item_hl in item_list:
+            # Highligh previous item
+            item_hl_idx -= 1
+            self.item_hl = container_item_list[item_hl_idx]
+
+        while item_hl_idx < len(container_item_list) and self.item_hl in item_list:
+            # Highligh next item
+            item_hl_idx += 1
+            self.item_hl = container_item_list[item_hl_idx]
+
+        if self.item_hl in item_list:
+            self.item_hl = None
+
     def cut(self) -> None:
         """
         Cut selected or highlited item(s)
@@ -181,17 +202,15 @@ class DisplayerContainer():
 
         self.disp.item_list_clipboard.set(item_list)
 
+        # If highlighted item in buffer
+        if self.item_hl in item_list:
+            self.highlight_closest_item(item_list)
+
         # Remove items list
         for item in item_list:
             self.remove_container_item(item)
 
-        # If highlighted item in buffer
-        if self.item_hl in item_list:
-            # Highlight closest item
-            # TODO
-            # self.item_hl = self.get_closest_item(item_list)
-            item_list: List[Any] = self.get_container_item_list()
-            self.item_hl = item_list[0]
+        self.item_sel_list.clear()
 
     def paste(self) -> None:
         """
@@ -205,6 +224,8 @@ class DisplayerContainer():
         # Add item list
         for item in item_list:
             self.add_container_item(item)
+
+        self.item_hl = item_list[0]
 
     def rappr(self) -> None:
         """
@@ -496,6 +517,7 @@ class DisplayerContainer():
             # ctrl x
             elif key == 24:
                 self.cut()
+                self.disp.win_list[WinId.LEFT].clear()
 
             # Paste item(s)
             # ctrl v
@@ -543,10 +565,11 @@ class DisplayerContainer():
 
                 if len(item_list) > 0:
 
+                    self.highlight_closest_item(item_list)
+
                     ret = self.remove_container_item_list(item_list)
                     if ret == RetCode.OK:
                         self.item_sel_list.clear()
-                        self.item_hl = None
 
                     self.disp.win_list[WinId.LEFT].clear()
 
