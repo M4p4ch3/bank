@@ -4,25 +4,21 @@
 Bank start script
 """
 
+import argparse
 from curses import wrapper
-from datetime import datetime
 import logging
 import os
 import signal
-import sys
 
 from bank.internal import Account
 from bank.display.my_curses import (DisplayerMain, DisplayerAccount)
-from bank.internal.operation import Operation
-from bank.internal.statement import Statement
-from bank.utils import RetCode
 
 def sig_handler_void(signum, frame):
     """void sig handler to remove ctrl c interrupt"""
     _ = signum
     _ = frame
 
-def wrap(win):
+def wrap(win, account):
     """
     Curses wrapper
     """
@@ -36,42 +32,40 @@ def wrap(win):
     # Browse account
     account_disp.browse_container()
 
-# Remove exit signals on ctrl (c, z)
-signal.signal(signal.SIGINT, sig_handler_void)
-signal.signal(signal.SIGTSTP, sig_handler_void)
+def main():
+    """
+    main
+    """
 
-# Set escape key press delay to 25 ms
-os.environ.setdefault('ESCDELAY', '25')
+    # Remove exit signals on ctrl (c, z)
+    signal.signal(signal.SIGINT, sig_handler_void)
+    signal.signal(signal.SIGTSTP, sig_handler_void)
 
-LOG_FMT = "[%(levelname)s][%(name)s] %(filename)s:%(funcName)s:%(lineno)d %(message)s"
-logging.basicConfig(format=LOG_FMT, level=logging.INFO)
+    # Set escape key press delay to 25 ms
+    os.environ.setdefault('ESCDELAY', '25')
 
-logger = logging.getLogger("bank_start")
+    # Parse arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument("data_dir", type=str, action="store",
+        default="data", help="data folder")
+    parser.add_argument("account_name", type=str, action="store",
+        default="main", help="account name")
+    parser.add_argument("-d", "--debug", action="store_true", help="enable debug log")
+    args = parser.parse_args()
 
-# Init account
-account = Account("data_2", "main")
+    # Setup logging
+    log_fmt = "[%(levelname)s][%(name)s] %(filename)s:%(funcName)s:%(lineno)d %(message)s"
+    logging.basicConfig(format=log_fmt, level=logging.INFO)
+    if args.debug:
+        # Set root logger (whole logging) level to debug
+        logger = logging.getLogger()
+        logger.setLevel(logging.DEBUG)
 
-# TODO remove as duplicated
-# datetime date format
-FMT_DATE = "%Y-%m-%d"
+    # Init account
+    account = Account(args.data_dir, args.account_name)
 
-# ope = Operation(datetime.strptime("2022-03-03", FMT_DATE), "cb", "biocoop", "bio", "", -10)
-# account.stat_list[0].add_ope(ope)
-# ope = account.stat_list[0].ope_list[-1]
-# account.stat_list[0].bal_end += 1
-# account.stat_list[0].write_dir()
+    # Curses wrapper
+    wrapper(wrap, account)
 
-# stat = Statement("data_2/account_main/stat_2022-08")
-# stat.date = datetime.strptime("2022-08-19", FMT_DATE)
-# stat.name = "2022-08"
-# stat.bal_start = 2000
-# account.add_stat(stat)
-# account.write_dir()
-
-# sys.exit(RetCode.OK)
-
-# Import account file
-# account.read_dir()
-
-# Curses wrapper
-wrapper(wrap)
+if __name__ == "__main__":
+    main()
