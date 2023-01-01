@@ -158,6 +158,7 @@ class DisplayerAccount(DisplayerContainer):
             self.account.write_dir()
             ret = RetCode.OK
         elif ret_super == RetCode.EXIT_NO_SAVE:
+            self.account.read_dir()
             ret = RetCode.OK
 
         return ret

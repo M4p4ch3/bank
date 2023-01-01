@@ -124,6 +124,7 @@ class Account():
         self.logger.debug("Read info")
         self._read_info()
 
+        self.stat_list.clear()
         self.logger.debug("Read statements list")
         self._read_stat_list()
 

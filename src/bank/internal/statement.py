@@ -192,6 +192,7 @@ class Statement():
         self.logger.debug("Read info")
         self._read_info()
 
+        self.ope_list.clear()
         self.logger.debug("Read operations list")
         self._read_ope_list()
 

@@ -351,6 +351,7 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
             self.stat.write_dir()
             ret = RetCode.OK
         elif ret_super == RetCode.EXIT_NO_SAVE:
+            self.stat.read_dir()
             ret = RetCode.OK
 
         return ret
