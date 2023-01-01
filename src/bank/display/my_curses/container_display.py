@@ -6,7 +6,7 @@ display/curses/container
 from curses import (A_NORMAL, A_BOLD, A_STANDOUT)
 from typing import (Any, List)
 
-from bank.display.my_curses.main import (NoOverrideError, WinId, DisplayerMain)
+from bank.display.my_curses.main import (KeyId, WinId, DisplayerMain)
 from bank.display.my_curses.item_display import DisplayerItem
 
 from bank.utils.return_code import RetCode
@@ -36,80 +36,33 @@ class DisplayerContainer():
         # Focused item index
         self.item_focus_idx: int = 0
 
-    def raise_no_override(self, method: str = "") -> None:
-        """
-        Raise method not overriden exception
-
-        Args:
-            method_name (str, optional): Method name. Defaults to "".
-        """
-
-        raise NoOverrideError(
-            base_class="DisplayerContainer",
-            derived_class=type(self).__name__,
-            method=method)
-
     def get_container_name(self) -> str:
-        """
-        Get container name
-        """
-
-        self.raise_no_override("get_container_name")
+        """Get container name"""
         return ""
 
     def get_container_item_list(self) -> List[Any]:
-        """
-        Get container item list
-        """
-
-        self.raise_no_override("get_container_item_list")
+        """Get container item list"""
         return []
 
     def edit_container_item(self, item: Any) -> bool:
-        """
-        Edit container item
-        """
-
-        self.raise_no_override("edit_container_item")
+        """Edit container item"""
         _ = item
         return False
 
     def browse_container_item(self, item: Any) -> None:
-        """
-        Browse container item
-        """
-
-        self.raise_no_override("browse_container_item")
+        """Browse container item"""
         _ = item
 
     def create_container_item(self) -> Any:
-        """
-        Create container item
-        """
-
-        self.raise_no_override("create_container_item")
+        """Create container item"""
         return Any
 
     def add_container_item(self, item: Any) -> None:
-        """
-        Add container item
-
-        Args:
-            item (Any): Item
-        """
-
-        self.raise_no_override("add_container_item")
+        """Add container item"""
         _ = item
 
     def add_container_item_list(self, item_list: List[Any]) -> None:
-        """
-        Add container item list
-
-        Args:
-            item_list (List[Any]): Item list
-        """
-
-        self.raise_no_override("add_container_item_list")
+        """Add container item list"""
         _ = item_list
 
     def remove_container_item_list(self, item_list: List[Any], force: bool = False) -> RetCode:
@@ -143,34 +96,25 @@ class DisplayerContainer():
         return ret
 
     def remove_container_item(self, item: Any) -> None:
-        """
-        Remove cotnainer item
-
-        Args:
-            item (Any): Item
-        """
-
-        self.raise_no_override("remove_container_item")
+        """Remove cotnainer item"""
         _ = item
 
-    def copy(self) -> None:
-        """
-        Copy selected or highlited item(s)
-        """
+    def highlight_item(self, delta: int) -> None:
+        """Highlight item from offset to current"""
 
-        if len(self.item_sel_list) > 0:
-            item_list = self.item_sel_list
-        elif self.item_hl is not None:
-            item_list = [self.item_hl]
-        else:
+        item_list = self.get_container_item_list()
+
+        if self.item_hl is None or len(item_list) == 0 or self.item_hl not in item_list:
             return
 
-        self.disp.item_list_clipboard.set(item_list)
+        item_hl_idx = item_list.index(self.item_hl) + delta
+        if item_hl_idx < 0 or item_hl_idx >= len(item_list):
+            return
+
+        self.item_hl = item_list[item_hl_idx]
 
     def highlight_closest_item(self, item_list: List) -> None:
-        """
-        Highlist closes item
-        """
+        """Highlight closest item from list"""
 
         container_item_list = self.get_container_item_list()
         item_hl_idx = container_item_list.index(self.item_hl)
@@ -190,6 +134,29 @@ class DisplayerContainer():
         if self.item_hl in item_list:
             self.item_hl = None
 
+    def toogle_item_sel(self) -> None:
+        """Toogle selection of highlighted item"""
+
+        if self.item_hl is None:
+            return
+
+        if self.item_hl not in self.item_sel_list:
+            self.item_sel_list.append(self.item_hl)
+        else:
+            self.item_sel_list.remove(self.item_hl)
+
+    def copy(self) -> None:
+        """Copy selected or highlited item(s)"""
+
+        if len(self.item_sel_list) > 0:
+            item_list = self.item_sel_list
+        elif self.item_hl is not None:
+            item_list = [self.item_hl]
+        else:
+            return
+
+        self.disp.item_list_clipboard.set(item_list)
+
     def cut(self) -> None:
         """
         Cut selected or highlited item(s)
@@ -204,13 +171,10 @@ class DisplayerContainer():
 
         self.disp.item_list_clipboard.set(item_list)
 
-        # If highlighted item in buffer
         if self.item_hl in item_list:
             self.highlight_closest_item(item_list)
 
-        # Remove items list
-        for item in item_list:
-            self.remove_container_item(item)
+        self.remove_container_item_list(item_list, force=True)
 
         self.item_sel_list.clear()
 
@@ -223,9 +187,7 @@ class DisplayerContainer():
         if item_list is None or len(item_list) == 0:
             return
 
-        # Add item list
-        for item in item_list:
-            self.add_container_item(item)
+        self.add_container_item_list(item_list)
 
         self.item_hl = item_list[0]
 
@@ -247,16 +209,28 @@ class DisplayerContainer():
             self.disp.cont_disp_last.save()
             self.remove_container_item_list(item_list, force=True)
 
-            self.item_sel_list.clear()
-
             self.highlight_closest_item(item_list)
 
-    def save(self) -> None:
-        """
-        Save
-        """
+            self.item_sel_list.clear()
 
-        self.raise_no_override("save")
+    def remove_item(self) -> None:
+        """Remove highlighted or selected item"""
+
+        if len(self.item_sel_list) != 0:
+            item_list = self.item_sel_list
+        elif self.item_hl is not None:
+            item_list = [self.item_hl]
+        else:
+            return
+
+        self.highlight_closest_item(item_list)
+
+        ret = self.remove_container_item_list(item_list)
+        if ret == RetCode.OK:
+            self.item_sel_list.clear()
+
+    def save(self) -> None:
+        """Save"""
 
     def exit(self) -> RetCode:
         """
@@ -281,11 +255,7 @@ class DisplayerContainer():
         return ret
 
     def display_container_info(self) -> None:
-        """
-        Display container info
-        """
-
-        self.raise_no_override("display_container_info")
+        """Display container info"""
 
     def display_container_item_list(self, hl_changed: bool, focus_changed: bool) -> None:
         """
@@ -307,52 +277,58 @@ class DisplayerContainer():
         if len(item_list) < item_disp_nb:
             item_disp_nb = len(item_list)
 
-        if hl_changed:
-            # Highlighted item updated
+        if self.item_hl is None or self.item_hl not in item_list:
+            if len(item_list) != 0:
+                self.item_hl = item_list[0]
 
-            # Fix focus
+        if self.item_hl and self.item_hl in item_list:
 
-            item_hl_idx = item_list.index(self.item_hl)
+            if hl_changed:
+                # Highlighted item updated
 
-            # While highlited item above focus
-            while (item_hl_idx < self.item_focus_idx and
-                self.item_focus_idx >= 0):
+                # Fix focus
 
-                # Move focus up
-                self.item_focus_idx -= 1
+                item_hl_idx = item_list.index(self.item_hl)
 
-            # While highlited item below focus
-            while (item_hl_idx > self.item_focus_idx + item_disp_nb - 1 and
-                self.item_focus_idx < len(item_list) - item_disp_nb):
+                # While highlited item above focus
+                while (item_hl_idx < self.item_focus_idx and
+                    self.item_focus_idx >= 0):
 
-                # Move focus down
-                self.item_focus_idx += 1
+                    # Move focus up
+                    self.item_focus_idx -= 1
 
-        # Else, if focus updated
-        elif focus_changed:
+                # While highlited item below focus
+                while (item_hl_idx > self.item_focus_idx + item_disp_nb - 1 and
+                    self.item_focus_idx < len(item_list) - item_disp_nb):
 
-            # Fix focus
+                    # Move focus down
+                    self.item_focus_idx += 1
 
-            if self.item_focus_idx < 0:
-                self.item_focus_idx = 0
-            elif self.item_focus_idx > len(item_list) - item_disp_nb:
-                self.item_focus_idx = len(item_list) - item_disp_nb
+            # Else, if focus updated
+            elif focus_changed:
 
-            # Fix highlighted item
+                # Fix focus
 
-            item_hl_idx = item_list.index(self.item_hl)
+                if self.item_focus_idx < 0:
+                    self.item_focus_idx = 0
+                elif self.item_focus_idx > len(item_list) - item_disp_nb:
+                    self.item_focus_idx = len(item_list) - item_disp_nb
 
-            if item_hl_idx < self.item_focus_idx:
+                # Fix highlighted item
 
-                # Highlight first displayed item
-                item_hl_idx = self.item_focus_idx
-                self.item_hl = item_list[item_hl_idx]
+                item_hl_idx = item_list.index(self.item_hl)
 
-            elif item_hl_idx > self.item_focus_idx + item_disp_nb - 1:
+                if item_hl_idx < self.item_focus_idx:
 
-                # Highlight last displayed item
-                item_hl_idx = self.item_focus_idx + item_disp_nb - 1
-                self.item_hl = item_list[item_hl_idx]
+                    # Highlight first displayed item
+                    item_hl_idx = self.item_focus_idx
+                    self.item_hl = item_list[item_hl_idx]
+
+                elif item_hl_idx > self.item_focus_idx + item_disp_nb - 1:
+
+                    # Highlight last displayed item
+                    item_hl_idx = self.item_focus_idx + item_disp_nb - 1
+                    self.item_hl = item_list[item_hl_idx]
 
         (win_y, win_x) = (0, 0)
 
@@ -381,7 +357,7 @@ class DisplayerContainer():
             item = item_list[item_idx]
 
             disp_flag = A_NORMAL
-            if item == self.item_hl:
+            if self.item_hl and item == self.item_hl:
                 disp_flag += A_STANDOUT
             if item in self.item_sel_list:
                 disp_flag += A_BOLD
@@ -449,144 +425,81 @@ class DisplayerContainer():
             hl_changed = False
             focus_changed = False
 
-            # key = win.getkey()
             key = win.getch()
-            # win.addstr(0, 0, f"\"{key}\"")
-            # win.refresh()
+            # self.disp.add_log(str(key))
 
-            # Highlight previous item
-            if key in ["KEY_UP", 259]:
-                if self.item_hl is None or self.item_hl not in item_list:
-                    continue
-                ope_hl_idx = item_list.index(self.item_hl) - 1
-                if ope_hl_idx < 0:
-                    ope_hl_idx = 0
-                    continue
-                self.item_hl = item_list[ope_hl_idx]
+            if key in [KeyId.UP]:
+                self.highlight_item(-1)
                 hl_changed = True
 
-            # Highlight next item
-            elif key in ["KEY_DOWN", 258]:
-                if self.item_hl is None or self.item_hl not in item_list:
-                    continue
-                ope_hl_idx = item_list.index(self.item_hl) + 1
-                if ope_hl_idx >= len(item_list):
-                    ope_hl_idx = len(item_list) - 1
-                    continue
-                self.item_hl = item_list[ope_hl_idx]
+            elif key in [KeyId.DOWN]:
+                self.highlight_item(1)
                 hl_changed = True
 
-            # Focus previous item
-            elif key in ["KEY_PPAGE", 339]:
-                if self.item_hl is None:
-                    continue
+            elif key in [KeyId.PAGE_UP]:
                 self.item_focus_idx -= 3
                 focus_changed = True
 
-            # Focus next item
-            elif key in ["KEY_NPAGE", 338]:
-                if self.item_hl is None:
-                    continue
+            elif key in [KeyId.PAGE_DOWN]:
                 self.item_focus_idx += 3
                 focus_changed = True
 
-            # Trigger item selection
-            elif key in [" ", 32]:
-                if self.item_hl is None:
-                    continue
-                if self.item_hl not in self.item_sel_list:
-                    self.item_sel_list.append(self.item_hl)
-                else:
-                    self.item_sel_list.remove(self.item_hl)
+            elif key in [KeyId.SPACE]:
+                self.toogle_item_sel()
 
-            # Copy item(s)
-            # ctrl c
-            elif key in [-1]:
+            elif key in [KeyId.CTRL_C]:
                 self.copy()
 
-            # Cut item(s)
-            # ctrl x
-            elif key == 24:
+            elif key in [KeyId.CTRL_X]:
                 self.cut()
                 self.disp.win_list[WinId.LEFT].clear()
 
-            # Paste item(s)
-            # ctrl v
-            elif key in [22]:
+            elif key in [KeyId.CTRL_V]:
                 self.paste()
 
-            # Rappr ope
-            # ctrl r
-            elif key == 18:
+            elif key in [KeyId.CTRL_R]:
                 self.rappr()
 
-            # Edit highlighted item
-            # ctrl e
-            elif key == 5:
+            elif key in [KeyId.CTRL_E]:
+                # Edit highlighted item
                 self.edit_container_item(self.item_hl)
                 self.disp.win_list[WinId.LEFT].clear()
                 hl_changed = True
 
-            # Open highlighted item
-            # enter
-            elif key in ["\n", 10]:
+            elif key in [KeyId.ENTER]:
+                # Open highlighted item
                 self.browse_container_item(self.item_hl)
                 self.disp.win_list[WinId.LEFT].clear()
                 hl_changed = True
 
-            # Add new item
-            # insert, +
-            elif key in ["KEY_IC", "+", 331, 43]:
+            elif key in [KeyId.INS, KeyId.PLUS]:
+                # Add new item
                 item = self.create_container_item()
                 if item is not None:
                     self.add_container_item(item)
-                self.disp.win_list[WinId.LEFT].clear()
-
-            # Remove item(s)
-            # del, -
-            elif key in ["KEY_DC", "-", 330, 45]:
-
-                ret = RetCode.CANCEL
-
-                item_list = []
-                if len(self.item_sel_list) != 0:
-                    item_list = self.item_sel_list
-                elif self.item_hl is not None:
-                    item_list = [self.item_hl]
-
-                if len(item_list) > 0:
-
-                    self.highlight_closest_item(item_list)
-
-                    ret = self.remove_container_item_list(item_list)
-                    if ret == RetCode.OK:
-                        self.item_sel_list.clear()
-
                     self.disp.win_list[WinId.LEFT].clear()
 
-            # Save
-            # ctrl s
-            elif key == 19:
+            elif key in [KeyId.DEL, KeyId.MINUS]:
+                self.remove_item()
+                self.disp.win_list[WinId.LEFT].clear()
+
+            elif key in [KeyId.CTRL_S]:
                 self.save()
 
-            # Exit
-            # esc, backspace
-            elif key in ['\x1b', 27, 8]:
+            elif key in [KeyId.ESC, KeyId.BACKSPACE]:
                 ret = self.exit()
                 if ret == RetCode.OK:
                     self.disp.cont_disp_last = self
                     break
 
-            # signal exit
-            # ctrl p
-            elif key == 16:
+            elif key in [KeyId.CTRL_P]:
                 raise KeyboardInterrupt
 
-            item_list = self.get_container_item_list()
+            # item_list = self.get_container_item_list()
 
-            if self.item_hl is None:
-                if len(item_list) != 0:
-                    self.item_hl = item_list[0]
+            # if self.item_hl is None:
+            #     if len(item_list) != 0:
+            #         self.item_hl = item_list[0]
 
             self.display_container_info()
             self.display_container_item_list(hl_changed, focus_changed)

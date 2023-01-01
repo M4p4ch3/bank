@@ -6,7 +6,7 @@ import curses
 from curses import (A_NORMAL, A_BOLD, A_STANDOUT)
 from typing import (Any, Tuple)
 
-from bank.display.my_curses.main import (NoOverrideError, WinId, DisplayerMain)
+from bank.display.my_curses.main import (WinId, DisplayerMain)
 
 class DisplayerItem():
     """
@@ -26,42 +26,17 @@ class DisplayerItem():
 
         self.name = ""
 
-    def raise_no_override(self, method: str = "") -> None:
-        """
-        Raise method not overriden exception
-
-        Args:
-            method_name (str, optional): Method name. Defaults to "".
-        """
-
-        raise NoOverrideError(
-            base_class="DisplayerItem",
-            derived_class=type(self).__name__,
-            method=method)
-
     def set_item(self, item: Any):
-        """
-        Set item
-        """
-
-        self.raise_no_override("set_item")
+        """Set item"""
         _ = item
 
     def get_item_field(self, field_idx: int) -> Tuple[str, str]:
-        """
-        Get item field
-        """
-
-        self.raise_no_override("get_item_field")
+        """Get item field"""
         _ = field_idx
         return ("", "")
 
     def set_item_field(self, field_idx: int, val_str: str) -> bool:
-        """
-        Set item field
-        """
-
-        self.raise_no_override("set_item_field")
+        """Set item field"""
         _ = field_idx
         _ = val_str
         return False

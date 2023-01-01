@@ -345,14 +345,14 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
 
         # Unsaved changes
 
-        ret_super = super().exit()
+        ret = super().exit()
 
-        ret = RetCode.CANCEL
-        if ret_super == RetCode.EXIT_SAVE:
+        if ret == RetCode.EXIT_SAVE:
             self.stat.write_dir()
-            ret = RetCode.OK
-        elif ret_super == RetCode.EXIT_NO_SAVE:
-            self.stat.read_dir()
-            ret = RetCode.OK
+            return RetCode.OK
 
-        return ret
+        if ret == RetCode.EXIT_NO_SAVE:
+            self.stat.read_dir()
+            return RetCode.OK
+
+        return RetCode.CANCEL
