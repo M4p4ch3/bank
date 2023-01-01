@@ -78,12 +78,12 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
 
         return self.stat.name
 
-    def set_item(self, stat: Statement) -> None:
+    def set_item(self, item: Statement) -> None:
         """
         Set statement
         """
 
-        self.stat = stat
+        self.stat = item
 
     def get_item_field(self, field_idx: int) -> Tuple[str, str]:
         """
@@ -139,34 +139,35 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
 
         return self.stat.ope_list
 
-    def add_container_item(self, op: Operation) -> None:
+    def add_container_item(self, item: Operation) -> None:
         """
         Add statement operation
         """
 
-        self.stat.add_ope(op)
+        self.stat.add_ope(item)
 
-    def add_container_item_list(self, op_list: List[Operation]) -> None:
+    def add_container_item_list(self, item_list: List[Operation]) -> None:
         """
         Add statement operation list
         """
 
-        self.stat.add_ope_list(op_list)
+        self.stat.add_ope_list(item_list)
 
-    def remove_container_item_list(self, ope_list: List[Operation], force: bool = False) -> RetCode:
+    def remove_container_item_list(self, item_list: List[Operation],
+            force: bool = False) -> RetCode:
         """
         Remove statement operation list
         """
 
-        ret = super().remove_container_item_list(ope_list, force)
+        ret = super().remove_container_item_list(item_list, force)
         if ret == RetCode.CANCEL:
             return ret
 
         # Confirmed
-        self.stat.remove_ope_list(ope_list)
+        self.stat.remove_ope_list(item_list)
         return RetCode.OK
 
-    def remove_container_item(self, operation: Operation) -> None:
+    def remove_container_item(self, item: Operation) -> None:
         """
         Remove statement operation
 
@@ -174,9 +175,9 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
             operation (Operation): operation
         """
 
-        self.stat.remove_ope(operation)
+        self.stat.remove_ope(item)
 
-    def edit_container_item(self, operation: Operation) -> None:
+    def edit_container_item(self, item: Operation) -> None:
         """
         Edit operation
 
@@ -186,19 +187,19 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
 
         # (Remove, edit, add) to update statment lsit and fields
 
-        self.stat.remove_ope(operation)
+        self.stat.remove_ope(item)
 
-        ope_disp = DisplayerOperation(self.disp, operation)
+        ope_disp = DisplayerOperation(self.disp, item)
         ope_disp.edit_item()
 
-        self.stat.add_ope(operation)
+        self.stat.add_ope(item)
 
-    def browse_container_item(self, operation: Operation) -> None:
+    def browse_container_item(self, item: Operation) -> None:
         """
         Browse operation
         """
 
-        self.edit_container_item(operation)
+        self.edit_container_item(item)
 
     def create_container_item(self) -> Operation:
         """
@@ -320,7 +321,7 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
             win.addstr(win_y, win_x,
                        f"last stat : {self.disp.cont_disp_last.get_container_name()}")
         else:
-            win.addstr(win_y, win_x, f"last stat : None")
+            win.addstr(win_y, win_x, "last stat : None")
         win_y += 1
 
         win.refresh()

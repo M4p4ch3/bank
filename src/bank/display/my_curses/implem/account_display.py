@@ -4,7 +4,6 @@ display/curses/implem/account
 
 import curses
 from curses import A_BOLD
-from datetime import datetime
 from typing import (List)
 
 from bank.display.my_curses.main import (ColorPairId, WinId, DisplayerMain)
@@ -13,7 +12,6 @@ from bank.display.my_curses.implem.statement_display import DisplayerStatement
 
 from bank.internal.account import Account
 from bank.internal.statement import Statement
-from bank.utils.my_date import FMT_DATE
 
 from bank.utils.return_code import RetCode
 
@@ -43,12 +41,12 @@ class DisplayerAccount(DisplayerContainer):
 
         return self.account.stat_list
 
-    def add_container_item(self, stat: Statement) -> None:
+    def add_container_item(self, item: Statement) -> None:
         """
         Add account statement
         """
 
-        self.account.add_stat(stat)
+        self.account.add_stat(item)
 
     def display_container_info(self) -> None:
         """
@@ -77,7 +75,7 @@ class DisplayerAccount(DisplayerContainer):
 
         win.refresh()
 
-    def edit_container_item(self, stat: Statement) -> None:
+    def edit_container_item(self, item: Statement) -> None:
         """
         Edit account statement
 
@@ -85,12 +83,12 @@ class DisplayerAccount(DisplayerContainer):
             stat (Statement): Statement
         """
 
-        stat_disp = DisplayerStatement(self.disp, stat)
+        stat_disp = DisplayerStatement(self.disp, item)
         is_edited = stat_disp.edit_item()
         if is_edited:
             self.account.file_sync = False
 
-    def browse_container_item(self, stat: Statement) -> None:
+    def browse_container_item(self, item: Statement) -> None:
         """
         Browse account statement
 
@@ -98,20 +96,23 @@ class DisplayerAccount(DisplayerContainer):
             stat (Statement): Statement
         """
 
-        stat_disp = DisplayerStatement(self.disp, stat)
+        stat_disp = DisplayerStatement(self.disp, item)
         stat_disp.browse_container()
 
-    def remove_container_item_list(self, stat_list: List[Statement]) -> RetCode:
+    def remove_container_item_list(self, item_list: List[Statement],
+            force: bool = False) -> RetCode:
         """
         Remove account statement list
         """
 
-        ret = super().remove_container_item_list(stat_list)
+        _ = force
+
+        ret = super().remove_container_item_list(item_list)
         if ret == RetCode.CANCEL:
             return ret
 
         # Confirmed
-        self.account.remove_stat_list(stat_list)
+        self.account.remove_stat_list(item_list)
         return RetCode.OK
 
     def create_container_item(self) -> Statement:

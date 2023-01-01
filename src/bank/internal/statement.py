@@ -135,7 +135,7 @@ class Statement():
             return
 
         self.logger.debug("Open %s for reading", file_name)
-        with open(file_name, "r") as file:
+        with open(file_name, "r", encoding="utf8") as file:
 
             data = json.load(file)
 
@@ -161,7 +161,7 @@ class Statement():
             return
 
         self.logger.debug("Open %s for reading", file_name)
-        with open(file_name, "r") as file:
+        with open(file_name, "r", encoding="utf8") as file:
 
             reader = csv.DictReader(file)
 
@@ -203,7 +203,7 @@ class Statement():
 
         file_name: str = self.dir + "/info.json"
         self.logger.debug("Open %s for writing", file_name)
-        with open(file_name, "w") as file:
+        with open(file_name, "w", encoding="utf8") as file:
 
             data = {
                 "name" : self.name,
@@ -219,7 +219,7 @@ class Statement():
 
         file_name: str = self.dir + "/ope_list.csv"
         self.logger.debug("Open %s for writing", file_name)
-        with open(file_name, "w") as file:
+        with open(file_name, "w", encoding="utf8") as file:
 
             writer = csv.DictWriter(file, Operation.CSV_KEY_LIST, delimiter=',', quotechar='"')
 

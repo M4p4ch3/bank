@@ -16,8 +16,6 @@ class Account():
     Account
     """
 
-    # TODO update dir to parent_dir
-
     CSV_KEY_LIST = ["id", "name"]
 
     def __init__(self, parent_dir: str, name: str = "") -> None:
@@ -89,7 +87,7 @@ class Account():
             return
 
         self.logger.debug("Open %s for reading", file_name)
-        with open(file_name, "r") as file:
+        with open(file_name, "r", encoding="utf8") as file:
 
             data = json.load(file)
 
@@ -135,7 +133,7 @@ class Account():
 
         file_name: str = self.dir + "/info.json"
         self.logger.debug("Open %s for writing", file_name)
-        with open(file_name, "w") as file:
+        with open(file_name, "w", encoding="utf8") as file:
 
             data = {
                 "name" : self.name,

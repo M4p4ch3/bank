@@ -64,12 +64,12 @@ class DisplayerOperation(DisplayerItem):
 
         self.name = "OPERATION"
 
-    def set_item(self, operation: Operation):
+    def set_item(self, item: Operation):
         """
         Set operation
         """
 
-        self.operation = operation
+        self.operation = item
 
     def display_item_line(self, win: Any,
                           win_y: int, win_x: int, flag) -> None:
