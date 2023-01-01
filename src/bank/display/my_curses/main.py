@@ -29,14 +29,28 @@ class WinId(IntEnum):
     RIGHT_BOT = 3
     LAST = RIGHT_BOT
 
-class NoOverrideError(Exception):
-    """
-    Exception raised for not overriden method
-    """
+class KeyId(IntEnum):
+    """Key ID as getch ret val"""
 
-    def __init__(self, base_class: str = "", derived_class: str = "", method: str = "") -> None:
-        msg = f"{base_class}.{method} not overriden in {derived_class}"
-        super().__init__(msg)
+    CTRL_C = -1
+    CTRL_E = 5
+    BACKSPACE = 8
+    ENTER = 10
+    CTRL_P = 16
+    CTRL_R = 18
+    CTRL_S = 19
+    CTRL_V = 22
+    CTRL_X = 24
+    ESC = 27
+    SPACE = 32
+    PLUS = 43
+    MINUS = 45
+    DOWN = 258
+    UP = 259
+    DEL = 330
+    INS = 331
+    PAGE_DOWN = 338
+    PAGE_UP = 339
 
 class DisplayerMain():
     """
