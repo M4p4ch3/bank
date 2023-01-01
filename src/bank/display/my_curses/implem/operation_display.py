@@ -8,7 +8,7 @@ from typing import (Any, Tuple)
 
 from bank.display.my_curses.main import (WinId, DisplayerMain)
 from bank.display.my_curses.item_display import DisplayerItem
-from bank.display.my_curses.implem.main import (FieldLen, formart_trunc_padd)
+from bank.display.my_curses.implem.main import (FieldLen, formart_trunc_padd, format_amount)
 
 from bank.internal.operation import Operation
 
@@ -94,7 +94,7 @@ class DisplayerOperation(DisplayerItem):
         ope_line += " | "
         ope_line += formart_trunc_padd(self.operation.desc, FieldLen.LEN_DESC)
         ope_line += " | "
-        ope_line += formart_trunc_padd(str(self.operation.amount), FieldLen.LEN_AMOUNT)
+        ope_line += format_amount(self.operation.amount, FieldLen.LEN_AMOUNT)
         ope_line += " |"
 
         win.addstr(win_y, win_x, ope_line, flag)

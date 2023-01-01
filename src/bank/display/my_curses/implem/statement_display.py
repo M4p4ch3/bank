@@ -10,7 +10,7 @@ from typing import (Any, List, Tuple)
 from bank.display.my_curses.main import (ColorPairId, WinId, DisplayerMain)
 from bank.display.my_curses.item_display import DisplayerItem
 from bank.display.my_curses.container_display import DisplayerContainer
-from bank.display.my_curses.implem.main import (FieldLen, formart_trunc_padd)
+from bank.display.my_curses.implem.main import (FieldLen, formart_trunc_padd, format_amount)
 from bank.display.my_curses.implem.operation_display import DisplayerOperation
 
 from bank.internal.statement import Statement
@@ -234,29 +234,29 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
         stat_line += " | "
         stat_line += formart_trunc_padd(self.stat.name, FieldLen.LEN_NAME)
         stat_line += " | "
-        stat_line += formart_trunc_padd(str(self.stat.bal_start), FieldLen.LEN_AMOUNT)
+        stat_line += format_amount(self.stat.bal_start, FieldLen.LEN_AMOUNT)
         stat_line += " | "
-        stat_line += formart_trunc_padd(str(self.stat.bal_end), FieldLen.LEN_AMOUNT)
+        stat_line += format_amount(self.stat.bal_end, FieldLen.LEN_AMOUNT)
         stat_line += " | "
 
         win.addstr(win_y, win_x, stat_line, flag)
 
         bal_diff = round(self.stat.bal_end - self.stat.bal_start, 2)
         if bal_diff >= 0.0:
-            win.addstr(str(bal_diff).ljust(FieldLen.LEN_AMOUNT),
+            win.addstr(format_amount(bal_diff, FieldLen.LEN_AMOUNT),
                        curses.color_pair(ColorPairId.GREEN_BLACK) + flag)
         else:
-            win.addstr(str(bal_diff).ljust(FieldLen.LEN_AMOUNT),
+            win.addstr(format_amount(bal_diff, FieldLen.LEN_AMOUNT),
                        curses.color_pair(ColorPairId.RED_BLACK) + flag)
 
         win.addstr(" | ", flag)
 
         bal_err = round(self.stat.bal_start + self.stat.ope_sum - self.stat.bal_end, 2)
         if bal_err == 0.0:
-            win.addstr(str(bal_err).ljust(FieldLen.LEN_AMOUNT),
+            win.addstr(format_amount(bal_err, FieldLen.LEN_AMOUNT),
                        curses.color_pair(ColorPairId.GREEN_BLACK) + flag)
         else:
-            win.addstr(str(bal_err).ljust(FieldLen.LEN_AMOUNT),
+            win.addstr(format_amount(bal_err, FieldLen.LEN_AMOUNT),
                        curses.color_pair(ColorPairId.RED_BLACK) + flag)
 
         win.addstr(" |", flag)
