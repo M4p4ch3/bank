@@ -247,13 +247,9 @@ class DisplayerContainer():
             self.disp.cont_disp_last.save()
             self.remove_container_item_list(item_list, force=True)
 
-            # TODO to improve
             self.item_sel_list.clear()
-            # if self.item_hl in item_list:
-            #     self.item_hl = None
-            #     if len(self.disp.get_container_item_list()) > 0:
-            #         self.item_hl = self.get_container_item_list()[0]
-            self.item_hl = self.get_container_item_list()[0]
+
+            self.highlight_closest_item(item_list)
 
     def save(self) -> None:
         """
@@ -368,15 +364,6 @@ class DisplayerContainer():
         win.addstr(win_y, win_x, self.item_disp.HEADER)
         win_y += 1
 
-        # TODO merge to common case
-        if len(item_list) == 0:
-            win.addstr(win_y, win_x, self.item_disp.SEPARATOR)
-            win_y += 1
-            win.addstr(win_y, win_x, self.item_disp.SEPARATOR)
-            win_y += 1
-            win.refresh()
-            return
-
         # Item separator or missing
         if self.item_focus_idx == 0:
             win.addstr(win_y, win_x, self.item_disp.SEPARATOR)
@@ -385,6 +372,7 @@ class DisplayerContainer():
         win_y += 1
 
         # Item list
+        item_idx = 0
         for item_idx in range(self.item_focus_idx, self.item_focus_idx + item_disp_nb):
 
             if item_idx >= len(item_list):
@@ -404,12 +392,13 @@ class DisplayerContainer():
             win_y += 1
 
         # Item separator or missing
-        if item_idx == len(item_list) - 1:
+        if item_idx == 0 or item_idx == len(item_list) - 1:
             win.addstr(win_y, win_x, self.item_disp.SEPARATOR)
         else:
             win.addstr(win_y, win_x, self.item_disp.MISSING)
         win_y += 1
 
+        ope_disp_ratio = 0
         if len(item_list) != 0:
             ope_disp_ratio = item_disp_nb / len(item_list)
 
