@@ -4,23 +4,41 @@ display/curses/implem/account
 
 import curses
 from curses import A_BOLD
-from typing import (List)
+from typing import (Any, List, Tuple)
 
 from bank.display.my_curses.main import (ColorPairId, WinId, DisplayerMain)
+from bank.display.my_curses.item_display import DisplayerItem
 from bank.display.my_curses.container_display import DisplayerContainer
 from bank.display.my_curses.implem.statement_display import DisplayerStatement
+from bank.display.my_curses.implem.main import (FieldLen, formart_trunc_padd, format_amount)
 
 from bank.internal.account import Account
 from bank.internal.statement import Statement
 
 from bank.utils.return_code import RetCode
+from bank.utils.my_date import FMT_DATE
 
-class DisplayerAccount(DisplayerContainer):
+class DisplayerAccount(DisplayerItem, DisplayerContainer):
     """
     Curses account display
     """
 
-    def __init__(self, account: Account, disp: DisplayerMain) -> None:
+    # Item separator
+    SEPARATOR = "|"
+    SEPARATOR += "-" + "-".ljust(FieldLen.LEN_NAME, "-") + "-|"
+
+    # Item header
+    HEADER = "|"
+    HEADER += " " + "name".ljust(FieldLen.LEN_NAME, " ") + " |"
+
+    # Item missing
+    MISSING = "|"
+    MISSING += " " + "...".ljust(FieldLen.LEN_NAME, " ") + " |"
+
+    def __init__(self, disp: DisplayerMain, account: Account = None) -> None:
+
+        # Init self item display
+        DisplayerItem.__init__(self, disp)
 
         # Init container item display
         stat_disp = DisplayerStatement(disp)
@@ -33,6 +51,46 @@ class DisplayerAccount(DisplayerContainer):
 
         self.title = "ACCOUNT"
         self.subtitle = "STATEMENTS LIST"
+
+    def get_container_name(self) -> str:
+        """
+        Get account name
+        """
+
+        return self.account.name
+
+    def set_item(self, item: Account) -> None:
+        """
+        Set account
+        """
+
+        self.account = item
+
+    def get_item_field(self, field_idx: int) -> Tuple[str, str]:
+        """
+        Get field (name, value), identified by field index
+        """
+
+        ret = ("", "")
+        if field_idx == Account.FieldIdx.NAME:
+            ret = ("name", self.account.name)
+
+        return ret
+
+    def set_item_field(self, field_idx: int, val_str: str) -> bool:
+        """
+        Set field value, identified by field index, from string
+        """
+
+        is_edited = True
+
+        if field_idx == Account.FieldIdx.NAME:
+            self.account.set_name(val_str)
+
+        if is_edited:
+            self.account.file_sync = False
+
+        return is_edited
 
     def get_container_item_list(self) -> List[Statement]:
         """
@@ -133,6 +191,25 @@ class DisplayerAccount(DisplayerContainer):
         stat.write_dir()
 
         return stat
+
+    def display_item_line(self, win: Any,
+                          win_y: int, win_x: int, flag) -> None:
+        """
+        Display item line
+
+        Args:
+            win (Any): Window
+            win_y (int): Y in window
+            win_x (int): X in window
+            flag ([type]): Display flag
+        """
+
+        stat_line = "| "
+        stat_line += formart_trunc_padd(self.account.name, FieldLen.LEN_NAME)
+
+        win.addstr(win_y, win_x, stat_line, flag)
+
+        win.addstr(" |", flag)
 
     def save(self) -> None:
         """

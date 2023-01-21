@@ -3,6 +3,7 @@ Account
 """
 
 from datetime import datetime
+from enum import IntEnum
 import json
 import logging
 import os
@@ -17,6 +18,13 @@ class Account():
     """
 
     CSV_KEY_LIST = ["id", "name"]
+
+    class FieldIdx(IntEnum):
+        """
+        Field index
+        """
+
+        NAME = 0
 
     def __init__(self, parent_dir: str, name: str = "") -> None:
 

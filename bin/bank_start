@@ -10,15 +10,15 @@ import logging
 import os
 import signal
 
-from bank.internal import Account
-from bank.display.my_curses import (DisplayerMain, DisplayerAccount)
+from bank.internal import Wallet
+from bank.display.my_curses import (DisplayerMain, DisplayerWallet)
 
 def sig_handler_void(signum, frame):
     """void sig handler to remove ctrl c interrupt"""
     _ = signum
     _ = frame
 
-def wrap(win, account):
+def wrap(win, wallet):
     """
     Curses wrapper
     """
@@ -26,11 +26,11 @@ def wrap(win, account):
     # Init display
     disp = DisplayerMain(win)
 
-    # Init account display
-    account_disp = DisplayerAccount(account, disp)
+    # Init wallet display
+    wallet_disp = DisplayerWallet(disp, wallet)
 
-    # Browse account
-    account_disp.browse_container()
+    # Browse wallet
+    wallet_disp.browse_container()
 
 def main():
     """
@@ -48,8 +48,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("data_dir", type=str, action="store",
         default="data", help="data folder")
-    parser.add_argument("account_name", type=str, action="store",
-        default="main", help="account name")
+    parser.add_argument("wallet_name", type=str, action="store",
+        default="main", help="wallet name")
     parser.add_argument("-d", "--debug", action="store_true", help="enable debug log")
     args = parser.parse_args()
 
@@ -61,11 +61,11 @@ def main():
         logger = logging.getLogger()
         logger.setLevel(logging.DEBUG)
 
-    # Init account
-    account = Account(args.data_dir, args.account_name)
+    # Init wallet
+    wallet = Wallet(args.data_dir, args.wallet_name)
 
     # Curses wrapper
-    wrapper(wrap, account)
+    wrapper(wrap, wallet)
 
 if __name__ == "__main__":
     main()
