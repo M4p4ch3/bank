@@ -26,14 +26,20 @@ class DisplayerAccount(DisplayerItem, DisplayerContainer):
     # Item separator
     SEPARATOR = "|"
     SEPARATOR += "-" + "-".ljust(FieldLen.LEN_NAME, "-") + "-|"
+    SEPARATOR += "-" + "-".ljust(FieldLen.LEN_DATE, "-") + "-|"
+    SEPARATOR += "-" + "-".ljust(FieldLen.LEN_AMOUNT, "-") + "-|"
 
     # Item header
     HEADER = "|"
     HEADER += " " + "name".ljust(FieldLen.LEN_NAME, " ") + " |"
+    HEADER += " " + "last updat".ljust(FieldLen.LEN_DATE, " ") + " |"
+    HEADER += " " + "balance".ljust(FieldLen.LEN_AMOUNT, " ") + " |"
 
     # Item missing
     MISSING = "|"
     MISSING += " " + "...".ljust(FieldLen.LEN_NAME, " ") + " |"
+    MISSING += " " + "...".ljust(FieldLen.LEN_DATE, " ") + " |"
+    MISSING += " " + "...".ljust(FieldLen.LEN_AMOUNT, " ") + " |"
 
     def __init__(self, disp: DisplayerMain, account: Account = None) -> None:
 
@@ -119,6 +125,9 @@ class DisplayerAccount(DisplayerItem, DisplayerContainer):
         win.addstr(0, 2, " INFO ", A_BOLD)
 
         (win_y, win_x) = (2, 2)
+
+        win.addstr(win_y, win_x, f"balance : {self.account.get_bal():.2f}")
+        win_y += 1
 
         win.addstr(win_y, win_x, "status : ")
         if self.account.file_sync:
@@ -206,6 +215,10 @@ class DisplayerAccount(DisplayerItem, DisplayerContainer):
 
         stat_line = "| "
         stat_line += formart_trunc_padd(self.account.name, FieldLen.LEN_NAME)
+        stat_line += " | "
+        stat_line += formart_trunc_padd(self.account.get_last_stat_date().strftime(FMT_DATE), FieldLen.LEN_DATE)
+        stat_line += " | "
+        stat_line += format_amount(self.account.get_bal(), FieldLen.LEN_AMOUNT)
 
         win.addstr(win_y, win_x, stat_line, flag)
 

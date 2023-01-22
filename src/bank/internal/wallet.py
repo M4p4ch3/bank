@@ -65,6 +65,17 @@ class Wallet():
 
         return None
 
+    def get_bal(self) -> float:
+        """Get balance
+        Sum of account balance"""
+
+        balance: float = 0
+
+        for account in self.account_list:
+            balance += account.get_bal()
+
+        return balance
+
     def set_name(self, name: str) -> None:
         """
         Set name

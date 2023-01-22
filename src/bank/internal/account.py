@@ -74,6 +74,31 @@ class Account():
 
         return None
 
+    def get_bal(self) -> float:
+        """Get actual balance
+        End balance of last statement"""
+
+        date_max: datetime = None
+        stat_last: Statement = None
+
+        for stat in self.stat_list:
+            if not date_max or stat.date > date_max:
+                date_max = stat.date
+                stat_last = stat
+
+        return stat_last.bal_end
+
+    def get_last_stat_date(self) -> datetime:
+        """Get last statement date"""
+
+        date_max: datetime = None
+
+        for stat in self.stat_list:
+            if not date_max or stat.date > date_max:
+                date_max = stat.date
+
+        return date_max
+
     def set_name(self, name: str) -> None:
         """
         Set name

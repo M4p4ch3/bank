@@ -62,6 +62,9 @@ class DisplayerWallet(DisplayerContainer):
 
         (win_y, win_x) = (2, 2)
 
+        win.addstr(win_y, win_x, f"balance : {self.wallet.get_bal():.2f}")
+        win_y += 1
+
         win.addstr(win_y, win_x, "status : ")
         if self.wallet.file_sync:
             win.addstr("Saved", curses.color_pair(ColorPairId.GREEN_BLACK))
