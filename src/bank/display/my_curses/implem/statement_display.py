@@ -3,14 +3,14 @@ display/curses/implem/statement
 """
 
 import curses
-from curses import *
+from curses import A_BOLD
 from datetime import datetime
-from typing import (TYPE_CHECKING, Any, List, Tuple)
+from typing import (Any, List, Tuple)
 
 from bank.display.my_curses.main import (ColorPairId, WinId, DisplayerMain)
 from bank.display.my_curses.item_display import DisplayerItem
 from bank.display.my_curses.container_display import DisplayerContainer
-from bank.display.my_curses.implem.main import (FieldLen, formart_trunc_padd)
+from bank.display.my_curses.implem.main import (FieldLen, formart_trunc_padd, format_amount)
 from bank.display.my_curses.implem.operation_display import DisplayerOperation
 
 from bank.internal.statement import Statement
@@ -18,13 +18,6 @@ from bank.internal.operation import Operation
 
 from bank.utils.my_date import FMT_DATE
 from bank.utils.return_code import RetCode
-
-if TYPE_CHECKING:
-    from _curses import _CursesWindow
-    Window = _CursesWindow
-else:
-    from typing import Any
-    Window = Any
 
 class DisplayerStatement(DisplayerItem, DisplayerContainer):
     """
@@ -56,6 +49,7 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
     MISSING += " " + "...".ljust(FieldLen.LEN_AMOUNT, " ") + " |"
     MISSING += " " + "...".ljust(FieldLen.LEN_AMOUNT, " ") + " |"
     MISSING += " " + "...".ljust(FieldLen.LEN_AMOUNT, " ") + " |"
+    MISSING += " " + "...".ljust(FieldLen.LEN_AMOUNT, " ") + " |"
 
     def __init__(self, disp: DisplayerMain, stat: Statement = None) -> None:
 
@@ -63,10 +57,10 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
         DisplayerItem.__init__(self, disp)
 
         # Init container item display
-        op_disp = DisplayerOperation(disp)
+        ope_disp = DisplayerOperation(disp)
 
         # Init container display
-        DisplayerContainer.__init__(self, disp, op_disp)
+        DisplayerContainer.__init__(self, disp, ope_disp)
 
         # self.item_disp: DisplayerOperation = DisplayerOperation(None, disp)
 
@@ -78,12 +72,19 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
         self.title = "STATEMENT"
         self.subtitle = "OPERATIONS LIST"
 
-    def set_item(self, stat: Statement) -> None:
+    def get_container_name(self) -> str:
+        """
+        Get statement name
+        """
+
+        return self.stat.name
+
+    def set_item(self, item: Statement) -> None:
         """
         Set statement
         """
 
-        self.stat = stat
+        self.stat = item
 
     def get_item_field(self, field_idx: int) -> Tuple[str, str]:
         """
@@ -93,6 +94,8 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
         ret = ("", "")
         if field_idx == Statement.FieldIdx.DATE:
             ret = ("date", self.stat.date.strftime(FMT_DATE))
+        elif field_idx == Statement.FieldIdx.NAME:
+            ret = ("name", self.stat.name)
         elif field_idx == Statement.FieldIdx.BAL_START:
             ret = ("start balance", str(self.stat.bal_start))
         elif field_idx == Statement.FieldIdx.BAL_END:
@@ -112,6 +115,8 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
                 self.stat.date = datetime.strptime(val_str, FMT_DATE)
             except ValueError:
                 is_edited = False
+        elif field_idx == Statement.FieldIdx.NAME:
+            self.stat.set_name(val_str)
         elif field_idx == Statement.FieldIdx.BAL_START:
             try:
                 self.stat.bal_start = float(val_str)
@@ -123,8 +128,8 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
             except ValueError:
                 is_edited = False
 
-        # if is_edited:
-        #     self.stat.is_saved = False
+        if is_edited:
+            self.stat.file_sync = False
 
         return is_edited
 
@@ -133,29 +138,37 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
         Get statement operation list
         """
 
-        return self.stat.op_list
+        return self.stat.ope_list
 
-    def add_container_item(self, op: Operation) -> None:
+    def add_container_item(self, item: Operation) -> None:
         """
         Add statement operation
         """
 
-        self.stat.add_op(op)
+        self.stat.add_ope(item)
 
-    def remove_container_item_list(self, op_list: List[Operation]) -> RetCode:
+    def add_container_item_list(self, item_list: List[Operation]) -> None:
+        """
+        Add statement operation list
+        """
+
+        self.stat.add_ope_list(item_list)
+
+    def remove_container_item_list(self, item_list: List[Operation],
+            force: bool = False) -> RetCode:
         """
         Remove statement operation list
         """
 
-        ret = super().remove_container_item_list(op_list)
+        ret = super().remove_container_item_list(item_list, force)
         if ret == RetCode.CANCEL:
             return ret
 
         # Confirmed
-        self.stat.remove_op_list(op_list)
+        self.stat.remove_ope_list(item_list)
         return RetCode.OK
 
-    def remove_container_item(self, operation: Operation) -> None:
+    def remove_container_item(self, item: Operation) -> None:
         """
         Remove statement operation
 
@@ -163,9 +176,9 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
             operation (Operation): operation
         """
 
-        self.stat.remove_op(operation)
+        self.stat.remove_ope(item)
 
-    def edit_container_item(self, operation: Operation) -> None:
+    def edit_container_item(self, item: Operation) -> None:
         """
         Edit operation
 
@@ -175,19 +188,19 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
 
         # (Remove, edit, add) to update statment lsit and fields
 
-        self.stat.remove_op(operation)
+        self.stat.remove_ope(item)
 
-        op_disp = DisplayerOperation(self.disp, operation)
-        op_disp.edit_item()
+        ope_disp = DisplayerOperation(self.disp, item)
+        ope_disp.edit_item()
 
-        self.stat.add_op(operation)
+        self.stat.add_ope(item)
 
-    def browse_container_item(self, operation: Operation) -> None:
+    def browse_container_item(self, item: Operation) -> None:
         """
         Browse operation
         """
 
-        self.edit_container_item(operation)
+        self.edit_container_item(item)
 
     def create_container_item(self) -> Operation:
         """
@@ -198,20 +211,20 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
         operation: Operation = Operation(datetime.now(), "", "", "", "", 0.0)
 
         # Init operation display
-        op_disp = DisplayerOperation(self.disp, operation)
+        ope_disp = DisplayerOperation(self.disp, operation)
 
         # Set operation fields
-        op_disp.edit_item(force_iterate=True)
+        ope_disp.edit_item(force_iterate=True)
 
         return operation
 
-    def display_item_line(self, win: Window,
+    def display_item_line(self, win: Any,
                           win_y: int, win_x: int, flag) -> None:
         """
         Display item line
 
         Args:
-            win (Window): Window
+            win (Any): Window
             win_y (int): Y in window
             win_x (int): X in window
             flag ([type]): Display flag
@@ -222,29 +235,29 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
         stat_line += " | "
         stat_line += formart_trunc_padd(self.stat.name, FieldLen.LEN_NAME)
         stat_line += " | "
-        stat_line += formart_trunc_padd(str(self.stat.bal_start), FieldLen.LEN_AMOUNT)
+        stat_line += format_amount(self.stat.bal_start, FieldLen.LEN_AMOUNT)
         stat_line += " | "
-        stat_line += formart_trunc_padd(str(self.stat.bal_end), FieldLen.LEN_AMOUNT)
+        stat_line += format_amount(self.stat.bal_end, FieldLen.LEN_AMOUNT)
         stat_line += " | "
 
         win.addstr(win_y, win_x, stat_line, flag)
 
         bal_diff = round(self.stat.bal_end - self.stat.bal_start, 2)
         if bal_diff >= 0.0:
-            win.addstr(str(bal_diff).ljust(FieldLen.LEN_AMOUNT),
+            win.addstr(format_amount(bal_diff, FieldLen.LEN_AMOUNT),
                        curses.color_pair(ColorPairId.GREEN_BLACK) + flag)
         else:
-            win.addstr(str(bal_diff).ljust(FieldLen.LEN_AMOUNT),
+            win.addstr(format_amount(bal_diff, FieldLen.LEN_AMOUNT),
                        curses.color_pair(ColorPairId.RED_BLACK) + flag)
 
         win.addstr(" | ", flag)
 
-        bal_err = round(self.stat.bal_start + self.stat.op_sum - self.stat.bal_end, 2)
+        bal_err = round(self.stat.bal_start + self.stat.ope_sum - self.stat.bal_end, 2)
         if bal_err == 0.0:
-            win.addstr(str(bal_err).ljust(FieldLen.LEN_AMOUNT),
+            win.addstr(format_amount(bal_err, FieldLen.LEN_AMOUNT),
                        curses.color_pair(ColorPairId.GREEN_BLACK) + flag)
         else:
-            win.addstr(str(bal_err).ljust(FieldLen.LEN_AMOUNT),
+            win.addstr(format_amount(bal_err, FieldLen.LEN_AMOUNT),
                        curses.color_pair(ColorPairId.RED_BLACK) + flag)
 
         win.addstr(" |", flag)
@@ -265,6 +278,9 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
         win.addstr(win_y, win_x, f"date : {self.stat.date.strftime(FMT_DATE)}")
         win_y += 1
 
+        win.addstr(win_y, win_x, f"name : {self.stat.name}")
+        win_y += 1
+
         win.addstr(win_y, win_x, f"balance start : {self.stat.bal_start}")
         win_y += 1
 
@@ -280,10 +296,10 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
         win_y += 1
 
         win.addstr(win_y, win_x,
-                   f"actual end : {(self.stat.bal_start + self.stat.op_sum):.2f}")
+                   f"actual end : {(self.stat.bal_start + self.stat.ope_sum):.2f}")
         win_y += 1
 
-        bal_err = round(self.stat.bal_start + self.stat.op_sum - self.stat.bal_end, 2)
+        bal_err = round(self.stat.bal_start + self.stat.ope_sum - self.stat.bal_end, 2)
         win.addstr(win_y, win_x, "balance error : ")
         if bal_err == 0.0:
             win.addstr(str(bal_err), curses.color_pair(ColorPairId.GREEN_BLACK))
@@ -292,7 +308,7 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
         win_y += 1
 
         win.addstr(win_y, win_x, "status : ")
-        if self.stat.is_saved:
+        if self.stat.file_sync:
             win.addstr("Saved", curses.color_pair(ColorPairId.GREEN_BLACK))
         else:
             win.addstr("Unsaved", curses.color_pair(ColorPairId.RED_BLACK))
@@ -302,6 +318,13 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
                    f"clipboard : {self.disp.item_list_clipboard.get_len()} operations")
         win_y += 1
 
+        if self.disp.cont_disp_last is not None:
+            win.addstr(win_y, win_x,
+                       f"last stat : {self.disp.cont_disp_last.get_container_name()}")
+        else:
+            win.addstr(win_y, win_x, "last stat : None")
+        win_y += 1
+
         win.refresh()
 
     def save(self) -> None:
@@ -309,7 +332,7 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
         Stave statement
         """
 
-        self.stat.export_file()
+        self.stat.write_dir()
 
     def exit(self) -> RetCode:
         """
@@ -317,19 +340,20 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
         """
 
         # If saved
-        if self.stat.is_saved:
+        if self.stat.file_sync:
             # Exit
             return RetCode.OK
 
         # Unsaved changes
 
-        ret_super = super().exit()
+        ret = super().exit()
 
-        ret = RetCode.CANCEL
-        if ret_super == RetCode.EXIT_SAVE:
-            self.stat.export_file()
-            ret = RetCode.OK
-        elif ret_super == RetCode.EXIT_NO_SAVE:
-            ret = RetCode.OK
+        if ret == RetCode.EXIT_SAVE:
+            self.stat.write_dir()
+            return RetCode.OK
 
-        return ret
+        if ret == RetCode.EXIT_NO_SAVE:
+            self.stat.read_dir()
+            return RetCode.OK
+
+        return RetCode.CANCEL

@@ -3,17 +3,10 @@ display/curses/item
 """
 
 import curses
-from curses import *
-from typing import (TYPE_CHECKING, Any, Tuple)
+from curses import (A_NORMAL, A_BOLD, A_STANDOUT)
+from typing import (Any, Tuple)
 
-from bank.display.my_curses.main import (NoOverrideError, WinId, DisplayerMain)
-
-if TYPE_CHECKING:
-    from _curses import _CursesWindow
-    Window = _CursesWindow
-else:
-    from typing import Any
-    Window = Any
+from bank.display.my_curses.main import (WinId, DisplayerMain)
 
 class DisplayerItem():
     """
@@ -33,47 +26,22 @@ class DisplayerItem():
 
         self.name = ""
 
-    def raise_no_override(self, method: str = "") -> None:
-        """
-        Raise method not overriden exception
-
-        Args:
-            method_name (str, optional): Method name. Defaults to "".
-        """
-
-        raise NoOverrideError(
-            base_class="DisplayerItem",
-            derived_class=type(self).__name__,
-            method=method)
-
     def set_item(self, item: Any):
-        """
-        Set item
-        """
-
-        self.raise_no_override("set_item")
+        """Set item"""
         _ = item
 
     def get_item_field(self, field_idx: int) -> Tuple[str, str]:
-        """
-        Get item field
-        """
-
-        self.raise_no_override("get_item_field")
+        """Get item field"""
         _ = field_idx
         return ("", "")
 
     def set_item_field(self, field_idx: int, val_str: str) -> bool:
-        """
-        Set item field
-        """
-
-        self.raise_no_override("set_item_field")
+        """Set item field"""
         _ = field_idx
         _ = val_str
         return False
 
-    def display_item_win(self, win: Window, field_hl_idx: int = 0) -> None:
+    def display_item_win(self, win: Any, field_hl_idx: int = 0) -> None:
         """
         Display item in window
         """
@@ -96,7 +64,7 @@ class DisplayerItem():
 
         # win.refresh()
 
-    def edit_item_field(self, win: Window, field_idx: int) -> bool:
+    def edit_item_field(self, win: Any, field_idx: int) -> bool:
         """
         Edit item field
         Print prompt to edit item field
@@ -119,7 +87,13 @@ class DisplayerItem():
         # Get field value input
         win.keypad(False)
         curses.echo()
-        val_str = win.getstr().decode(encoding="utf-8")
+
+        val_str = ""
+        try:
+            val_str = win.getstr().decode(encoding="utf-8")
+        except UnicodeDecodeError:
+            pass
+
         win.keypad(True)
         curses.noecho()
 

@@ -2,25 +2,17 @@
 display/curses/implem/operation
 """
 
-import curses
-from curses import *
+# import curses
 from datetime import datetime
-from typing import (TYPE_CHECKING, Any, Tuple)
+from typing import (Any, Tuple)
 
 from bank.display.my_curses.main import (WinId, DisplayerMain)
 from bank.display.my_curses.item_display import DisplayerItem
-from bank.display.my_curses.implem.main import (FieldLen, formart_trunc_padd)
+from bank.display.my_curses.implem.main import (FieldLen, formart_trunc_padd, format_amount)
 
 from bank.internal.operation import Operation
 
 from bank.utils.my_date import FMT_DATE
-
-if TYPE_CHECKING:
-    from _curses import _CursesWindow
-    Window = _CursesWindow
-else:
-    from typing import Any
-    Window = Any
 
 class DisplayerOperation(DisplayerItem):
     """
@@ -66,46 +58,46 @@ class DisplayerOperation(DisplayerItem):
         self.win = disp.win_list[WinId.RIGHT_BOT]
 
         # Index of operation highlighted field
-        self.op_field_hl_idx = 0
+        self.ope_field_hl_idx = 0
 
         self.field_nb = Operation.FieldIdx.LAST + 1
 
         self.name = "OPERATION"
 
-    def set_item(self, operation: Operation):
+    def set_item(self, item: Operation):
         """
         Set operation
         """
 
-        self.operation = operation
+        self.operation = item
 
-    def display_item_line(self, win: Window,
+    def display_item_line(self, win: Any,
                           win_y: int, win_x: int, flag) -> None:
         """
         Display item line
 
         Args:
-            win (Window): Window
+            win (Any): Window
             win_y (int): Y in window
             win_x (int): X in window
             flag ([type]): Display flag
         """
 
-        op_line = "| "
-        op_line += formart_trunc_padd(self.operation.date.strftime(FMT_DATE), FieldLen.LEN_DATE)
-        op_line += " | "
-        op_line += formart_trunc_padd(self.operation.mode, FieldLen.LEN_MODE)
-        op_line += " | "
-        op_line += formart_trunc_padd(self.operation.tier, FieldLen.LEN_TIER)
-        op_line += " | "
-        op_line += formart_trunc_padd(self.operation.cat, FieldLen.LEN_CAT)
-        op_line += " | "
-        op_line += formart_trunc_padd(self.operation.desc, FieldLen.LEN_DESC)
-        op_line += " | "
-        op_line += formart_trunc_padd(str(self.operation.amount), FieldLen.LEN_AMOUNT)
-        op_line += " |"
+        ope_line = "| "
+        ope_line += formart_trunc_padd(self.operation.date.strftime(FMT_DATE), FieldLen.LEN_DATE)
+        ope_line += " | "
+        ope_line += formart_trunc_padd(self.operation.mode, FieldLen.LEN_MODE)
+        ope_line += " | "
+        ope_line += formart_trunc_padd(self.operation.tier, FieldLen.LEN_TIER)
+        ope_line += " | "
+        ope_line += formart_trunc_padd(self.operation.cat, FieldLen.LEN_CAT)
+        ope_line += " | "
+        ope_line += formart_trunc_padd(self.operation.desc, FieldLen.LEN_DESC)
+        ope_line += " | "
+        ope_line += format_amount(self.operation.amount, FieldLen.LEN_AMOUNT)
+        ope_line += " |"
 
-        win.addstr(win_y, win_x, op_line, flag)
+        win.addstr(win_y, win_x, ope_line, flag)
 
     def get_item_field(self, field_idx) -> Tuple[str, str]:
         """
@@ -178,7 +170,7 @@ class DisplayerOperation(DisplayerItem):
 
     #         # Set display flag for highlighted field
     #         disp_flag = A_NORMAL
-    #         if field_idx == self.op_field_hl_idx:
+    #         if field_idx == self.ope_field_hl_idx:
     #             disp_flag = A_STANDOUT
 
     #         # Display field

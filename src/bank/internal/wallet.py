@@ -1,40 +1,31 @@
 """
-Account
+Wallet, list of accounts
 """
 
-from datetime import datetime
-from enum import IntEnum
 import json
 import logging
 import os
 import shutil
 from typing import List
 
-from bank.internal.statement import Statement
+from bank.internal.account import Account
 
-class Account():
+class Wallet():
     """
-    Account
+    Wallet, list of accounts
     """
 
     CSV_KEY_LIST = ["id", "name"]
 
-    class FieldIdx(IntEnum):
-        """
-        Field index
-        """
-
-        NAME = 0
-
     def __init__(self, parent_dir: str, name: str = "") -> None:
 
-        self.logger = logging.getLogger("Account")
+        self.logger = logging.getLogger("Wallet")
 
         self.parent_dir: str = parent_dir
         self.name: str = name
 
-        self.dir: str = self.parent_dir + "/account_" + self.name
-        self.stat_list: List[Statement] = []
+        self.dir: str = self.parent_dir + "/wallet_" + self.name
+        self.account_list: List[Account] = []
         self.file_sync: bool = True
 
         self.logger.debug("parent_dir = %s", self.parent_dir)
@@ -54,8 +45,8 @@ class Account():
             indent_str += "    "
 
         ret = ""
-        ret += f"{indent_str}statements : [\n"
-        for stat in self.stat_list:
+        ret += f"{indent_str}accounts : [\n"
+        for stat in self.account_list:
             ret += f"{indent_str}    {{\n"
             ret += stat.get_str(indent + 2) + "\n"
             ret += f"{indent_str}    }}\n"
@@ -63,44 +54,27 @@ class Account():
 
         return ret
 
-    def get_stat(self, date: datetime) -> Statement:
+    def get_account(self, name: str) -> Account:
         """
         Get statement by date
         """
 
-        for stat in self.stat_list:
-            if stat.date == date:
-                return stat
+        for account in self.account_list:
+            if account.name == name:
+                return account
 
         return None
 
     def get_bal(self) -> float:
-        """Get actual balance
-        End balance of last statement"""
+        """Get balance
+        Sum of account balance"""
 
-        date_max: datetime = None
-        stat_last: Statement = None
+        balance: float = 0
 
-        for stat in self.stat_list:
-            if not date_max or stat.date > date_max:
-                date_max = stat.date
-                stat_last = stat
+        for account in self.account_list:
+            balance += account.get_bal()
 
-        if stat_last is None:
-            return 0.0
-
-        return stat_last.bal_end
-
-    def get_last_stat_date(self) -> datetime:
-        """Get last statement date"""
-
-        date_max: datetime = None
-
-        for stat in self.stat_list:
-            if not date_max or stat.date > date_max:
-                date_max = stat.date
-
-        return date_max
+        return balance
 
     def set_name(self, name: str) -> None:
         """
@@ -112,7 +86,7 @@ class Account():
         """
 
         self.name = name
-        self.dir: str = self.parent_dir + "/account_" + self.name
+        self.dir: str = self.parent_dir + "/wallet_" + self.name
 
     def _read_info(self) -> None:
 
@@ -131,20 +105,20 @@ class Account():
                 self.name = data["name"]
                 self.logger.info("name = %s", self.name)
 
-    def _read_stat_list(self) -> None:
+    def _read_account_list(self) -> None:
 
         self.logger.debug("List dir %s", self.dir)
         for item in os.listdir(self.dir):
 
-            if os.path.isdir(self.dir + "/" + item) and "stat_" in item:
-                stat_name = item[len("stat_"):]
-                self.logger.debug("Found statement %s", stat_name)
+            if os.path.isdir(self.dir + "/" + item) and "account_" in item:
+                account_name = item[len("account_"):]
+                self.logger.debug("Found account %s", account_name)
 
-                self.logger.debug("Init statement %s", stat_name)
-                stat = Statement(self.dir, stat_name)
-                self.logger.debug("Statement inited : %s", stat)
+                self.logger.debug("Init account %s", account_name)
+                stat = Account(self.dir, account_name)
+                self.logger.debug("Account inited : %s", stat)
 
-                self.stat_list.append(stat)
+                self.account_list.append(stat)
 
     def read_dir(self) -> None:
         """
@@ -158,9 +132,9 @@ class Account():
         self.logger.debug("Read info")
         self._read_info()
 
-        self.stat_list.clear()
-        self.logger.debug("Read statements list")
-        self._read_stat_list()
+        self.account_list.clear()
+        self.logger.debug("Read account list")
+        self._read_account_list()
 
         self.logger.debug("File sync")
         self.file_sync = True
@@ -178,32 +152,32 @@ class Account():
             self.logger.debug("Dump JSON to %s", file_name)
             json.dump(data, file)
 
-    def _write_stat_list(self) -> None:
+    def _write_account_list(self) -> None:
 
         self.logger.debug("List dir %s", self.dir)
         for item in os.listdir(self.dir):
 
-            if os.path.isdir(self.dir + "/" + item) and "stat_" in item:
-                stat_name = item[len("stat_"):]
-                self.logger.debug("Found statement %s", stat_name)
+            if os.path.isdir(self.dir + "/" + item) and "account_" in item:
+                account_name = item[len("account_"):]
+                self.logger.debug("Found account %s", account_name)
 
-                # Should stat dir be removed ?
-                remove_stat_dir: bool = True
+                # Should account dir be removed ?
+                remove_account_dir: bool = True
 
-                for stat in self.stat_list:
-                    if stat.name == stat_name:
+                for account in self.account_list:
+                    if account.name == account_name:
                         # Stat still in list, dont remove
-                        remove_stat_dir = False
+                        remove_account_dir = False
                         break
 
-                if remove_stat_dir:
+                if remove_account_dir:
                     # Stat dir not in list anymore, remove
                     self.logger.debug("Remove dir %s", item)
                     shutil.rmtree(self.dir + "/" + item)
 
-        for stat in self.stat_list:
-            self.logger.debug("Write statement %s to folder", stat.name)
-            stat.write_dir()
+        for account in self.account_list:
+            self.logger.debug("Write account %s to folder", account.name)
+            account.write_dir()
 
     def write_dir(self) -> None:
         """
@@ -217,33 +191,33 @@ class Account():
         self.logger.debug("Write info")
         self._write_info()
 
-        self.logger.debug("Write statements list")
-        self._write_stat_list()
+        self.logger.debug("Write accounts list")
+        self._write_account_list()
 
         self.logger.debug("File sync")
         self.file_sync = True
 
-    def add_stat(self, stat: Statement) -> None:
+    def add_account(self, account: Account) -> None:
         """
-        Add statement
+        Add accounts
         """
 
         idx = 0
-        while idx < len(self.stat_list) and stat.date > self.stat_list[idx].date:
+        while idx < len(self.account_list):
             idx = idx + 1
 
-        self.stat_list.insert(idx, stat)
+        self.account_list.insert(idx, account)
 
         self.file_sync = False
 
-    def remove_stat(self, stat: Statement) -> None:
+    def remove_stat(self, account: Account) -> None:
         """
-        Remove statement
+        Remove account
         """
 
-        if stat not in self.stat_list:
+        if account not in self.account_list:
             return
 
-        self.stat_list.remove(stat)
+        self.account_list.remove(account)
 
         self.file_sync = False

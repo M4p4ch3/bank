@@ -3,18 +3,12 @@ display/curses/main
 """
 
 import curses
-from curses import *
+from curses import (A_NORMAL, A_BOLD, A_STANDOUT)
 from enum import IntEnum
-from typing import (TYPE_CHECKING, Any, List)
+from typing import (Any, List)
 
 from bank.utils.clipboard import Clipboard
 
-if TYPE_CHECKING:
-    from _curses import _CursesWindow
-    Window = _CursesWindow
-else:
-    from typing import Any
-    Window = Any
 
 class ColorPairId(IntEnum):
     """
@@ -35,14 +29,28 @@ class WinId(IntEnum):
     RIGHT_BOT = 3
     LAST = RIGHT_BOT
 
-class NoOverrideError(Exception):
-    """
-    Exception raised for not overriden method
-    """
+class KeyId(IntEnum):
+    """Key ID as getch ret val"""
 
-    def __init__(self, base_class: str = "", derived_class: str = "", method: str = "") -> None:
-        msg = f"{base_class}.{method} not overriden in {derived_class}"
-        super().__init__(msg)
+    CTRL_C = -1
+    CTRL_E = 5
+    BACKSPACE = 8
+    ENTER = 10
+    CTRL_P = 16
+    CTRL_R = 18
+    CTRL_S = 19
+    CTRL_V = 22
+    CTRL_X = 24
+    ESC = 27
+    SPACE = 32
+    PLUS = 43
+    MINUS = 45
+    DOWN = 258
+    UP = 259
+    DEL = 330
+    INS = 331
+    PAGE_DOWN = 338
+    PAGE_UP = 339
 
 class DisplayerMain():
     """
@@ -54,13 +62,16 @@ class DisplayerMain():
     BORDER_H = 1
     BORDER_W = BORDER_H
 
-    def __init__(self, win_main: Window) -> None:
+    def __init__(self, win_main: Any) -> None:
 
         # Windows list
-        self.win_list: List[Window] = [None] * (WinId.LAST + 1)
+        self.win_list: List[Any] = [None] * (WinId.LAST + 1)
 
         # Item list clipboard
         self.item_list_clipboard: Clipboard = Clipboard()
+
+        # Last browsed container displayer
+        self.cont_disp_last: Any = None
 
         # Main window
         (win_main_h, win_main_w) = win_main.getmaxyx()
@@ -136,6 +147,7 @@ class DisplayerMain():
         win.border()
         win.addstr(0, 2, f" {name} ", A_BOLD)
         win.addstr(2, 2, msg)
+        win.keypad(1)
 
         while True:
 
@@ -150,27 +162,30 @@ class DisplayerMain():
                 win.addstr(win_y, win_x, choice, disp_flag)
                 win_y += 1
 
-            # Get key
-            key = win.getkey()
+            # key = win.getkey()
+            key = win.getch()
+            win.addstr(0, 0, f"\"{key}\"")
+            win.refresh()
 
             # Highlight previous field
-            if key == "KEY_UP":
+            if key in ["KEY_UP", 259]:
                 choice_hl_idx -= 1
                 if choice_hl_idx < 0:
                     choice_hl_idx = 0
 
             # Highlight next field
-            elif key == "KEY_DOWN":
+            elif key in ["KEY_DOWN", 258]:
                 choice_hl_idx += 1
                 if choice_hl_idx >= len(choice_list):
                     choice_hl_idx = len(choice_list) - 1
 
             # Select highlighted choice
-            elif key == "\n":
+            elif key in [10]:
                 break
 
             # Exit
-            elif key == '\x1b':
+            # esc, backspace
+            elif key in [27, 8]:
                 choice_hl_idx = -1
                 break
 

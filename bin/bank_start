@@ -1,14 +1,24 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
+"""
+Bank start script
+"""
+
+import argparse
 from curses import wrapper
 import logging
-import sys
+import os
+import signal
 
-from bank.internal import Account
-from bank.display.my_curses import (DisplayerMain, DisplayerAccount)
-from bank.utils import RetCode
+from bank.internal import Wallet
+from bank.display.my_curses import (DisplayerMain, DisplayerWallet)
 
-def wrap(win):
+def sig_handler_void(signum, frame):
+    """void sig handler to remove ctrl c interrupt"""
+    _ = signum
+    _ = frame
+
+def wrap(win, wallet):
     """
     Curses wrapper
     """
@@ -16,25 +26,46 @@ def wrap(win):
     # Init display
     disp = DisplayerMain(win)
 
-    # Init account display
-    account_disp = DisplayerAccount(account, disp)
+    # Init wallet display
+    wallet_disp = DisplayerWallet(disp, wallet)
 
-    # Browse account
-    account_disp.browse_container()
+    # Browse wallet
+    wallet_disp.browse_container()
 
-LOG_FMT = "[%(levelname)s][%(name)s] %(filename)s:%(funcName)s:%(lineno)d %(message)s"
-logging.basicConfig(format=LOG_FMT)
+def main():
+    """
+    main
+    """
 
-logger = logging.getLogger("bank_start")
+    # Remove exit signals on ctrl (c, z)
+    signal.signal(signal.SIGINT, sig_handler_void)
+    signal.signal(signal.SIGTSTP, sig_handler_void)
 
-# Init account
-account = Account("data", 1, "current")
+    # Set escape key press delay to 25 ms
+    os.environ.setdefault('ESCDELAY', '25')
 
-# Import account file
-ret = account.import_file()
-if ret != RetCode.OK:
-    logger.error("account.import_file FAILED")
-    sys.exit(RetCode.ERROR)
+    # Parse arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument("data_dir", type=str, action="store",
+        default="data", help="data folder")
+    parser.add_argument("wallet_name", type=str, action="store",
+        default="main", help="wallet name")
+    parser.add_argument("-d", "--debug", action="store_true", help="enable debug log")
+    args = parser.parse_args()
 
-# Curses wrapper
-wrapper(wrap)
+    # Setup logging
+    log_fmt = "[%(levelname)s][%(name)s] %(filename)s:%(funcName)s:%(lineno)d %(message)s"
+    logging.basicConfig(format=log_fmt, level=logging.INFO)
+    if args.debug:
+        # Set root logger (whole logging) level to debug
+        logger = logging.getLogger()
+        logger.setLevel(logging.DEBUG)
+
+    # Init wallet
+    wallet = Wallet(args.data_dir, args.wallet_name)
+
+    # Curses wrapper
+    wrapper(wrap, wallet)
+
+if __name__ == "__main__":
+    main()
