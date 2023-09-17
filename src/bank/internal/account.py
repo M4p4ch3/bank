@@ -7,22 +7,28 @@ from datetime import datetime
 import logging
 from typing import List
 
-from .statement import Statement
-from .utils.return_code import RetCode
-from .utils.my_date import FMT_DATE
+from bank.internal.statement import Statement
+from bank.utils.return_code import RetCode
+from bank.utils.my_date import FMT_DATE
 
 class Account():
     """
     Account
     """
 
-    def __init__(self) -> None:
+    CSV_KEY_LIST = ["id", "name"]
+
+    def __init__(self, parent_dir: str, identifier: int, name: str) -> None:
 
         self.logger = logging.getLogger("Account")
 
-        self.stat_list: List[Statement] = []
+        self.identifier = identifier
+        self.name = name
 
-        self.file_path = "./data/statements.csv"
+        self.dir = f"{parent_dir}/account_{self.identifier:03}"
+        self.stat_list_file_name = f"{self.dir}/statement_list.csv"
+
+        self.stat_list: List[Statement] = []
 
         self.is_saved: bool = True
 
@@ -58,30 +64,38 @@ class Account():
 
     def import_file(self) -> RetCode:
         """
-        Import statements from file
+        Import statement list from file
         """
 
         try:
-            # Open statements CSV file
-            file = open(self.file_path, "r", encoding="utf8")
+            # Open statement list CSV file
+            file = open(self.stat_list_file_name, "r", encoding="utf8")
         except FileNotFoundError:
-            self.logger.error("import_file : Open %s file FAILED", self.file_path)
+            self.logger.error("open %s FAILED", self.stat_list_file_name)
             return RetCode.ERROR
 
-        file_csv = csv.reader(file)
+        file_csv = csv.DictReader(file)
 
-        # For each statement line
-        for stat_line in file_csv:
+        if file_csv.fieldnames != Statement.CSV_KEY_LIST:
+            self.logger.error("%s wrong CSV format", self.stat_list_file_name)
+
+        # For each statement CSV item
+        for csv_item in file_csv:
+
+            stat_parent_dir = self.dir
+            stat_id = int(csv_item["id"])
+            stat_date = datetime.strptime(csv_item["date"], FMT_DATE)
+            stat_bal_start = float(csv_item["bal_start"])
+            stat_bal_end = float(csv_item["bal_end"])
 
             # Init statement
-            stat = Statement(datetime.strptime(stat_line[Statement.FieldIdx.DATE], FMT_DATE),
-                             float(stat_line[Statement.FieldIdx.BAL_START]),
-                             float(stat_line[Statement.FieldIdx.BAL_END]))
+            stat = Statement(stat_parent_dir, stat_id, csv_item["name"],
+                             stat_date, stat_bal_start, stat_bal_end)
 
             # Import statement file
             ret = stat.import_file()
             if ret != RetCode.OK:
-                self.logger.error("import_file : Import statement file FAILED")
+                self.logger.error("import_file FAILED")
                 return ret
 
             # Add statement to statements list
@@ -91,29 +105,31 @@ class Account():
 
         return RetCode.OK
 
-    def export_file(self):
+    def export_file(self) -> None:
         """
-        Export statements to file
+        Export statement list to file
         """
 
-        try:
-            # Open statements CSV file
-            file = open(self.file_path, "w", encoding="utf8")
-        except FileNotFoundError:
-            self.logger.error("export_file : Open %s file FAILED", self.file_path)
-            return
+        file = open(self.stat_list_file_name, "w", encoding="utf8")
 
-        file_csv = csv.writer(file, delimiter=',', quotechar='"')
+        file_csv = csv.DictWriter(file, Statement.CSV_KEY_LIST, delimiter=',', quotechar='"')
+
+        file_csv.writeheader()
 
         # For each statement
         for stat in self.stat_list:
 
-            # Create statement line
-            stat_csv = [stat.date.strftime(FMT_DATE),
-                        str(stat.bal_start), str(stat.bal_end)]
+            # Create statement CSV item
+            csv_item = {
+                "id": str(stat.identifier),
+                "date": stat.date.strftime(FMT_DATE),
+                "name": stat.name,
+                "bal_start": str(stat.bal_start),
+                "bal_end": str(stat.bal_end)
+            }
 
-            # Write statement line to CSV file
-            file_csv.writerow(stat_csv)
+            # Write statement CSV item to file
+            file_csv.writerow(csv_item)
 
         self.is_saved = True
 
