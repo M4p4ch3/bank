@@ -49,6 +49,7 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
     MISSING += " " + "...".ljust(FieldLen.LEN_AMOUNT, " ") + " |"
     MISSING += " " + "...".ljust(FieldLen.LEN_AMOUNT, " ") + " |"
     MISSING += " " + "...".ljust(FieldLen.LEN_AMOUNT, " ") + " |"
+    MISSING += " " + "...".ljust(FieldLen.LEN_AMOUNT, " ") + " |"
 
     def __init__(self, disp: DisplayerMain, stat: Statement = None) -> None:
 

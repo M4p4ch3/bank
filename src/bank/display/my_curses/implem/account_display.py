@@ -213,10 +213,15 @@ class DisplayerAccount(DisplayerItem, DisplayerContainer):
             flag ([type]): Display flag
         """
 
+        stat_last_date = self.account.get_last_stat_date()
+        stat_last_date_str = ""
+        if stat_last_date:
+            stat_last_date_str = stat_last_date.strftime(FMT_DATE)
+
         stat_line = "| "
         stat_line += formart_trunc_padd(self.account.name, FieldLen.LEN_NAME)
         stat_line += " | "
-        stat_line += formart_trunc_padd(self.account.get_last_stat_date().strftime(FMT_DATE), FieldLen.LEN_DATE)
+        stat_line += formart_trunc_padd(stat_last_date_str, FieldLen.LEN_DATE)
         stat_line += " | "
         stat_line += format_amount(self.account.get_bal(), FieldLen.LEN_AMOUNT)
 

@@ -87,7 +87,13 @@ class DisplayerItem():
         # Get field value input
         win.keypad(False)
         curses.echo()
-        val_str = win.getstr().decode(encoding="utf-8")
+
+        val_str = ""
+        try:
+            val_str = win.getstr().decode(encoding="utf-8")
+        except UnicodeDecodeError:
+            pass
+
         win.keypad(True)
         curses.noecho()
 

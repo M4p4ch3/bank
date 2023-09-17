@@ -116,8 +116,10 @@ class DisplayerContainer():
     def highlight_closest_item(self, item_list: List) -> None:
         """Highlight closest item from list"""
 
+        item_hl_idx = 0
         container_item_list = self.get_container_item_list()
-        item_hl_idx = container_item_list.index(self.item_hl)
+        if self.item_hl in container_item_list:
+            item_hl_idx = container_item_list.index(self.item_hl)
 
         while item_hl_idx >= 0 and self.item_hl in item_list:
             # Highligh previous item
@@ -207,9 +209,10 @@ class DisplayerContainer():
 
             self.disp.cont_disp_last.add_container_item_list(item_list)
             self.disp.cont_disp_last.save()
-            self.remove_container_item_list(item_list, force=True)
 
             self.highlight_closest_item(item_list)
+
+            self.remove_container_item_list(item_list, force=True)
 
             self.item_sel_list.clear()
 
@@ -273,7 +276,7 @@ class DisplayerContainer():
         win_h: int = win.getmaxyx()[0]
 
         # Number of displayed items
-        item_disp_nb: int = win_h - 4
+        item_disp_nb: int = win_h - 5
         if len(item_list) < item_disp_nb:
             item_disp_nb = len(item_list)
 

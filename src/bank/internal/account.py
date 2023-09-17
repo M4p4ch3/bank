@@ -86,6 +86,9 @@ class Account():
                 date_max = stat.date
                 stat_last = stat
 
+        if stat_last is None:
+            return 0.0
+
         return stat_last.bal_end
 
     def get_last_stat_date(self) -> datetime:
