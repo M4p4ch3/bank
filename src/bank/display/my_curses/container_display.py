@@ -147,6 +147,13 @@ class DisplayerContainer():
         else:
             self.item_sel_list.remove(self.item_hl)
 
+    def select_all(self) -> None:
+        """Select all items"""
+        self.item_sel_list.clear()
+        item_list = self.get_container_item_list()
+        for item in item_list:
+            self.item_sel_list.append(item)
+
     def copy(self) -> None:
         """Copy selected or highlited item(s)"""
 
@@ -449,6 +456,9 @@ class DisplayerContainer():
 
             elif key in [KeyId.SPACE]:
                 self.toogle_item_sel()
+
+            elif key in [KeyId.CTRL_A]:
+                self.select_all()
 
             elif key in [KeyId.CTRL_C]:
                 self.copy()
