@@ -278,12 +278,11 @@ class DisplayerContainer():
 
         item_list: List[Any] = self.get_container_item_list()
 
-        # Left window
-        win = self.disp.win_list[WinId.LEFT]
-        win_h: int = win.getmaxyx()[0]
+        win_left = self.disp.win_list[WinId.LEFT]
+        win_left_h: int = win_left.getmaxyx()[0]
 
         # Number of displayed items
-        item_disp_nb: int = win_h - 5
+        item_disp_nb: int = win_left_h - 5
         if len(item_list) < item_disp_nb:
             item_disp_nb = len(item_list)
 
@@ -343,18 +342,18 @@ class DisplayerContainer():
         (win_y, win_x) = (0, 0)
 
         # Item separator
-        win.addstr(win_y, win_x, self.item_disp.SEPARATOR)
+        win_left.addstr(win_y, win_x, self.item_disp.SEPARATOR)
         win_y += 1
 
         # Item header
-        win.addstr(win_y, win_x, self.item_disp.HEADER)
+        win_left.addstr(win_y, win_x, self.item_disp.HEADER)
         win_y += 1
 
         # Item separator or missing
         if self.item_focus_idx == 0:
-            win.addstr(win_y, win_x, self.item_disp.SEPARATOR)
+            win_left.addstr(win_y, win_x, self.item_disp.SEPARATOR)
         else:
-            win.addstr(win_y, win_x, self.item_disp.MISSING)
+            win_left.addstr(win_y, win_x, self.item_disp.MISSING)
         win_y += 1
 
         # Item list
@@ -373,15 +372,15 @@ class DisplayerContainer():
                 disp_flag += A_BOLD
 
             self.item_disp.set_item(item)
-            self.item_disp.display_item_line(win, win_y, win_x, disp_flag)
-            # self.display_item_line(item, win, win_y, win_x, disp_flag)
+            self.item_disp.display_item_line(win_left, win_y, win_x, disp_flag)
+            # self.display_item_line(item, win_left, win_y, win_x, disp_flag)
             win_y += 1
 
         # Item separator or missing
         if item_idx == 0 or item_idx == len(item_list) - 1:
-            win.addstr(win_y, win_x, self.item_disp.SEPARATOR)
+            win_left.addstr(win_y, win_x, self.item_disp.SEPARATOR)
         else:
-            win.addstr(win_y, win_x, self.item_disp.MISSING)
+            win_left.addstr(win_y, win_x, self.item_disp.MISSING)
         win_y += 1
 
         ope_disp_ratio = 0
@@ -389,20 +388,31 @@ class DisplayerContainer():
             ope_disp_ratio = item_disp_nb / len(item_list)
 
         # Slider
-        (win_y, win_x) = (3, win.getyx()[1])
+        (win_y, win_x) = (3, win_left.getyx()[1])
         for _ in range(0, int(self.item_focus_idx * ope_disp_ratio)):
-            win.addstr(win_y, win_x, " ")
+            win_left.addstr(win_y, win_x, " ")
             win_y += 1
         for _ in range(int(self.item_focus_idx * ope_disp_ratio),
                        int((self.item_focus_idx + item_disp_nb) * ope_disp_ratio)):
-            win.addstr(win_y, win_x, " ", A_STANDOUT)
+            win_left.addstr(win_y, win_x, " ", A_STANDOUT)
             win_y += 1
         for _ in range(int((self.item_focus_idx + item_disp_nb) * ope_disp_ratio),
                        int((len(item_list)) * ope_disp_ratio)):
-            win.addstr(win_y, win_x, " ")
+            win_left.addstr(win_y, win_x, " ")
             win_y += 1
 
-        win.refresh()
+        win_left.refresh()
+
+    def draw_win_main(self):
+        """Draw main window"""
+        win_main = self.disp.win_list[WinId.MAIN]
+        win_main_w = win_main.getmaxyx()[1]
+        win_main.clear()
+        win_main.border()
+        win_main.addstr(0, int((win_main_w - len(self.title))/2), f" {self.title} ", A_STANDOUT)
+        win_main.addstr(0, 2, f" {self.subtitle} ", A_BOLD)
+        win_main.keypad(1)
+        win_main.refresh()
 
     def browse_container(self):
         """
@@ -417,25 +427,18 @@ class DisplayerContainer():
             self.item_hl = item_list[0]
         self.item_sel_list = []
 
-        # Main window
-        win = self.disp.win_list[WinId.MAIN]
-        win_w = win.getmaxyx()[1]
-        win.clear()
-        win.border()
-        win.addstr(0, int((win_w - len(self.title))/2), f" {self.title} ", A_STANDOUT)
-        win.addstr(0, 2, f" {self.subtitle} ", A_BOLD)
-        win.keypad(1)
-        win.refresh()
-
+        self.draw_win_main()
         self.display_container_info()
         self.display_container_item_list(False, False)
+
+        win_main = self.disp.win_list[WinId.MAIN]
 
         while True:
 
             hl_changed = False
             focus_changed = False
 
-            key = win.getch()
+            key = win_main.getch()
             # self.disp.add_log(str(key))
 
             if key in [KeyId.UP]:
@@ -472,6 +475,7 @@ class DisplayerContainer():
 
             elif key in [KeyId.CTRL_R]:
                 self.rappr()
+                self.disp.win_list[WinId.LEFT].clear()
 
             elif key in [KeyId.CTRL_E]:
                 # Edit highlighted item
@@ -484,6 +488,7 @@ class DisplayerContainer():
                 self.browse_container_item(self.item_hl)
                 self.disp.win_list[WinId.LEFT].clear()
                 hl_changed = True
+                self.draw_win_main()
 
             elif key in [KeyId.INS, KeyId.PLUS]:
                 # Add new item
@@ -507,6 +512,11 @@ class DisplayerContainer():
 
             elif key in [KeyId.CTRL_P]:
                 raise KeyboardInterrupt
+
+            # else:
+            #     debug_key_str = f"key = {key} ({int(key)})"
+            #     print(debug_key_str)
+            #     win_main.addstr(0, 0, debug_key_str)
 
             # item_list = self.get_container_item_list()
 
