@@ -175,8 +175,16 @@ class Statement():
                                 row["tier"], row["cat"], row["desc"], float(row["amount"]))
                 self.logger.debug("Operation inited : %s", ope)
 
-                self.ope_list.append(ope)
-                self.ope_sum += + ope.amount
+                ope_inserted = False
+                for (ope_idx, ope_it) in enumerate(self.ope_list):
+                    if ope.date < ope_it.date:
+                        self.ope_list.insert(ope_idx, ope)
+                        ope_inserted = True
+                        break
+                if not ope_inserted:
+                    self.ope_list.append(ope)
+
+                self.ope_sum += ope.amount
 
             self.file_sync = True
 

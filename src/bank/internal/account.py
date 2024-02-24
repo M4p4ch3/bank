@@ -82,7 +82,7 @@ class Account():
         stat_last: Statement = None
 
         for stat in self.stat_list:
-            if not date_max or stat.date > date_max:
+            if (not date_max) or ((stat.date > date_max) and (stat.bal_end != 0.0)):
                 date_max = stat.date
                 stat_last = stat
 
@@ -144,7 +144,14 @@ class Account():
                 stat = Statement(self.dir, stat_name)
                 self.logger.debug("Statement inited : %s", stat)
 
-                self.stat_list.append(stat)
+                stat_inserted = False
+                for (stat_idx, stat_it) in enumerate(self.stat_list):
+                    if stat.date < stat_it.date:
+                        self.stat_list.insert(stat_idx, stat)
+                        stat_inserted = True
+                        break
+                if not stat_inserted:
+                    self.stat_list.append(stat)
 
     def read_dir(self) -> None:
         """
