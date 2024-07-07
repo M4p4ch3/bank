@@ -12,6 +12,7 @@ from bank.internal import Wallet
 from bank.utils import FMT_DATE
 
 FMT_DATE_MONTH = "%Y-%m"
+FMT_DATE_YEAR = "%Y"
 
 DATE_START = date(2019, 1, 1)
 DATE_END = date(2024, 12, 1)
@@ -46,6 +47,8 @@ def main():
     args = parser.parse_args()
 
     wallet = Wallet(args.data_dir, args.wallet_name)
+    ACCOUNT_NAME_FILTER_OUT = ["lbc"]
+    account_list = [acc for acc in wallet.account_list if acc.name not in ACCOUNT_NAME_FILTER_OUT]
 
     # window = tk.Tk()
     # window.title("Hello World")
@@ -64,10 +67,15 @@ def main():
 
     month_delta_list = [md for md in range(get_month_delta(DATE_START), get_month_delta(DATE_END))]
 
-    for account in wallet.account_list:
-        if "lbc" in account.name.lower():
-            continue
+    # Plot balance sum accross accounts
+    bal_sum_list: List[float] = []
+    for month_delta in month_delta_list:
+        bal_sum = sum(acc.get_bal_at(datetime_from_month_delta(month_delta)) for acc in account_list)
+        bal_sum_list += [bal_sum]
+    ax.plot(month_delta_list, bal_sum_list, marker="+", linestyle="-", color="grey")
 
+    # Plot balance for each account
+    for account in account_list:
         color = "grey"
         if "ce" in account.name.lower():
             color = "red"
@@ -77,30 +85,8 @@ def main():
             color = "blue"
         elif "carbon" in account.name.lower():
             color = "orange"
-
-        month_delta_list: List[int] = []
-        bal_list: List[float] = []
-        for stat in account.stat_list:
-            if stat.date.date() < DATE_START or stat.date.date() > DATE_END:
-                continue
-            month_delta = get_month_delta(stat.date)
-            month_delta_list += [month_delta]
-            bal_list += [account.get_bal_at(datetime_from_month_delta(month_delta))]
-
+        bal_list = [account.get_bal_at(datetime_from_month_delta(md)) for md in month_delta_list]
         ax.plot(month_delta_list, bal_list, marker="+", linestyle="-", color=color)
-
-    # Plot balance sum
-    month_delta_list: List[int] = []
-    bal_sum_list: List[float] = []
-    for month_delta in range(get_month_delta(DATE_START), get_month_delta(DATE_END)):
-        month_delta_list += [month_delta]
-        bal_sum = 0.0
-        for account in wallet.account_list:
-            if "lbc" in account.name.lower():
-                continue
-            bal_sum += account.get_bal_at(datetime_from_month_delta(month_delta))
-        bal_sum_list += [bal_sum]
-    ax.plot(month_delta_list, bal_sum_list, marker="+", linestyle="-", color="grey")
 
     ax.set_xlim(get_month_delta(DATE_START), get_month_delta(DATE_END))
     ax_x = ax.get_xaxis()
@@ -120,7 +106,8 @@ def main():
     ax_y.set_ticks([bal for bal in range(BAL_MIN, BAL_MAX, BAL_STEP_MIN)], minor=True)
     ax_y.set_major_formatter(FuncFormatter(lambda x, p: get_bal_str(x)))
 
-    plt.grid(True, "both", "both")
+    plt.grid(True, which="both", axis="both")
+    plt.grid(True, which="major", axis="both", color="black", linewidth=1)
     plt.show()
 
 if __name__ == "__main__":
