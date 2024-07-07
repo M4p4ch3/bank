@@ -91,6 +91,15 @@ class Account():
 
         return stat_last.bal_end
 
+    def get_bal_at(self, _date: datetime):
+        bal: float = 0.0
+        for stat in self.stat_list:
+            if stat.date < _date:
+                bal = stat.bal_end
+            else:
+                break
+        return bal
+
     def get_last_stat_date(self) -> datetime:
         """Get last statement date"""
 
