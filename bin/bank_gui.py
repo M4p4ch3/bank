@@ -67,12 +67,11 @@ def main():
 
     month_delta_list = [md for md in range(get_month_delta(DATE_START), get_month_delta(DATE_END))]
 
-    # Plot balance sum accross accounts
-    bal_sum_list: List[float] = []
+    # Plot total balance accross accounts
+    bal_total_list: List[float] = []
     for month_delta in month_delta_list:
-        bal_sum = sum(acc.get_bal_at(datetime_from_month_delta(month_delta)) for acc in account_list)
-        bal_sum_list += [bal_sum]
-    ax.plot(month_delta_list, bal_sum_list, marker="+", linestyle="-", color="grey")
+        bal_total_list += [sum(acc.get_bal_at(datetime_from_month_delta(month_delta)) for acc in account_list)]
+    ax.plot(month_delta_list, bal_total_list, marker="", linestyle="-", color="grey", label="total")
 
     # Plot balance for each account
     for account in account_list:
@@ -86,7 +85,9 @@ def main():
         elif "carbon" in account.name.lower():
             color = "orange"
         bal_list = [account.get_bal_at(datetime_from_month_delta(md)) for md in month_delta_list]
-        ax.plot(month_delta_list, bal_list, marker="+", linestyle="-", color=color)
+        ax.plot(month_delta_list, bal_list, marker="", linestyle="-", color=color, label=account.name)
+
+    ax.set_title("Balance evolution over time")
 
     ax.set_xlim(get_month_delta(DATE_START), get_month_delta(DATE_END))
     ax_x = ax.get_xaxis()
@@ -106,8 +107,11 @@ def main():
     ax_y.set_ticks([bal for bal in range(BAL_MIN, BAL_MAX, BAL_STEP_MIN)], minor=True)
     ax_y.set_major_formatter(FuncFormatter(lambda x, p: get_bal_str(x)))
 
+    plt.xlabel("Date", loc="right")
+    plt.ylabel("Balance (EUR)", loc="top")
     plt.grid(True, which="both", axis="both")
     plt.grid(True, which="major", axis="both", color="black", linewidth=1)
+    plt.legend(loc="upper left")
     plt.show()
 
 if __name__ == "__main__":
