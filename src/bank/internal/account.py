@@ -82,7 +82,7 @@ class Account():
         stat_last: Statement = None
 
         for stat in self.stat_list:
-            if (not date_max) or ((stat.date > date_max) and (stat.bal_end != 0.0)):
+            if not date_max or stat.date > date_max and stat.date < datetime.now():
                 date_max = stat.date
                 stat_last = stat
 
