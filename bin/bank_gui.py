@@ -16,7 +16,7 @@ FMT_DATE_MONTH = "%Y-%m"
 FMT_DATE_YEAR = "%Y"
 
 DATE_START = date(2019, 1, 1)
-DATE_END = date(2024, 12, 1)
+DATE_END = date(2025, 12, 31)
 
 BAL_MIN = -5000
 BAL_MAX = 50000
