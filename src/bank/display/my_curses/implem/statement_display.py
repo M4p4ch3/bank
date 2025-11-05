@@ -19,6 +19,9 @@ from bank.internal.operation import Operation
 from bank.utils.my_date import FMT_DATE
 from bank.utils.return_code import RetCode
 
+# Enable actual balance diff
+ENABLE_ACT_BAL_DIFF = False
+
 class DisplayerStatement(DisplayerItem, DisplayerContainer):
     """
     Curses statement display
@@ -31,6 +34,8 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
     SEPARATOR += "-" + "-".ljust(FieldLen.LEN_AMOUNT, "-") + "-|"
     SEPARATOR += "-" + "-".ljust(FieldLen.LEN_AMOUNT, "-") + "-|"
     SEPARATOR += "-" + "-".ljust(FieldLen.LEN_AMOUNT, "-") + "-|"
+    if ENABLE_ACT_BAL_DIFF:
+        SEPARATOR += "-" + "-".ljust(FieldLen.LEN_AMOUNT, "-") + "-|"
     SEPARATOR += "-" + "-".ljust(FieldLen.LEN_AMOUNT, "-") + "-|"
 
     # Item header
@@ -40,6 +45,8 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
     HEADER += " " + "start".ljust(FieldLen.LEN_AMOUNT, " ") + " |"
     HEADER += " " + "end".ljust(FieldLen.LEN_AMOUNT, " ") + " |"
     HEADER += " " + "diff".ljust(FieldLen.LEN_AMOUNT, " ") + " |"
+    if ENABLE_ACT_BAL_DIFF:
+        HEADER += " " + "act diff".ljust(FieldLen.LEN_AMOUNT, " ") + " |"
     HEADER += " " + "error".ljust(FieldLen.LEN_AMOUNT, " ") + " |"
 
     # Item missing
@@ -49,6 +56,8 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
     MISSING += " " + "...".ljust(FieldLen.LEN_AMOUNT, " ") + " |"
     MISSING += " " + "...".ljust(FieldLen.LEN_AMOUNT, " ") + " |"
     MISSING += " " + "...".ljust(FieldLen.LEN_AMOUNT, " ") + " |"
+    if ENABLE_ACT_BAL_DIFF:
+        MISSING += " " + "...".ljust(FieldLen.LEN_AMOUNT, " ") + " |"
     MISSING += " " + "...".ljust(FieldLen.LEN_AMOUNT, " ") + " |"
 
     def __init__(self, disp: DisplayerMain, stat: Statement = None) -> None:
@@ -250,6 +259,17 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
             win.addstr(format_amount(bal_diff, FieldLen.LEN_AMOUNT),
                        curses.color_pair(ColorPairId.RED_BLACK) + flag)
 
+        if ENABLE_ACT_BAL_DIFF:
+            win.addstr(" | ", flag)
+
+            bal_act_diff = round(self.stat.ope_sum, 2)
+            if bal_act_diff >= 0.0:
+                win.addstr(format_amount(bal_act_diff, FieldLen.LEN_AMOUNT),
+                        curses.color_pair(ColorPairId.GREEN_BLACK) + flag)
+            else:
+                win.addstr(format_amount(bal_act_diff, FieldLen.LEN_AMOUNT),
+                        curses.color_pair(ColorPairId.RED_BLACK) + flag)
+
         win.addstr(" | ", flag)
 
         bal_err = round(self.stat.bal_start + self.stat.ope_sum - self.stat.bal_end, 2)
@@ -298,6 +318,15 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
         win.addstr(win_y, win_x,
                    f"actual end : {(self.stat.bal_start + self.stat.ope_sum):.2f}")
         win_y += 1
+
+        if ENABLE_ACT_BAL_DIFF:
+            bal_act_diff = round(self.stat.ope_sum, 2)
+            win.addstr(win_y, win_x, "actual balance diff : ")
+            if bal_act_diff >= 0.0:
+                win.addstr(str(bal_act_diff), curses.color_pair(ColorPairId.GREEN_BLACK))
+            else:
+                win.addstr(str(bal_act_diff), curses.color_pair(ColorPairId.RED_BLACK))
+            win_y += 1
 
         bal_err = round(self.stat.bal_start + self.stat.ope_sum - self.stat.bal_end, 2)
         win.addstr(win_y, win_x, "balance error : ")
