@@ -1,6 +1,7 @@
 
 # VS code
 **/.vscode
+**/*.code-workspace
 # Python cache
 **/__pycache__
 
