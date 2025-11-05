@@ -103,6 +103,8 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
         ret = ("", "")
         if field_idx == Statement.FieldIdx.DATE:
             ret = ("date", self.stat.date.strftime(FMT_DATE))
+        elif field_idx == Statement.FieldIdx.ID:
+            ret = ("id", self.stat.id)
         elif field_idx == Statement.FieldIdx.NAME:
             ret = ("name", self.stat.name)
         elif field_idx == Statement.FieldIdx.BAL_START:
@@ -124,6 +126,8 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
                 self.stat.date = datetime.strptime(val_str, FMT_DATE)
             except ValueError:
                 is_edited = False
+        elif field_idx == Statement.FieldIdx.ID:
+            self.stat.set_id(val_str)
         elif field_idx == Statement.FieldIdx.NAME:
             self.stat.set_name(val_str)
         elif field_idx == Statement.FieldIdx.BAL_START:

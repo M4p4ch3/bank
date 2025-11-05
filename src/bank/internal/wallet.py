@@ -17,18 +17,20 @@ class Wallet():
 
     CSV_KEY_LIST = ["id", "name"]
 
-    def __init__(self, parent_dir: str, name: str = "") -> None:
+    def __init__(self, parent_dir: str, id: str = "") -> None:
 
         self.logger = logging.getLogger("Wallet")
 
         self.parent_dir: str = parent_dir
-        self.name: str = name
+        self.id: str = id
+        self.name: str = self.id
 
         self.dir: str = self.parent_dir + "/wallet_" + self.name
         self.account_list: List[Account] = []
         self.file_sync: bool = True
 
         self.logger.debug("parent_dir = %s", self.parent_dir)
+        self.logger.debug("id = %s", self.id)
         self.logger.debug("name = %s", self.name)
         self.logger.debug("dir = %s", self.dir)
 
@@ -76,17 +78,12 @@ class Wallet():
 
         return balance
 
+    def set_id(self, id: str) -> None:
+        self.id = id
+        self.dir: str = self.parent_dir + "/account_" + self.id
+
     def set_name(self, name: str) -> None:
-        """
-        Set name
-        Update dir accordingly
-
-        Args:
-            name (str): Name
-        """
-
         self.name = name
-        self.dir: str = self.parent_dir + "/wallet_" + self.name
 
     def _read_info(self) -> None:
 
@@ -115,10 +112,10 @@ class Wallet():
                 self.logger.debug("Found account %s", account_name)
 
                 self.logger.debug("Init account %s", account_name)
-                stat = Account(self.dir, account_name)
-                self.logger.debug("Account inited : %s", stat)
+                account = Account(self, self.dir, account_name)
+                self.logger.debug("Account inited : %s", account)
 
-                self.account_list.append(stat)
+                self.account_list.append(account)
 
     def read_dir(self) -> None:
         """

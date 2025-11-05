@@ -24,20 +24,25 @@ class Account():
         Field index
         """
 
-        NAME = 0
+        ID = 0
+        NAME = 1
+        LAST = NAME
 
-    def __init__(self, parent_dir: str, name: str = "") -> None:
+    def __init__(self, parent_wallet, parent_dir: str, id: str = "") -> None:
 
         self.logger = logging.getLogger("Account")
 
+        self.parent_wallet = parent_wallet
         self.parent_dir: str = parent_dir
-        self.name: str = name
+        self.id: str = id
+        self.name: str = self.id
 
-        self.dir: str = self.parent_dir + "/account_" + self.name
+        self.dir: str = self.parent_dir + "/account_" + self.id
         self.stat_list: List[Statement] = []
         self.file_sync: bool = True
 
         self.logger.debug("parent_dir = %s", self.parent_dir)
+        self.logger.debug("id = %s", self.id)
         self.logger.debug("name = %s", self.name)
         self.logger.debug("dir = %s", self.dir)
 
@@ -111,17 +116,12 @@ class Account():
 
         return date_max
 
+    def set_id(self, id: str) -> None:
+        self.id = id
+        self.dir: str = self.parent_dir + "/account_" + self.id
+
     def set_name(self, name: str) -> None:
-        """
-        Set name
-        Update dir accordingly
-
-        Args:
-            name (str): Name
-        """
-
         self.name = name
-        self.dir: str = self.parent_dir + "/account_" + self.name
 
     def _read_info(self) -> None:
 
@@ -150,7 +150,7 @@ class Account():
                 self.logger.debug("Found statement %s", stat_name)
 
                 self.logger.debug("Init statement %s", stat_name)
-                stat = Statement(self.dir, stat_name)
+                stat = Statement(self, self.dir, stat_name)
                 self.logger.debug("Statement inited : %s", stat)
 
                 stat_inserted = False

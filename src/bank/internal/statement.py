@@ -27,27 +27,31 @@ class Statement():
         """
 
         DATE = 0
-        NAME = 1
-        BAL_START = 2
-        BAL_END = 3
+        ID = 1
+        NAME = 2
+        BAL_START = 3
+        BAL_END = 4
         LAST = BAL_END
 
-    def __init__(self, parent_dir: str, name: str = "") -> None:
+    def __init__(self, parent_account, parent_dir: str, id: str = "") -> None:
 
         self.logger = logging.getLogger("Statement")
 
+        self.parent_account = parent_account
         self.parent_dir: str = parent_dir
-        self.name: str = name
+        self.id: str = id
+        self.name: str = self.id
 
-        self.dir: str = parent_dir + "/stat_" + self.name
+        self.dir: str = parent_dir + "/stat_" + self.id
         self.date: datetime = datetime.now()
-        self.bal_start: int = 0
-        self.bal_end: int = 0
+        self.bal_start: float = 0.0
+        self.bal_end: float = 0.0
         self.ope_list: List[Operation] = []
         self.ope_sum: float = 0.0
         self.file_sync: bool = True
 
         self.logger.debug("parent_dir = %s", self.parent_dir)
+        self.logger.debug("id = %s", self.id)
         self.logger.debug("name = %s", self.name)
         self.logger.debug("dir = %s", self.dir)
 
@@ -114,17 +118,12 @@ class Statement():
 
         return ope_ret
 
+    def set_id(self, id: str) -> None:
+        self.id = id
+        self.dir: str = self.parent_dir + "/account_" + self.id
+
     def set_name(self, name: str) -> None:
-        """
-        Set name
-        Update dir accordingly
-
-        Args:
-            name (str): Name
-        """
-
         self.name = name
-        self.dir: str = self.parent_dir + "/stat_" + self.name
 
     def _read_info(self) -> None:
 

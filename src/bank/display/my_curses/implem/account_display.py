@@ -55,6 +55,8 @@ class DisplayerAccount(DisplayerItem, DisplayerContainer):
         # Account
         self.account: Account = account
 
+        self.field_nb = Account.FieldIdx.LAST + 1
+
         self.title = "ACCOUNT"
         self.subtitle = "STATEMENTS LIST"
 
@@ -78,7 +80,9 @@ class DisplayerAccount(DisplayerItem, DisplayerContainer):
         """
 
         ret = ("", "")
-        if field_idx == Account.FieldIdx.NAME:
+        if field_idx == Account.FieldIdx.ID:
+            ret = ("id", self.account.id)
+        elif field_idx == Account.FieldIdx.NAME:
             ret = ("name", self.account.name)
 
         return ret
@@ -90,7 +94,9 @@ class DisplayerAccount(DisplayerItem, DisplayerContainer):
 
         is_edited = True
 
-        if field_idx == Account.FieldIdx.NAME:
+        if field_idx == Account.FieldIdx.ID:
+            self.account.set_id(val_str)
+        elif field_idx == Account.FieldIdx.NAME:
             self.account.set_name(val_str)
 
         if is_edited:
