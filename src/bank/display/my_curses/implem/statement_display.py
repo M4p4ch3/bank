@@ -13,6 +13,7 @@ from bank.display.my_curses.container_display import DisplayerContainer
 from bank.display.my_curses.implem.main import (FieldLen, formart_trunc_padd, format_amount)
 from bank.display.my_curses.implem.operation_display import DisplayerOperation
 
+from bank.internal.account import Account
 from bank.internal.statement import Statement
 from bank.internal.operation import Operation
 
@@ -159,6 +160,26 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
         """
 
         self.stat.add_ope(item)
+
+        if item.tier[0] == '@':
+            # Internal transfer
+            transfered = False
+            account_id = item.tier.removeprefix('@')
+            for account in self.stat.parent_account.parent_wallet.account_list:
+                account: Account = account
+                if account.id == account_id:
+                    for stat in account.stat_list:
+                        if stat.name == "pending":
+                            ope = Operation(item.date, item.mode, f"@{self.stat.parent_account.id}",
+                                item.cat, item.desc, -item.amount)
+                            stat.add_ope(ope)
+                            stat.write_dir()
+                            transfered = True
+                            self.disp.add_log(f"Internal transfer to {account.id}.{stat.id}")
+                            break
+                    break
+            if not transfered:
+                self.disp.add_log(f"Internal transfer error")
 
     def add_container_item_list(self, item_list: List[Operation]) -> None:
         """
