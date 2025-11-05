@@ -150,8 +150,8 @@ class DisplayerItem():
                 # Highlight next field
                 elif key == "KEY_DOWN":
                     field_hl_idx += 1
-                    if field_hl_idx > self.field_nb:
-                        field_hl_idx = self.field_nb
+                    if field_hl_idx >= self.field_nb:
+                        field_hl_idx = self.field_nb - 1
 
                 # Edit highlighted field
                 elif key == "\n":
