@@ -8,7 +8,7 @@ class FieldLen():
     """
 
     LEN_DATE = 10
-    LEN_NAME = LEN_DATE
+    LEN_NAME = 20
     LEN_MODE = 8
     LEN_TIER = 18
     LEN_CAT = 10
