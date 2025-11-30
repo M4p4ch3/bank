@@ -414,6 +414,10 @@ class DisplayerContainer():
         win_main.keypad(1)
         win_main.refresh()
 
+    def handle_key(self, key):
+        _ = key
+        return
+
     def browse_container(self):
         """
         Browse container
@@ -512,6 +516,9 @@ class DisplayerContainer():
 
             elif key in [KeyId.CTRL_P]:
                 raise KeyboardInterrupt
+
+            else:
+                self.handle_key(key)
 
             # else:
             #     debug_key_str = f"key = {key} ({int(key)})"
