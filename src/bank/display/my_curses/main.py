@@ -166,8 +166,9 @@ class DisplayerMain():
 
             # key = win.getkey()
             key = win.getch()
-            win.addstr(0, 0, f"\"{key}\"")
-            win.refresh()
+            # debug
+            # win.addstr(0, 0, f"\"{key}\"")
+            # win.refresh()
 
             # Highlight previous field
             if key in ["KEY_UP", 259]:
