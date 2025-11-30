@@ -7,7 +7,7 @@ from curses import A_BOLD
 from datetime import datetime
 from typing import (Any, List, Tuple)
 
-from bank.display.my_curses.main import (ColorPairId, WinId, DisplayerMain)
+from bank.display.my_curses.main import (ColorPairId, KeyId, WinId, DisplayerMain)
 from bank.display.my_curses.item_display import DisplayerItem
 from bank.display.my_curses.container_display import DisplayerContainer
 from bank.display.my_curses.implem.main import (FieldLen, formart_trunc_padd, format_amount)
@@ -160,26 +160,6 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
         """
 
         self.stat.add_ope(item)
-
-        if item.tier[0] == '@':
-            # Internal transfer
-            transfered = False
-            account_id = item.tier.removeprefix('@')
-            for account in self.stat.parent_account.parent_wallet.account_list:
-                account: Account = account
-                if account.id == account_id:
-                    for stat in account.stat_list:
-                        if stat.name == "pending":
-                            ope = Operation(item.date, item.mode, f"@{self.stat.parent_account.id}",
-                                item.cat, item.desc, -item.amount)
-                            stat.add_ope(ope)
-                            stat.write_dir()
-                            transfered = True
-                            self.disp.add_log(f"Internal transfer to {account.id}.{stat.id}")
-                            break
-                    break
-            if not transfered:
-                self.disp.add_log(f"Internal transfer error")
 
     def add_container_item_list(self, item_list: List[Operation]) -> None:
         """
@@ -411,3 +391,69 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
             return RetCode.OK
 
         return RetCode.CANCEL
+
+    def do_internal_transfer(self):
+
+        def confirm(self, account: Account, stat: Statement, ope: Operation):
+            choice_idx = self.disp.display_choice_menu(
+                "INTERNAL TRANSFER",
+                f"Create operation : \n"
+                f"{ope.get_str(indent=1)}\n"
+                f"in \"{account.name}\" account \"{stat.name}\" statement ?\n",
+                [
+                    "Cancel",
+                    "Confirm",
+                ])
+
+            if choice_idx == 1:
+                return RetCode.OK
+
+            return RetCode.CANCEL
+
+        ope: Operation = self.item_hl
+        if len(self.item_sel_list) == 1:
+            ope = self.item_sel_list[0]
+
+        if not ope:
+            self.disp.add_log(f"No operation selected")
+            return
+
+        if ope.tier[0] == '@':
+            # Relative path to account
+            account_id = ope.tier.removeprefix('@')
+        elif ope.tier.startswith("../"):
+            # Relative path to account
+            account_id = ope.tier.removeprefix("../")
+        elif ope.tier[0] == '/':
+            # TODO implement absolute path from wallet
+            return
+        else:
+            self.disp.add_log(f"Failed to get path to account")
+            return
+
+        for account in self.stat.parent_account.parent_wallet.account_list:
+            account: Account = account
+            if account.id != account_id:
+                continue
+
+            for stat in account.stat_list:
+                if stat.name != "pending":
+                    continue
+
+                ope = ope.copy()
+                ope.tier = f"../{self.stat.parent_account.id}"
+                ope.amount = -ope.amount
+
+                ret = confirm(self, account, stat, ope)
+                if ret != RetCode.OK:
+                    return
+
+                stat.add_ope(ope)
+                stat.write_dir()
+                return
+
+        self.disp.add_log(f"Account with ID {account_id} not found")
+
+    def handle_key(self, key):
+        if key in [KeyId.CTRL_T]:
+            self.do_internal_transfer()

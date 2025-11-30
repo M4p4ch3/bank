@@ -40,6 +40,7 @@ class KeyId(IntEnum):
     CTRL_P = 16
     CTRL_R = 18
     CTRL_S = 19
+    CTRL_T = 20
     CTRL_V = 22
     CTRL_X = 24
     ESC = 27
