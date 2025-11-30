@@ -148,12 +148,17 @@ class DisplayerMain():
         win.clear()
         win.border()
         win.addstr(0, 2, f" {name} ", A_BOLD)
-        win.addstr(2, 2, msg)
+
+        (win_y, win_x) = (2, 2)
+        for line in msg.splitlines():
+            win.addstr(win_y, win_x, line, A_NORMAL)
+            win_y += 1
+
         win.keypad(1)
 
         while True:
 
-            (win_y, win_x) = (4, 2)
+            (win_y, win_x) = (len(msg.splitlines()) + 3, 2)
 
             for choice in choice_list:
 
