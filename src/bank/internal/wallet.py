@@ -80,7 +80,7 @@ class Wallet():
 
     def set_id(self, id: str) -> None:
         self.id = id
-        self.dir: str = self.parent_dir + "/account_" + self.id
+        self.dir: str = self.parent_dir + "/wallet_" + self.id
 
     def set_name(self, name: str) -> None:
         self.name = name
