@@ -194,7 +194,7 @@ class DisplayerAccount(DisplayerItem, DisplayerContainer):
         """
 
         # Init statement
-        stat: Statement = Statement(self.account.dir)
+        stat: Statement = Statement(self.account, self.account.dir)
 
         # Init statement display
         stat_disp = DisplayerStatement(self.disp, stat)
