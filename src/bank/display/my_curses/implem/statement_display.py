@@ -452,7 +452,10 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
                 stat.write_dir()
                 return
 
-        self.disp.add_log(f"Account with ID {account_id} not found")
+            self.disp.add_log(f"Pending statement not found in {account_id} account")
+            return
+
+        self.disp.add_log(f"{account_id} account not found")
 
     def handle_key(self, key):
         if key in [KeyId.CTRL_T]:
