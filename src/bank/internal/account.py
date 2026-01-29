@@ -111,6 +111,9 @@ class Account():
         date_max: datetime = None
 
         for stat in self.stat_list:
+            if stat.date > datetime.now():
+                continue
+
             if not date_max or stat.date > date_max:
                 date_max = stat.date
 
