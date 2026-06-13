@@ -124,7 +124,7 @@ class DisplayerWallet(DisplayerContainer):
         """
 
         # Init account
-        account: Account = Account(self.wallet.dir)
+        account: Account = Account(self.wallet, self.wallet.dir)
 
         # Init account display
         account_disp = DisplayerAccount(self.disp, account)
