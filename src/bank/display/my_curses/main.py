@@ -34,6 +34,7 @@ class KeyId(IntEnum):
 
     CTRL_C = -1
     CTRL_A = 1
+    CTRL_D = 4
     CTRL_E = 5
     BACKSPACE = 8
     ENTER = 10

@@ -474,3 +474,14 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
     def handle_key(self, key):
         if key in [KeyId.CTRL_T]:
             self.do_internal_transfer()
+        elif key in [KeyId.CTRL_D]:
+            if self.item_sel_list:
+                for ope in self.item_sel_list:
+                    assert isinstance(ope, Operation)
+                    ope.date = date(self.stat.date.year, self.stat.date.month, ope.date.day)
+            else:
+                ope = self.item_hl
+                assert isinstance(ope, Operation)
+                ope.date = date(self.stat.date.year, self.stat.date.month, ope.date.day)
+
+            self.stat.write_dir()
