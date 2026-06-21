@@ -74,7 +74,7 @@ class WalletGroup():
                 self.logger.debug("Found wallet %s", wallet_id)
 
                 self.logger.debug("Init wallet %s", wallet_id)
-                wallet = Wallet(self.dir, wallet_id)
+                wallet = Wallet(self, self.dir, wallet_id)
                 self.logger.debug("Wallet inited : %s", wallet)
 
                 self.wallet_list.append(wallet)

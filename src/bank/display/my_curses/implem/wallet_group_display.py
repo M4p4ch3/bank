@@ -90,7 +90,7 @@ class DisplayerWalletGroup(DisplayerContainer):
 
     def create_container_item(self) -> Wallet:
         # Init wallet
-        wallet: Wallet = Wallet(self.wallet_group.dir)
+        wallet: Wallet = Wallet(self, self.wallet_group.dir)
 
         # Init wallet display
         wallet_disp = DisplayerWallet(self.disp, wallet)

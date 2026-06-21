@@ -132,7 +132,7 @@ class DisplayerOperation(DisplayerItem):
 
         if field_idx == Operation.FieldIdx.DATE:
             try:
-                self.operation.date = datetime.strptime(val_str, FMT_DATE)
+                self.operation.date = datetime.strptime(val_str, FMT_DATE).date()
             except ValueError:
                 is_edited = False
         elif field_idx == Operation.FieldIdx.MODE:

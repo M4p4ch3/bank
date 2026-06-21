@@ -25,10 +25,11 @@ class Wallet():
         NAME = 1
         LAST = NAME
 
-    def __init__(self, parent_dir: str, id: str = "") -> None:
+    def __init__(self, parent_wallet_group, parent_dir: str, id: str = "") -> None:
 
         self.logger = logging.getLogger("Wallet")
 
+        self.parent_wallet_group = parent_wallet_group
         self.parent_dir: str = parent_dir
         self.id: str = id
         # Defaults to ID

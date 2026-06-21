@@ -4,7 +4,7 @@ display/curses/implem/statement
 
 import curses
 from curses import A_BOLD
-from datetime import datetime
+from datetime import datetime, date
 from typing import (Any, List, Tuple)
 
 from bank.display.my_curses.main import (ColorPairId, KeyId, WinId, DisplayerMain)
@@ -16,6 +16,7 @@ from bank.display.my_curses.implem.operation_display import DisplayerOperation
 from bank.internal.account import Account
 from bank.internal.statement import Statement
 from bank.internal.operation import Operation
+from bank.internal.wallet import Wallet
 
 from bank.utils.my_date import FMT_DATE
 from bank.utils.return_code import RetCode
@@ -124,7 +125,7 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
 
         if field_idx == Statement.FieldIdx.DATE:
             try:
-                self.stat.date = datetime.strptime(val_str, FMT_DATE)
+                self.stat.date = datetime.strptime(val_str, FMT_DATE).date()
             except ValueError:
                 is_edited = False
         elif field_idx == Statement.FieldIdx.ID:
@@ -394,12 +395,12 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
 
     def do_internal_transfer(self):
 
-        def confirm(self, account: Account, stat: Statement, ope: Operation):
+        def confirm(self, wallet: Wallet, account: Account, stat: Statement, ope: Operation):
             choice_idx = self.disp.display_choice_menu(
                 "INTERNAL TRANSFER",
                 f"Create operation : \n"
                 f"{ope.get_str(indent=1)}\n"
-                f"in \"{account.name}\" account \"{stat.name}\" statement ?\n",
+                f"in /{wallet.id}/{account.id}/{stat.id} ?\n",
                 [
                     "Cancel",
                     "Confirm",
@@ -418,22 +419,35 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
             self.disp.add_log(f"No operation selected")
             return
 
-        if ope.tier[0] == '@':
+        wallet_dst = None
+        wallet_dst_id = ""
+        account_dst_id = ""
+        account_src_id = ""
+        if ope.tier.startswith("../"):
             # Relative path to account
-            account_id = ope.tier.removeprefix('@')
-        elif ope.tier.startswith("../"):
-            # Relative path to account
-            account_id = ope.tier.removeprefix("../")
+            wallet_dst = self.stat.parent_account.parent_wallet
+            account_dst_id = ope.tier.removeprefix("../")
+            account_src_id = f"../{self.stat.parent_account.id}"
         elif ope.tier[0] == '/':
-            # TODO implement absolute path from wallet
-            return
+            wallet_dst_id = ope.tier.split('/')[1]
+            account_dst_id = ope.tier.split('/')[2]
+            account_src_id = f"/{self.stat.parent_account.parent_wallet.id}/{self.stat.parent_account.id}"
         else:
-            self.disp.add_log(f"Failed to get path to account")
+            self.disp.add_log(f"Unhandled path")
             return
 
-        for account in self.stat.parent_account.parent_wallet.account_list:
+        if not wallet_dst:
+            for wallet in self.stat.parent_account.parent_wallet.parent_wallet_group.wallet_list:
+                if wallet.id == wallet_dst_id:
+                    wallet_dst = wallet
+                    break
+            if not wallet_dst:
+                self.disp.add_log(f"Look for wallet /{wallet_dst_id} FAILED")
+                return
+
+        for account in wallet_dst.account_list:
             account: Account = account
-            if account.id != account_id:
+            if account.id != account_dst_id:
                 continue
 
             for stat in account.stat_list:
@@ -441,10 +455,10 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
                     continue
 
                 ope = ope.copy()
-                ope.tier = f"../{self.stat.parent_account.id}"
+                ope.tier = account_src_id
                 ope.amount = -ope.amount
 
-                ret = confirm(self, account, stat, ope)
+                ret = confirm(self, wallet_dst, account, stat, ope)
                 if ret != RetCode.OK:
                     return
 
@@ -452,10 +466,10 @@ class DisplayerStatement(DisplayerItem, DisplayerContainer):
                 stat.write_dir()
                 return
 
-            self.disp.add_log(f"Pending statement not found in {account_id} account")
+            self.disp.add_log(f"Look for statement /{wallet_dst.id}/{account.id}/pending FAILED")
             return
 
-        self.disp.add_log(f"{account_id} account not found")
+        self.disp.add_log(f"Look for account /{wallet_dst.id}/{account.id} FAILED")
 
     def handle_key(self, key):
         if key in [KeyId.CTRL_T]:

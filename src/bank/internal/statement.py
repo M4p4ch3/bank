@@ -170,7 +170,7 @@ class Statement():
             for row in reader:
 
                 self.logger.debug("Init operation")
-                ope = Operation(datetime.strptime(row["date"], FMT_DATE), row["mode"],
+                ope = Operation(datetime.strptime(row["date"], FMT_DATE).date(), row["mode"],
                                 row["tier"], row["cat"], row["desc"], float(row["amount"]))
                 self.logger.debug("Operation inited : %s", ope)
 
