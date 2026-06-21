@@ -42,8 +42,8 @@ class App():
 
     ACCOUNT_NAME_FILTER_OUT = ["lbc"]
 
-    def __init__(self, data_dir: str, wallet_name: str):
-        wallet = Wallet(data_dir, wallet_name)
+    def __init__(self, data_dir: str, wallet_id: str):
+        wallet = Wallet(data_dir, wallet_id)
         self.account_list = [acc for acc in wallet.account_list if acc.name not in self.ACCOUNT_NAME_FILTER_OUT]
 
         window = tk.Tk()

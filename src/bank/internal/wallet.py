@@ -2,6 +2,8 @@
 Wallet, list of accounts
 """
 
+from datetime import date
+from enum import IntEnum
 import json
 import logging
 import os
@@ -9,6 +11,7 @@ import shutil
 from typing import List
 
 from bank.internal.account import Account
+from bank.utils.my_date import DATE_EPOCH, date_is_epoch
 
 class Wallet():
     """
@@ -17,12 +20,18 @@ class Wallet():
 
     CSV_KEY_LIST = ["id", "name"]
 
+    class FieldIdx(IntEnum):
+        ID = 0
+        NAME = 1
+        LAST = NAME
+
     def __init__(self, parent_dir: str, id: str = "") -> None:
 
         self.logger = logging.getLogger("Wallet")
 
         self.parent_dir: str = parent_dir
         self.id: str = id
+        # Defaults to ID
         self.name: str = self.id
 
         self.dir: str = self.parent_dir + "/wallet_" + self.name
@@ -56,9 +65,9 @@ class Wallet():
 
         return ret
 
-    def get_account(self, name: str) -> Account:
+    def get_account(self, name: str) -> Account | None:
         """
-        Get statement by date
+        Get account by date
         """
 
         for account in self.account_list:
@@ -78,6 +87,22 @@ class Wallet():
 
         return balance
 
+    def get_bal_at(self, _date: date):
+        bal = 0.0
+        for account in self.account_list:
+            bal += account.get_bal_at(_date)
+        return bal
+
+    def get_last_account_date(self) -> date:
+        date_max = DATE_EPOCH
+
+        for account in self.account_list:
+            last_stat_date = account.get_last_stat_date()
+            if date_is_epoch(date_max) or last_stat_date > date_max:
+                date_max = last_stat_date
+
+        return date_max
+
     def set_id(self, id: str) -> None:
         self.id = id
         self.dir: str = self.parent_dir + "/wallet_" + self.id
@@ -95,12 +120,11 @@ class Wallet():
 
         self.logger.debug("Open %s for reading", file_name)
         with open(file_name, "r", encoding="utf8") as file:
-
             data = json.load(file)
-
-            if "name" in data:
-                self.name = data["name"]
-                self.logger.info("name = %s", self.name)
+            if data["id"] != self.id:
+                self.logger.error("ID mismatch (self == %d) != (info == %d)", self.id, data["id"])
+            self.name = data["name"]
+            self.logger.debug("name = %s", self.name)
 
     def _read_account_list(self) -> None:
 

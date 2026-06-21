@@ -7,6 +7,8 @@ from datetime import date
 # datetime date format
 FMT_DATE = "%Y-%m-%d"
 
+DATE_EPOCH = date(1970, 1, 1)
+
 # Get next month of date
 def get_next_month(date_in: date):
     """
@@ -19,3 +21,6 @@ def get_next_month(date_in: date):
         date_ret = date(date_in.year, date_in.month + 1, date_in.day)
 
     return date_ret
+
+def date_is_epoch(_date: date):
+    return _date == DATE_EPOCH

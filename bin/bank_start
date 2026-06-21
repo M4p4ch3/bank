@@ -10,15 +10,15 @@ import logging
 import os
 import signal
 
-from bank.internal import Wallet
-from bank.display.my_curses import (DisplayerMain, DisplayerWallet)
+from bank.internal import WalletGroup
+from bank.display.my_curses import (DisplayerMain, DisplayerWalletGroup)
 
 def sig_handler_void(signum, frame):
     """void sig handler to remove ctrl c interrupt"""
     _ = signum
     _ = frame
 
-def wrap(win, wallet):
+def wrap(win, wallet_group):
     """
     Curses wrapper
     """
@@ -26,11 +26,11 @@ def wrap(win, wallet):
     # Init display
     disp = DisplayerMain(win)
 
-    # Init wallet display
-    wallet_disp = DisplayerWallet(disp, wallet)
+    # Init wallet group display
+    wallet_group_disp = DisplayerWalletGroup(disp, wallet_group)
 
-    # Browse wallet
-    wallet_disp.browse_container()
+    # Browse wallet i
+    wallet_group_disp.browse_container()
 
 def main():
     """
@@ -48,24 +48,24 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("data_dir", type=str, action="store",
         default="data", help="data folder")
-    parser.add_argument("wallet_name", type=str, action="store",
-        default="main", help="wallet name")
-    parser.add_argument("-d", "--debug", action="store_true", help="enable debug log")
+    # parser.add_argument("wallet_id", type=str, action="store",
+    #     default="main", help="wallet ID")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Verbose log level")
     args = parser.parse_args()
 
     # Setup logging
-    log_fmt = "[%(levelname)s][%(name)s] %(filename)s:%(funcName)s:%(lineno)d %(message)s"
+    log_fmt = "[%(levelname)s][%(name)s] (%(filename)s:%(funcName)s:%(lineno)d) %(message)s"
     logging.basicConfig(format=log_fmt, level=logging.INFO)
-    if args.debug:
+    if args.verbose:
         # Set root logger (whole logging) level to debug
         logger = logging.getLogger()
         logger.setLevel(logging.DEBUG)
 
-    # Init wallet
-    wallet = Wallet(args.data_dir, args.wallet_name)
+    # Init wallet group
+    wallet_group = WalletGroup(args.data_dir)
 
     # Curses wrapper
-    wrapper(wrap, wallet)
+    wrapper(wrap, wallet_group)
 
 if __name__ == "__main__":
     main()

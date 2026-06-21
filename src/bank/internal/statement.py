@@ -3,7 +3,7 @@ Statement
 """
 
 import csv
-from datetime import datetime
+from datetime import date, datetime
 from enum import IntEnum
 import json
 import logging
@@ -43,7 +43,7 @@ class Statement():
         self.name: str = self.id
 
         self.dir: str = parent_dir + "/stat_" + self.id
-        self.date: datetime = datetime.now()
+        self.date: date = date.today()
         self.bal_start: float = 0.0
         self.bal_end: float = 0.0
         self.ope_list: List[Operation] = []
@@ -86,14 +86,14 @@ class Statement():
 
         return ret
 
-    def get_closest_ope(self, ope_list: List[Operation]) -> Operation:
+    def get_closest_ope(self, ope_list: List[Operation]) -> Operation | None:
         """
         Get closest operation from list
         None if not found
         """
 
         # Operation to return
-        ope_ret: Operation = ope_list[0]
+        ope_ret: Operation | None = ope_list[0]
 
         # While operation in list
         while (ope_ret in ope_list) and (ope_ret is not None):
@@ -140,16 +140,16 @@ class Statement():
 
             if "name" in data:
                 self.name = data["name"]
-                self.logger.info("name = %s", self.name)
+                self.logger.debug("name = %s", self.name)
             if "date" in data:
-                self.date = datetime.strptime(data["date"], FMT_DATE)
-                self.logger.info("date = %s", self.date.strftime(FMT_DATE))
+                self.date = datetime.strptime(data["date"], FMT_DATE).date()
+                self.logger.debug("date = %s", self.date.strftime(FMT_DATE))
             if "bal_start" in data:
                 self.bal_start = data["bal_start"]
-                self.logger.info("bal_start = %s", self.bal_start)
+                self.logger.debug("bal_start = %s", self.bal_start)
             if "bal_end" in data:
                 self.bal_end = data["bal_end"]
-                self.logger.info("bal_end = %s", self.bal_end)
+                self.logger.debug("bal_end = %s", self.bal_end)
 
     def _read_ope_list(self) -> None:
 

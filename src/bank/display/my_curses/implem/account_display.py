@@ -185,7 +185,8 @@ class DisplayerAccount(DisplayerItem, DisplayerContainer):
             return ret
 
         # Confirmed
-        self.account.remove_stat_list(item_list)
+        # ERA TODO fix
+        # self.account.remove_stat_list(item_list)
         return RetCode.OK
 
     def create_container_item(self) -> Statement:

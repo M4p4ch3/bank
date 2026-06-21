@@ -2,7 +2,7 @@
 Operation
 """
 
-from datetime import datetime
+from datetime import date
 from enum import IntEnum
 
 from bank.utils import FMT_DATE
@@ -28,7 +28,7 @@ class Operation():
         LAST = AMOUNT
 
     # pylint: disable=too-many-arguments
-    def __init__(self, _date: datetime, mode: str,
+    def __init__(self, _date: date, mode: str,
                  tier: str, cat: str, desc: str, amount: float) -> None:
 
         self.date = _date

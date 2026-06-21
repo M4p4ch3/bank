@@ -2,7 +2,7 @@
 Account
 """
 
-from datetime import datetime
+from datetime import date
 from enum import IntEnum
 import json
 import logging
@@ -11,6 +11,7 @@ import shutil
 from typing import List
 
 from bank.internal.statement import Statement
+from bank.utils.my_date import DATE_EPOCH, date_is_epoch
 
 class Account():
     """
@@ -68,7 +69,7 @@ class Account():
 
         return ret
 
-    def get_stat(self, date: datetime) -> Statement:
+    def get_stat(self, date: date) -> Statement | None:
         """
         Get statement by date
         """
@@ -83,11 +84,11 @@ class Account():
         """Get actual balance
         End balance of last statement"""
 
-        date_max: datetime = None
-        stat_last: Statement = None
+        date_max = DATE_EPOCH
+        stat_last: Statement | None = None
 
         for stat in self.stat_list:
-            if not date_max or stat.date > date_max and stat.date < datetime.now():
+            if date_is_epoch(date_max) or stat.date > date_max and stat.date < date.today():
                 date_max = stat.date
                 stat_last = stat
 
@@ -96,7 +97,7 @@ class Account():
 
         return stat_last.bal_end
 
-    def get_bal_at(self, _date: datetime):
+    def get_bal_at(self, _date: date):
         bal: float = 0.0
         for stat in self.stat_list:
             if stat.date < _date:
@@ -105,16 +106,16 @@ class Account():
                 break
         return bal
 
-    def get_last_stat_date(self) -> datetime:
+    def get_last_stat_date(self) -> date:
         """Get last statement date"""
 
-        date_max: datetime = None
+        date_max = DATE_EPOCH
 
         for stat in self.stat_list:
-            if stat.date > datetime.now():
+            if stat.date > date.today():
                 continue
 
-            if not date_max or stat.date > date_max:
+            if date_is_epoch(date_max) or stat.date > date_max:
                 date_max = stat.date
 
         return date_max
@@ -141,7 +142,7 @@ class Account():
 
             if "name" in data:
                 self.name = data["name"]
-                self.logger.info("name = %s", self.name)
+                self.logger.debug("name = %s", self.name)
 
     def _read_stat_list(self) -> None:
 
