@@ -108,7 +108,12 @@ class DisplayerContainer():
             return
 
         item_hl_idx = item_list.index(self.item_hl) + delta
-        if item_hl_idx < 0 or item_hl_idx >= len(item_list):
+        if item_hl_idx < 0:
+            self.item_hl = item_list[0]
+            return
+            
+        if item_hl_idx >= len(item_list):
+            self.item_hl = item_list[-1]
             return
 
         self.item_hl = item_list[item_hl_idx]
@@ -454,12 +459,16 @@ class DisplayerContainer():
                 hl_changed = True
 
             elif key in [KeyId.PAGE_UP]:
-                self.item_focus_idx -= 3
-                focus_changed = True
+                # self.item_focus_idx -= 3
+                # focus_changed = True
+                self.highlight_item(-20)
+                hl_changed = True
 
             elif key in [KeyId.PAGE_DOWN]:
-                self.item_focus_idx += 3
-                focus_changed = True
+                # self.item_focus_idx += 3
+                # focus_changed = True
+                self.highlight_item(20)
+                hl_changed = True
 
             elif key in [KeyId.SPACE]:
                 self.toogle_item_sel()
